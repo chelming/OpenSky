@@ -1,0 +1,60 @@
+# OpenSky test image: runs tools/test-all.sh with no Raspberry Pi and no screen.
+# The real MagicMirror/Electron app runs on an off-screen Wayland compositor (labwc) and Playwright drives it,
+# exactly as on a Pi (docs/development/testing.md). The repo is NOT copied in: tools/docker-test.sh mounts it at
+# /opensky, so edits are tested without a rebuild. Only the slow-to-install parts live in the image.
+#   tools/docker-test.sh                      all unit tests + every scenario
+#   tools/docker-test.sh scenario tools/scenarios/google.js
+FROM node:24-trixie-slim
+
+ARG MM_VERSION=v2.38.0
+ENV DEBIAN_FRONTEND=noninteractive
+# Electron's libraries, the headless compositor and its tools. No color-emoji font on purpose:
+# Raspberry Pi OS has none, so a test must not rely on one.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git ca-certificates procps python3 python3-venv \
+      labwc wlr-randr grim \
+      libgtk-3-0t64 libnss3 libgbm1 libasound2t64 libxkbcommon0 libdrm2 libatk-bridge2.0-0t64 libcups2t64 libxss1 libxtst6 \
+      fonts-dejavu-core fonts-liberation \
+    && rm -rf /var/lib/apt/lists/* \
+ && install -d -o node -g node /opt/MagicMirror /opt/tools-deps /opt/venv /opt/seed
+
+USER node
+# MagicMirror (pinned, same tag as install.sh) with its Electron
+RUN git -c advice.detachedHead=false clone -q --depth 1 --branch "$MM_VERSION" \
+      https://github.com/MagicMirrorOrg/MagicMirror /opt/MagicMirror \
+ && cd /opt/MagicMirror && (npm run install-mm >/tmp/mm.log 2>&1 || (cat /tmp/mm.log; exit 1)) \
+ && ([ -x node_modules/electron/dist/electron ] || node node_modules/electron/install.js) \
+ && test -x node_modules/electron/dist/electron
+
+# Playwright (core only, as in tools/package.json; the browser is Electron itself)
+COPY --chown=node:node tools/package.json tools/package-lock.json /opt/tools-deps/
+RUN cd /opt/tools-deps && npm ci --silent
+
+# CalDAV helper + a throwaway Radicale CalDAV server for tools/test-calendar-service.py
+COPY --chown=node:node services/calendar-service/requirements.txt /opt/seed/requirements.txt
+RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install -q --no-cache-dir -r /opt/seed/requirements.txt radicale
+
+# Pre-fetch the pinned community modules (tools/link-mm.sh) so a test run needs no network. The seed folder
+# only stands in for the repo: the entrypoint links the real, mounted repo over it on every run.
+COPY --chown=node:node tools/link-mm.sh tools/community-modules.txt /opt/seed/tools/
+COPY --chown=node:node patches /opt/seed/patches
+RUN mkdir -p /opt/seed/modules/MMM-OpenSky-seed /opt/seed/lib /opt/seed/css /opt/seed/config \
+ && touch /opt/seed/css/opensky.css /opt/seed/config/config.js \
+ && /opt/seed/tools/link-mm.sh /opt/MagicMirror >/dev/null \
+ && rm /opt/MagicMirror/modules/MMM-OpenSky-seed
+
+USER root
+COPY tools/docker-test-entrypoint.sh /usr/local/bin/docker-test-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-test-entrypoint.sh
+USER node
+
+ENV OPENSKY_MM=/opt/MagicMirror \
+    OPENSKY_PYTHON=/opt/venv/bin/python \
+    NODE_PATH=/opt/tools-deps/node_modules \
+    XDG_RUNTIME_DIR=/tmp/xdg-runtime \
+    ELECTRON_DISABLE_SANDBOX=1 \
+    HOME=/home/node \
+    TZ=America/New_York
+WORKDIR /opensky
+ENTRYPOINT ["/usr/local/bin/docker-test-entrypoint.sh"]
+CMD ["tools/test-all.sh"]

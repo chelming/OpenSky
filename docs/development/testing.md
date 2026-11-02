@@ -14,6 +14,22 @@ that runs a family's screen.
 3. Link this repo into it: `tools/dev-setup.sh` (re-run after adding a module).
 4. Test tools: `cd tools && npm install` (Playwright core only — no browsers are downloaded).
 
+## Without a Pi: the test container
+Needs only Docker. The image holds MagicMirror 2.38 with Electron, the pinned community modules, the headless
+compositor (`labwc`), Playwright and the Python/Radicale pieces; your checkout is mounted into it, so edits are tested
+without rebuilding.
+```
+tools/docker-test.sh                                    # all unit tests + every scenario (tools/test-all.sh)
+tools/docker-test.sh scenario tools/scenarios/google.js # one screen scenario
+tools/docker-test.sh node tools/test-pickup.js          # any single command
+tools/docker-test.sh build                              # rebuild (only after changing Dockerfile.test)
+```
+The first run builds the image (about 2 GB, a few minutes). Screenshots land in `tools/out/` as usual. The container user
+is uid 1000, so `tools/out/` must be writable by that user. If the build can't resolve host names, build with
+`OPENSKY_DOCKER_BUILD_ARGS="--network host" tools/docker-test.sh build`.
+It is a different computer from a Pi (x86, Debian trixie, no color-emoji font like Raspberry Pi OS), so a pass here is
+good evidence but not proof for the real screen: run `tools/test-all.sh` on a Pi before a release.
+
 ## Running tests
 Everything at once: `tools/test-all.sh` (unit tests + every scenario; starts/stops the compositor itself).
 
