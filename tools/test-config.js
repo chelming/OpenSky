@@ -17,6 +17,8 @@ function build(settings, secrets = {}) {
   return m.exports;
 }
 const mod = (c, name) => c.modules.find((m) => m.module === name);
+// the defaults are what's tested: Docker (and the test container) set these two on purpose
+delete process.env.OPENSKY_ADDRESS; delete process.env.OPENSKY_IP_WHITELIST;
 const errs = []; const origErr = console.error; console.error = (...a) => errs.push(a.join(" "));
 
 const c = build({
