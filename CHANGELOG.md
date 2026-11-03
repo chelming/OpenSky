@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Calendar: scroll a busy day** instead of tapping "+N more": swipe (or wheel) on the week's row to show the hidden events.
 - **Home Assistant address is shown** in phone setup as plain text (it was a hidden password field); the token stays hidden.
 - **People**: add family members (name + color) in phone setup → Your family → People, and choose *Who is it for?* for each calendar
   and list (one can be for several people). The top bar shows a circle with each person's initial; tap it to show only
