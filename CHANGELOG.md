@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- **People**: add family members (name + color) in phone setup → Your family → People, and choose *Who is it for?* for each calendar
+  and list (one can be for several people). The top bar shows a circle with each person's initial; tap it to show only
+  their calendars and lists. A calendar for one person can use (and follow) that person's color. See docs/configure.md.
 - **One event on several calendars shows once** (`calendar.mergeShared`, off by default). Invite the kids to an event
   and each gets a copy; OpenSky merges copies with the same Google event ID and start, shows the names, and a striped
   bar in their colors. A family calendar can be marked `"role": "shared"`. Turn it on in phone setup (Calendars → Show shared events once). See docs/configure.md.
