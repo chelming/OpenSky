@@ -4,6 +4,9 @@
 - **One event on several calendars shows once** (`calendar.mergeShared`, off by default). Invite the kids to an event
   and each gets a copy; OpenSky merges copies with the same Google event ID and start, shows the names, and a striped
   bar in their colors. A family calendar can be marked `"role": "shared"`. Turn it on in phone setup (Calendars → Show shared events once). See docs/configure.md.
+- **Run in Docker**: a `Dockerfile` and `docker-compose.yml`; tablets and PCs open the screen in a browser
+  ([docs/docker.md](docs/docker.md)). `OPENSKY_SETUP_URL` sets the address phone setup shows in its QR code.
+  In Docker, Settings hides Restart Pi and Shut down, and Restart OpenSky (and finishing phone setup) really restarts it.
 
 ## 1.0.4 — 2026-10-27
 - **Phone setup: any color for a calendar or a list** — besides the palette chips, the phone's color picker or a
