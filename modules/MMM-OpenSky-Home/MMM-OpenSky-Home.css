@@ -226,7 +226,7 @@
   font-weight: 700;
   color: #1f2937;
 }
-.hd-event-time { font-size: 14px; font-weight: 600; color: #4b5563; }
+.hd-event-time { font-size: 14px; font-weight: 600; color: #374151; }   /* #4b5563 is ~4.2:1 on the purple pastel */
 /* Two-line names, only while the whole day still fits (window.OpenSkyFit.grow) */
 .hd-event.mf-two .hd-event-title {
   white-space: normal;
@@ -302,19 +302,36 @@
 
 /* ---- calendar label on every pill: dot + name at the end of the time row (the name gives way before the time) ---- */
 .hd-ev-meta { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
-.hd-ev-meta .hd-event-time { font-size: 13px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hd-event-rel { flex: 0 0 auto; white-space: nowrap; font-size: 13px; font-weight: 800; color: #1f2937; }
+.hd-ev-meta .hd-event-time { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-event-rel { flex: 0 0 auto; white-space: nowrap; font-size: 14px; font-weight: 800; color: #1f2937; }
 /* the name shrinks first (flex-shrink 1000, down to the dots, whose width JS sets as min-width), then the time */
-.hd-cal { margin-left: auto; display: flex; align-items: center; gap: 5px; overflow: hidden; flex: 0 1000 auto; }
+.hd-cal { display: flex; align-items: center; gap: 5px; flex: none; white-space: nowrap; }
 .hd-cal-dots { flex: 0 0 auto; display: inline-flex; gap: 3px; }
 .hd-cal-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--evc-bar, #9ca3af); }
-.hd-cal-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; color: #374151; }
+.hd-cal-name { max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; color: #374151; }
+
+/* ---- title row: the title grows; who it is for (dot + name, or initial badges) stays at the top right ---- */
+.hd-ev-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; width: 100%; min-width: 0; }
+.hd-ev-top .hd-event-title { flex: 1 1 auto; min-width: 0; }
+.hd-ev-top .hd-cal { margin-top: 3px; }
+.hd-badges { flex: none; display: flex; }
+.hd-badge {
+  --b-bg: #e5e7eb; --b-bar: #6b7280;
+  box-sizing: border-box; flex: none; width: 24px; height: 24px; margin-left: -6px;
+  border-radius: 50%; background: var(--b-bg); border: 2px solid var(--b-bar);
+  box-shadow: 0 0 0 2px #fff;   /* a white ring separates the overlaps */
+  display: flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 11px; font-weight: 800; line-height: 1; color: #1f2937; overflow: hidden;
+}
+.hd-badge:first-child { margin-left: 0; }
+.hd-badge-long { font-size: 9px; letter-spacing: -.2px; }
+.hd-badge-more { --b-bg: #e5e7eb; --b-bar: #6b7280; }
 
 /* ---- today's tile: what's left (live → upcoming; the rest folded into "N done") ---- */
 .hd-event.hd-strip { flex-direction: row; align-items: center; gap: 8px; padding: 6px 10px; }
 .hd-strip .hd-event-title { flex: 1 1 auto; min-width: 0; width: auto; font-size: 15px; }
 .hd-strip-tag { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #374151; }
-.hd-strip .hd-cal { margin-left: 0; }
+.hd-strip .hd-cal, .hd-strip .hd-badges { margin-left: 0; }
 .hd-event.live { box-shadow: 0 0 0 2px #1f2937; }
 .hd-event.live .hd-event-title { font-weight: 800; }
 .hd-live-row { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
@@ -330,3 +347,7 @@
 .hd-empty { display: flex; align-items: center; gap: 6px; padding: 4px 4px; font-size: 15px; font-weight: 700; color: #4b5563; }
 /* the done list open: the tile scrolls instead of clipping */
 .hd-day.hd-done-open .hd-day-events { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* "in 1 hr 45 min · 3:30 PM – 4 PM" is the one time line that can outgrow the pill: 13px only when a countdown shares it */
+.hd-event:not(.live) .hd-ev-meta:has(.hd-event-rel) { font-size: 13px; }
+.hd-event:not(.live) .hd-ev-meta:has(.hd-event-rel) .hd-event-rel,
+.hd-event:not(.live) .hd-ev-meta:has(.hd-event-rel) .hd-event-time { font-size: 13px; }

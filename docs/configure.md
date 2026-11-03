@@ -194,7 +194,7 @@ OpenSky can show any number of calendars, each with its own color. Some can also
 
 ### One event on several calendars (kids who share an activity)
 If each person has their own calendar and an event is on more than one of them, turn on **Show shared events once** and it
-shows **once**, with a box that blends each person's color and their names in the event's details. It's off by default.
+shows **once**, with a box that blends each person's color, their initials as small badges at the top right of the Home tile (`Q`, `Re`: the shortest start that tells the calendars apart; up to 4, then `+N`), and their full names in the event's details. It's off by default.
 
 **On the phone:** Settings → Set up from your phone → Calendars → *Show shared events once*; then tap your family
 calendar and turn on *Shared family calendar*.

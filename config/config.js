@@ -97,6 +97,8 @@ const calendarSources = (Array.isArray(cal.sources) ? cal.sources : []).filter((
 // calendar.colors.calendars (a color per calendar name) wins over a source's own color, so a synced color goes in there too
 const syncedColors = Object.fromEntries((Array.isArray(cal.sources) ? cal.sources : []).filter((c) => c && c.name && profileColor(c)).map((c) => [String(c.name), profileColor(c)]));
 const eventColors = Object.keys(syncedColors).length ? { ...(cal.colors || {}), calendars: { ...((cal.colors || {}).calendars || {}), ...syncedColors } } : (cal.colors || null);
+// who the calendars are, in settings order (initial badges on events shared by several calendars; the family calendar isn't a person)
+const calendarPeople = calendarSources.filter((c) => c.role !== "shared").map((c) => ({ name: c.name, color: ((eventColors || {}).calendars || {})[c.name] || c.color || null }));
 // CalDAV calendars are read through OpenSky's calendar service on this Pi (the account stays in secrets.json)
 const servicePort = (cal.service && cal.service.port) || 5747;
 calendarSources.filter((c) => c.type === "caldav").forEach((c) => { c.url = `http://127.0.0.1:${servicePort}/${encodeURIComponent(c.name)}/calendar.ics`; });
@@ -169,6 +171,7 @@ const PAGES = {
       canAddEvents,
       maxEventsPerDay: 4,
       eventColors,
+      calendarPeople,
       photos: {
         enabled: !(s.photos && s.photos.enabled === false),
         provider: (s.photos && s.photos.provider) || "folder",
