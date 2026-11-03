@@ -127,17 +127,6 @@
   grid-template-rows: repeat(var(--maxeventlines), minmax(0, 32px)) !important;
   align-content: start;
 }
-/* Days with more events than fit ("+N more"): the week's event layer scrolls (swipe or wheel) to show the rest.
-   CX3 gives the overflow rows no height and hides them; give them a row each instead. The week's days scroll
-   together, because multi-day events span them. No scrollbar: the badge says there is more. */
-.CX3 .week .eventContainer {
-  grid-auto-rows: 32px !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  scrollbar-width: none;
-}
-.CX3 .week .eventContainer::-webkit-scrollbar { display: none; }
 .CX3 .week .cellContainer { height: 100% !important; grid-template-rows: minmax(0, 1fr); }
 .CX3 .week .cell { height: 100% !important; box-sizing: border-box; }
 /* Rounded outer corners, like every other card */

@@ -13,23 +13,6 @@ module.exports = async (page, h) => {
   ok("palette colors: Family pink, School teal, Dentist indigo", has("Family dinner")[0]?.cls === "evc-pink" && has("School assembly")[0]?.cls === "evc-teal" && has("Dentist")[0]?.cls === "evc-indigo", [has("Family dinner")[0]?.cls, has("School assembly")[0]?.cls, has("Dentist")[0]?.cls]);
   ok("color is drawn (indigo bar)", has("Dentist")[0]?.bar === "rgb(74, 91, 216)", has("Dentist")[0]?.bar);
   ok("today is highlighted", await page.evaluate(() => !!document.querySelector(".CX3 .cell.today")));
-  // a day with "+N more": its week's event layer scrolls to reveal the hidden events
-  await page.evaluate(() => {   // a crowded day: six extra events today, from a stand-in calendar
-    const cx = MM.getModules().withClass("MMM-CalendarExt3")[0];
-    const base = [...cx.eventPool.values()].flat().find((e) => !e.isFullday && !e.isMultiday);
-    const d = new Date(); d.setHours(8, 0, 0, 0);
-    const extra = [1, 2, 3, 4, 5, 6].map((i) => ({ ...base, title: "Crowd " + i, startDate: d.getTime() + i * 3600e3, endDate: d.getTime() + i * 3600e3 + 1800e3, today: true }));
-    cx.notificationReceived("CALENDAR_EVENTS", extra, { identifier: "crowd" });
-  });
-  await h.sleep(1500);
-  const more = await page.evaluate(async () => {
-    const cell = document.querySelector(".CX3 .cell.hasMore"); if (!cell) return null;
-    const ec = cell.closest(".week").querySelector(".eventContainer"), before = ec.scrollTop;
-    ec.scrollTop = 32; await new Promise((r) => setTimeout(r, 100));
-    const r = { scrollable: ec.scrollHeight > ec.clientHeight, moved: ec.scrollTop > before, overflow: getComputedStyle(ec).overflowY };
-    ec.scrollTop = 0; return r;
-  });
-  ok("'+N more' days scroll to show the hidden events", !!more && more.scrollable && more.moved, more);
   ok("Add Event in the toolbar (an editable calendar exists)", await page.evaluate(() => !!document.querySelector(".os-nav-add")));
   await h.shot("calendar-month");
   // toolbar
