@@ -141,16 +141,49 @@ module.exports = async (page, h) => {
   ok("pills: dot color is the --evc-bar color, aria-label = the name, no left border",
     col.length > 4 && col.every((c) => c.bar === c.dot && c.label && c.label === c.name && c.border === "0px"), col.filter((c) => !(c.bar === c.dot && c.label === c.name && c.border === "0px")));
 
-  // 6b. an event shared by several calendars: one dot per calendar, all the names
-  await page.evaluate(() => {
-    const hm = MM.getModules().withClass("MMM-OpenSky-Home")[0], t = new Date(), at = (hh) => new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1, hh).getTime();
-    const ev = hm.normalize({ title: "Roller derby", calendarName: "Mia", startDate: String(at(18)), endDate: String(at(19)) });
-    ev.colors = ["#2e8bd6", "#e0559a"]; ev.calendarNames = ["Mia", "Leo"];
-    const tile = document.querySelectorAll(".hd-week .hd-day:not(.hd-nextweek)")[1];
-    tile.querySelector(".hd-day-events").appendChild(hm.eventPill(ev, new Date(at(0))));
+  // 6b. events on several calendars: initial badges (not dot + name), the blended fill, the same letters everywhere
+  const sh = await page.evaluate(() => {
+    const hm = MM.getModules().withClass("MMM-OpenSky-Home")[0], EC = window.OpenSkyEventColors, t = new Date();
+    hm.config.calendarPeople = ["Quinn", "Reese", "Ryan", "Sam", "Mom", "Dad"].map((name) => ({ name }));
+    EC.calendars = { ...EC.calendars, Quinn: "blue", Reese: "pink", Ryan: "green", Sam: "purple", Mom: "orange", Dad: "teal" };
+    const at = (hh) => new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1, hh).getTime();
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;left:0;top:0;width:246px;z-index:99999;display:flex;flex-direction:column;gap:8px;background:#fff";
+    document.body.appendChild(probe);
+    const mk = (title, names, cls = "") => {
+      const ev = hm.normalize({ title, calendarName: names[0], startDate: String(at(18)), endDate: String(at(19)) });
+      ev.calendarNames = names; ev.colors = names.map((n) => EC.pair(EC.colorOf(EC.calendars[n]))[1]);
+      const pill = hm.eventPill(ev, new Date(at(0)));
+      if (cls) pill.classList.add(cls);
+      probe.appendChild(pill);
+      return pill;
+    };
+    const info = (pill) => {
+      const b = [...pill.querySelectorAll(".hd-badge")], g = pill.querySelector(".hd-badges"), r = pill.getBoundingClientRect(), title = pill.querySelector(".hd-event-title").getBoundingClientRect();
+      return {
+        texts: b.map((x) => x.textContent), cal: !!pill.querySelector(".hd-cal"), role: g && g.getAttribute("role"), label: g && g.getAttribute("aria-label"),
+        multi: /--evc-multi/.test(pill.getAttribute("style") || ""), bg: getComputedStyle(pill).backgroundImage.slice(0, 15),
+        firstBorder: b[0] && getComputedStyle(b[0]).borderTopColor, inside: !!g && g.getBoundingClientRect().right <= r.right + 0.5 && g.getBoundingClientRect().left >= r.left,
+        badgeTop: b[0] && b[0].getBoundingClientRect().top, titleTop: title.top, titleH: title.height, timeText: pill.querySelector(".hd-event-time").textContent
+      };
+    };
+    const out = {
+      two: info(mk("Roller derby", ["Reese", "Quinn"])),                            // given out of order: Quinn first on screen
+      five: info(mk("Birthday party", ["Quinn", "Reese", "Sam", "Mom", "Ryan"])),
+      pair: info(mk("Swim meet", ["Ryan", "Reese"])),
+      long: info(mk("A very long title for the tournament that goes on and on and on forever", ["Quinn", "Reese"], "mf-two")),
+      single: info(mk("Piano", ["Mom"]))
+    };
+    probe.remove();
+    return out;
   });
-  const sh = await page.evaluate(() => { const c = [...document.querySelectorAll(".hd-event")].find((p) => /Roller derby/.test(p.textContent)).querySelector(".hd-cal"); return { dots: [...c.querySelectorAll(".hd-cal-dot")].map((d) => getComputedStyle(d).backgroundColor), name: c.querySelector(".hd-cal-name").textContent, label: c.querySelector(".hd-cal-dots").getAttribute("aria-label") }; });
-  ok("shared event: two dots in the calendars' colors, names 'Mia, Leo'", sh.dots.join() === "rgb(46, 139, 214),rgb(224, 85, 154)" && sh.name === "Mia, Leo" && sh.label === "Mia, Leo", sh);
+  ok("shared event (Quinn + Reese): badges Q, Re, no dot + name, blended fill, settings order", sh.two.texts.join() === "Q,Re" && !sh.two.cal && sh.two.multi && /linear-gradient/.test(sh.two.bg), sh.two);
+  ok("shared event: the first badge has its person's color (Quinn is blue)", sh.two.firstBorder === "rgb(46, 139, 214)", sh.two.firstBorder);
+  ok("five people: 3 badges + '+2'", sh.five.texts.join() === "Q,Re,Ry,+2", sh.five.texts);
+  ok("Reese / Ryan are told apart: Re, Ry (and in settings order)", sh.pair.texts.join() === "Re,Ry", sh.pair.texts);
+  ok("badge group is role=img with the full names", sh.two.role === "img" && sh.two.label === "Quinn, Reese", [sh.two.role, sh.two.label]);
+  ok("a long title wraps to two lines and the badges stay inside the pill, top right", sh.long.inside && sh.long.titleH > 30 && Math.abs(sh.long.badgeTop - sh.long.titleTop) <= 6, [sh.long.inside, sh.long.titleH, sh.long.badgeTop, sh.long.titleTop]);
+  ok("one calendar: dot + name, no badges; the time line is only the time", sh.single.cal && !sh.single.texts.length && sh.single.timeText === "6 PM – 7 PM", sh.single);
 
   // 7. the clock ticks: a minute later Swim says 'in 18 min' and other tiles are not redrawn
   await set(761, BASE); await h.sleep(300);

@@ -22,12 +22,13 @@ Module.register("MMM-OpenSky-Home", {
     canAddEvents: false,         // true when an event editor module is installed
     maxEventsPerDay: 4,
     eventColors: null,           // calendar.colors from opensky.json
+    calendarPeople: [],          // [{ name, color }] the calendars in settings order (badge letters + colors for shared events)
     photos: { enabled: true, provider: "folder", folder: null, usb: true, url: null, intervalSeconds: 30 },
     pickup: null                 // resolved pickup schedule (see lib/client/pickup.js); null = no icons
   },
 
   getStyles() { return ["modules/opensky-lib/client/list-columns.css", "MMM-OpenSky-Home.css"]; },
-  getScripts() { return ["modules/opensky-lib/client/opensky-client.js", "modules/opensky-lib/client/pickup.js", "modules/opensky-lib/client/day-agenda.js"]; },
+  getScripts() { return ["modules/opensky-lib/client/opensky-client.js", "modules/opensky-lib/client/pickup.js", "modules/opensky-lib/client/day-agenda.js", "modules/opensky-lib/client/shared-badges.js"]; },
 
   start() {
     this.pools = new Map();      // sender identifier → events
@@ -405,22 +406,65 @@ Module.register("MMM-OpenSky-Home", {
     }
   },
 
-  // The calendar's dot + name at the end of a pill's meta row (the name gives way first, down to just the dot).
-  // An event shared by several calendars (calendar.mergeShared) gets one dot per calendar and all their names.
+  // Who an event is for, always at the top right of the title row: one calendar → its dot + name; an event on several
+  // calendars (calendar.mergeShared) → initial badges (the pill keeps its blended fill). Full names: popup + aria-label.
+  who(ev) { return ev.calendarNames && ev.calendarNames.length > 1 && window.OpenSkyBadges ? this.badgeGroup(ev.calendarNames) : this.calLabel(ev); },
+
   calLabel(ev) {
-    const names = ev.calendarNames && ev.calendarNames.length ? ev.calendarNames : ev.calendarName ? [ev.calendarName] : [];
+    const name = ev.calendarName || "";
     const el = document.createElement("span");
     el.className = "hd-cal";
-    if (!names.length) return el;
-    const name = names.join(", ");
+    if (!name) return el;
     el.title = name;
-    const shared = (ev.colors || []).filter((c) => /^#[0-9a-f]{3,8}$/i.test(c));
-    const dots = shared.length > 1 ? shared.map((c) => `<i class="hd-cal-dot" style="background:${c}"></i>`).join("") : `<i class="hd-cal-dot"></i>`;
-    el.style.minWidth = `${Math.max(1, shared.length > 1 ? shared.length : 1) * 8 + (shared.length > 1 ? shared.length - 1 : 0) * 3}px`;   // never less than the dots
-    el.innerHTML = `<span class="hd-cal-dots">${dots}</span><span class="hd-cal-name"></span>`;
+    el.innerHTML = `<span class="hd-cal-dots"><i class="hd-cal-dot"></i></span><span class="hd-cal-name"></span>`;
     el.querySelector(".hd-cal-dots").setAttribute("aria-label", name);
     el.querySelector(".hd-cal-name").textContent = name;
     return el;
+  },
+
+  // badge letters come from every calendar name together (Reese + Ryan → Re, Ry), the same on every event
+  badgeLabels() {
+    const names = (this.config.calendarPeople || []).map((p) => p.name);
+    const key = names.join("\u0001");
+    if (this._labelKey !== key) { this._labelKey = key; this._labels = window.OpenSkyBadges.labels(names); }
+    return this._labels;
+  },
+
+  badgeGroup(names) {
+    const EC = window.OpenSkyEventColors, people = this.config.calendarPeople || [];
+    const rank = (n) => { const i = people.findIndex((p) => p.name === n); return i < 0 ? people.length : i; };
+    const ordered = [...names].sort((a, b) => rank(a) - rank(b)).map((name) => ({ name }));   // settings order: a pill never reshuffles
+    const { shown, extra } = window.OpenSkyBadges.badges(ordered, this.badgeLabels(), 4);
+    const wrap = document.createElement("span");
+    wrap.className = "hd-badges";
+    wrap.setAttribute("role", "img");
+    wrap.setAttribute("aria-label", ordered.map((p) => p.name).join(", "));
+    for (const p of shown) {
+      const own = (people.find((q) => q.name === p.name) || {}).color;
+      const pair = EC ? EC.pair((EC.colorOf((EC.calendars || {})[p.name]) || EC.colorOf(own)) || "gray") : ["#e5e7eb", "#6b7280"];
+      const b = document.createElement("span");
+      b.className = "hd-badge" + (Array.from(p.label).length > 2 ? " hd-badge-long" : "");
+      b.style.setProperty("--b-bg", pair[0]);
+      b.style.setProperty("--b-bar", pair[1]);
+      b.textContent = p.label;
+      wrap.appendChild(b);
+    }
+    if (extra) {
+      const m = document.createElement("span");
+      m.className = "hd-badge hd-badge-more";
+      m.textContent = `+${extra}`;
+      wrap.appendChild(m);
+    }
+    return wrap;
+  },
+
+  // title (grows) + who (top right), then the time line alone below
+  topRow(titleHtml, ev) {
+    const top = document.createElement("span");
+    top.className = "hd-ev-top";
+    top.innerHTML = `<span class="hd-event-title">${titleHtml}</span>`;
+    top.appendChild(this.who(ev));
+    return top;
   },
 
   colored(el, ev) { if (window.OpenSkyEventColors) el.setAttribute("style", window.OpenSkyEventColors.vars(ev)); },
@@ -432,7 +476,7 @@ Module.register("MMM-OpenSky-Home", {
     this.colored(pill, ev);
     pill.innerHTML = `<span class="hd-event-title"></span><span class="hd-strip-tag">All day</span>`;
     pill.querySelector(".hd-event-title").textContent = ev.title;
-    pill.appendChild(this.calLabel(ev));
+    pill.appendChild(this.who(ev));
     pill.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
     return pill;
   },
@@ -444,13 +488,12 @@ Module.register("MMM-OpenSky-Home", {
     this.colored(pill, ev);
     const end = ev.endDate > ev.startDate ? ev.endDate : ev.startDate;
     const left = r.minutesLeft < 60 ? `${window.OpenSkyDayAgenda.dur(r.minutesLeft)} left` : `until ${this.clock(new Date(end))}`;
-    pill.innerHTML = `<span class="hd-event-title"></span>
-      <span class="hd-ev-meta"><span class="hd-live-row"><b class="hd-now">NOW</b><span class="hd-event-rel"></span></span></span>
-      <span class="hd-progress"><i></i></span>`;
+    pill.appendChild(this.topRow("", ev));
+    pill.insertAdjacentHTML("beforeend", `<span class="hd-ev-meta"><span class="hd-live-row"><b class="hd-now">NOW</b><span class="hd-event-rel"></span></span></span>
+      <span class="hd-progress"><i></i></span>`);
     pill.querySelector(".hd-event-title").textContent = ev.title;
     pill.querySelector(".hd-event-rel").textContent = left;
     pill.querySelector(".hd-progress > i").style.width = `${Math.round(r.progress * 100)}%`;
-    pill.querySelector(".hd-ev-meta").appendChild(this.calLabel(ev));
     pill.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
     return pill;
   },
@@ -460,10 +503,10 @@ Module.register("MMM-OpenSky-Home", {
     const pill = document.createElement("button");
     pill.className = `hd-event ${kind}`;
     this.colored(pill, ev);
-    pill.innerHTML = `<span class="hd-event-title">${this.icon("check")}<span></span></span><span class="hd-ev-meta"><span class="hd-event-time"></span></span>`;
+    pill.appendChild(this.topRow(`${this.icon("check")}<span></span>`, ev));
+    pill.insertAdjacentHTML("beforeend", `<span class="hd-ev-meta"><span class="hd-event-time"></span></span>`);
     pill.querySelector(".hd-event-title > span").textContent = ev.title;
     pill.querySelector(".hd-event-time").textContent = text;
-    pill.querySelector(".hd-ev-meta").appendChild(this.calLabel(ev));
     pill.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
     return pill;
   },
@@ -472,7 +515,8 @@ Module.register("MMM-OpenSky-Home", {
     const pill = document.createElement("button");
     pill.className = "hd-event" + (ev.endDate < this.nowMs() && !ev.allDay ? " passed" : "");
     this.colored(pill, ev);
-    pill.innerHTML = `<span class="hd-event-title"></span><span class="hd-ev-meta"><span class="hd-event-time"></span></span>`;
+    pill.appendChild(this.topRow("", ev));
+    pill.insertAdjacentHTML("beforeend", `<span class="hd-ev-meta"><span class="hd-event-time"></span></span>`);
     pill.querySelector(".hd-event-title").textContent = ev.title;
     pill.querySelector(".hd-event-time").textContent = this.when(ev, day);
     const meta = pill.querySelector(".hd-ev-meta");
@@ -482,7 +526,6 @@ Module.register("MMM-OpenSky-Home", {
       r.textContent = `${rel} ·`;
       meta.prepend(r);
     }
-    meta.appendChild(this.calLabel(ev));
     pill.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
     return pill;
   },

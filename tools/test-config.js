@@ -58,6 +58,9 @@ const ec = mod(c, "MMM-OpenSky-Calendars").config.eventColors;
 ok("10 a calendar for one person can take their color (colorFromProfile), also over a per-calendar color; for two people, or without the flag, it keeps its own",
   byName("ZoeCal").color === "#3b82f6" && ec.calendars.ZoeCal === "#3b82f6" && byName("ZoeOwn").color === "red" && !("ZoeOwn" in ec.calendars) && byName("Mom").color === "red" && !("Mom" in ec.calendars),
   { zoe: byName("ZoeCal").color, own: byName("ZoeOwn").color, mom: byName("Mom").color, ec });
+const people = mod(c, "MMM-OpenSky-Home").config.calendarPeople;
+ok("14 Home gets the calendars as people for the shared-event badges: settings order, the shared family calendar and OpenSky's own names left out, each with its color",
+  JSON.stringify(people.map((p) => p.name)) === '["Shared","Work","Club","Mom","ZoeCal","ZoeOwn"]' && people.find((p) => p.name === "ZoeCal").color === "#3b82f6" && people.find((p) => p.name === "Shared").color === "green" && people.find((p) => p.name === "Work").color === null, people);
 const pages = mod(c, "MMM-pages").config.modules;
 ok("7 pages in order; embed pages told apart by class; an unknown page skipped with a message",
   JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-WordGame"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);
