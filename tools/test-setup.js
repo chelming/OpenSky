@@ -122,6 +122,28 @@ function burst(n) {
   ok("13 ...while the Host of the set address works", (await call("GET", "/", undefined, { Host: "nas.testers.lan:8090" })).status === 200);
   delete process.env.OPENSKY_SETUP_URL;
 
+  // 14-19 photos: add and delete from the phone
+  const pics = path.join(tmp, "pics");
+  fs.writeFileSync(process.env.OPENSKY_SETTINGS, JSON.stringify({ photos: { folder: pics } }));
+  const jpeg = fs.readFileSync(path.join(REPO, "tools", "fixtures", "photos", fs.readdirSync(path.join(REPO, "tools", "fixtures", "photos")).find((f) => /\.jpe?g$/i.test(f))));
+  const upload = (name, buf, hdr = as) => new Promise((resolve) => {
+    const q = http.request({ host: "127.0.0.1", port, path: `/api/photos?name=${encodeURIComponent(name)}`, method: "POST", headers: { Host: "localhost", "X-OpenSky": "1", "Content-Length": buf.length, ...hdr } }, (res) => {
+      let d = ""; res.on("data", (c) => { d += c; }); res.on("end", () => resolve({ status: res.statusCode, body: JSON.parse(d || "{}") }));
+    });
+    q.end(buf);
+  });
+  r = await upload("Lake.jpg", jpeg);
+  ok("14 a phone adds a photo to the folder", r.status === 200 && fs.existsSync(path.join(pics, "Lake.jpg")), r.body);
+  r = await upload("notes.jpg", Buffer.from("this is just text, not a picture"));
+  ok("15 something that isn't a photo is refused", r.status === 400 && /JPEG, PNG and WebP/.test(r.body.error), r.body);
+  ok("16 an unpaired phone can't add photos", (await upload("x.jpg", jpeg, {})).status === 401 && fs.readdirSync(pics).length === 1);
+  r = await call("GET", "/api/photos", undefined, as);
+  const first = r.body.photos[0];
+  ok("17 the list shows the photo, without file paths", r.status === 200 && r.body.photos.length === 1 && first.name === "Lake.jpg" && !JSON.stringify(r.body.photos).includes(tmp), r.body);
+  ok("18 the photo itself can be shown", (await call("GET", `/api/photos/${first.id}`, undefined, as)).status === 200 && (await call("GET", "/api/photos/..%2F..%2Fetc%2Fpasswd", undefined, as)).status === 404);
+  r = await call("POST", "/api/photos/delete", { id: first.id }, as);
+  ok("19 deleting removes the file", r.status === 200 && fs.readdirSync(pics).length === 0, r.body);
+
   h.stopServer("test over");
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);
