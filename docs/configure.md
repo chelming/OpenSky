@@ -67,7 +67,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 
 | Page | What it is |
 |---|---|
-| `home` | the week ahead, your lists and a photo |
+| `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
 | `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `wordgame` | a daily five-letter word puzzle for the whole family (one shared board a day, family stats) |

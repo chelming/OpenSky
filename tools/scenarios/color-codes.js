@@ -8,7 +8,7 @@ module.exports = async (page, h) => {
 
   // Home: the Family calendar's events (Soccer practice, Mon/Wed) get #8cbfc4; "dinner" events the rule's #e32a36
   await until(() => page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].some((p) => /Soccer|dinner/i.test(p.textContent))));
-  const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].map((p) => ({ t: p.querySelector(".hd-event-title").textContent, bar: getComputedStyle(p).borderLeftColor, bg: getComputedStyle(p).backgroundColor })));
+  const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].map((p) => ({ t: p.querySelector(".hd-event-title").textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor, bg: getComputedStyle(p).backgroundColor })));
   const soccer = pills.find((p) => p.t === "Soccer practice"), dinner = pills.find((p) => p.t === "Family dinner");
   ok("Home: a calendar's color code (upper case) colors its events — the bar in that color on a pale background of it",
     soccer && soccer.bar === rgb("#8cbfc4") && soccer.bg !== soccer.bar && !/rgba?\(0, 0, 0/.test(soccer.bg), soccer);
