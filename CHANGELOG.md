@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Home Assistant address is shown** in phone setup as plain text (it was a hidden password field); the token stays hidden.
+
 ## 1.0.4 — 2026-10-27
 - **Phone setup: any color for a calendar or a list** — besides the palette chips, the phone's color picker or a
   typed color code (like #8cbfc4), the same as for the accent color.
