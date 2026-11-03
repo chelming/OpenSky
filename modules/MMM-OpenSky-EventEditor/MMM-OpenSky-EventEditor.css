@@ -477,6 +477,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* today's list: finished events fade, a "Now" line marks where the day is */
+.day-event-row.day-event-past { opacity: .55; }
+.day-now { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.day-now::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: var(--os-accent-mid, #e8663f); }
+.day-now-label { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px; border-radius: 999px; background: var(--os-accent-mid, #e8663f); color: #fff; font-size: 15px; font-weight: 700; }
+.day-now-label b { font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 13px; }
 .day-empty {
   padding: 28px 0;
   text-align: center;

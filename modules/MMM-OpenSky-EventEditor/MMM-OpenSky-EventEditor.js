@@ -174,6 +174,7 @@ Module.register("MMM-OpenSky-EventEditor", {
       empty.textContent = "Nothing planned";
       list.appendChild(empty);
     }
+    const rows = [];
     this.day.events.forEach((ev) => {
       const row = document.createElement("button");
       row.className = "day-event-row";
@@ -188,8 +189,10 @@ Module.register("MMM-OpenSky-EventEditor", {
       row.appendChild(name);
       row.onclick = () => { this.currentEvent = ev; this.mode = "view"; this.render(); };
       list.appendChild(row);
+      rows.push({ ev, row });
     });
     container.appendChild(list);
+    if (this.day.events.length && day.toDateString() === new Date(this.nowMs()).toDateString()) this.addNowLine(list, rows);
 
     if (!this.config.editable.length) return container;   // read-only calendars: no "+ Add Event"
     const add = document.createElement("button");
@@ -208,6 +211,33 @@ Module.register("MMM-OpenSky-EventEditor", {
   },
 
   // "All day", "4:00 PM", or "Starts 4:00 PM"/"Until 11:00 AM" for multi-day timed events
+  // The one clock of the day list (scenarios pin it)
+  nowMs() { return Date.now(); },
+
+  // Today's list: a "Now" line with the current time between what is over and what is still going on or ahead; finished
+  // events are faded. It moves (and fades more events) every minute while the list is open, without redrawing it.
+  addNowLine(list, rows) {
+    const line = document.createElement("div");
+    line.className = "day-now";
+    line.innerHTML = `<span class="day-now-label"><b>Now</b><span class="day-now-time"></span></span>`;
+    const place = (first) => {
+      if (!first && !line.isConnected) return;   // the popup was closed
+      const now = this.nowMs();
+      line.querySelector(".day-now-time").textContent = new Date(now).toLocaleTimeString(this.locale(), { hour: "numeric", minute: "2-digit", hour12: this.hour12() });
+      let before = null;   // the first timed event that is live or still ahead (a point in time is over once it has passed)
+      for (const r of rows) {
+        const over = !r.ev.allDay && (r.ev.endDate > r.ev.startDate ? r.ev.endDate : r.ev.startDate) <= now;
+        r.row.classList.toggle("day-event-past", over);
+        if (!before && !r.ev.allDay && !over) before = r.row;
+      }
+      list.insertBefore(line, before);   // null → the end of the list
+      setTimeout(() => place(false), 60000 - (Date.now() % 60000) + 250);
+    };
+    list.appendChild(line);
+    place(true);
+    setTimeout(() => line.scrollIntoView({ block: "center" }), 0);   // a long day opens at the line
+  },
+
   shortWhen(ev, day) {
     if (ev.allDay) return "All day";
     const start = new Date(ev.startDate);

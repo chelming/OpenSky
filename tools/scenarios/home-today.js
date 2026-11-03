@@ -101,6 +101,17 @@ module.exports = async (page, h) => {
   await h.sleep(300);
   ok("idle reset: the done list closes again", !pills(await today(), "done").length);
 
+  // the day popup (tap "+N more"): finished events faded, a "Now" line with the time between them and the rest
+  await set(825, BUSY); await h.sleep(300);
+  await page.evaluate(() => { const t = new Date(); MM.getModules().withClass("MMM-OpenSky-EventEditor")[0].nowMs = () => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 13, 45).getTime(); });
+  await h.tap(".hd-is-today .hd-more:not(.hd-done-chip)"); await h.sleep(500);
+  const pop = await page.evaluate(() => [...document.querySelectorAll(".calendar-editor-modal .day-event-list > *")].map((el) => ({ now: el.classList.contains("day-now"), past: el.classList.contains("day-event-past"), text: el.textContent.trim().replace(/\s+/g, " ") })));
+  const ni = pop.findIndex((x) => x.now);
+  ok("day popup: 'Now 1:45 PM' sits after the finished OT and PT and before Swim", ni === 3 && /Now\s*1:45 PM/.test(pop[ni].text) && /Swim/.test(pop[ni + 1].text), pop);
+  ok("day popup: only the finished events (OT, PT) are faded; the all-day, live and upcoming ones are not", pop.filter((x) => x.past).length === 2 && pop[1].past && pop[2].past && !pop[0].past && !pop.slice(ni).some((x) => x.past), pop.map((x) => x.past));
+  await h.shot("home-today-popup");
+  await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-EventEditor")[0].notificationReceived("OPENSKY_IDLE_RESET")); await h.sleep(300);
+
   // 4. 9 PM: everything is over
   await set(1260, BASE); await h.sleep(400);
   r = await today();
