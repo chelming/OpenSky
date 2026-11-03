@@ -7,11 +7,11 @@ module.exports = async (page, h) => {
   const title = () => page.evaluate(() => document.querySelector(".CX3 .headerTitle")?.textContent.trim());
   const now = new Date(), month = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   ok("month view shows this month", (await title()) === month, await title());
-  const evs = await page.evaluate(() => [...document.querySelectorAll(".CX3 .event")].map((e) => ({ t: e.dataset.title, cls: [...e.classList].find((c) => c.startsWith("evc-")), bar: getComputedStyle(e).borderLeftColor })));
+  const evs = await page.evaluate(() => [...document.querySelectorAll(".CX3 .event")].map((e) => ({ t: e.dataset.title, cls: [...e.classList].find((c) => c.startsWith("evc-")), bar: getComputedStyle(e).getPropertyValue("--evc-bar").trim() })));
   const has = (t) => evs.filter((e) => e.t === t);
   ok("recurring events fill the month", has("Soccer practice").length >= 6 && has("School assembly").length >= 3, { soccer: has("Soccer practice").length, assembly: has("School assembly").length });
   ok("palette colors: Family pink, School teal, Dentist indigo", has("Family dinner")[0]?.cls === "evc-pink" && has("School assembly")[0]?.cls === "evc-teal" && has("Dentist")[0]?.cls === "evc-indigo", [has("Family dinner")[0]?.cls, has("School assembly")[0]?.cls, has("Dentist")[0]?.cls]);
-  ok("color is drawn (indigo bar)", has("Dentist")[0]?.bar === "rgb(74, 91, 216)", has("Dentist")[0]?.bar);
+  ok("color is set (indigo --evc-bar: events no longer have a left border, it colors the 'now' outline)", has("Dentist")[0]?.bar === "#4a5bd8", has("Dentist")[0]?.bar);
   ok("today is highlighted", await page.evaluate(() => !!document.querySelector(".CX3 .cell.today")));
   ok("Add Event in the toolbar (an editable calendar exists)", await page.evaluate(() => !!document.querySelector(".os-nav-add")));
   await h.shot("calendar-month");
