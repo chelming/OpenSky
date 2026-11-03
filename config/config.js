@@ -125,8 +125,8 @@ const PAGES = {
           const esc = (v) => (typeof v === "string" ? v.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`) : v);
           const out = { ...ev, title: esc(ev.title), description: esc(ev.description), location: esc(ev.location) };
           if (typeof window !== "undefined" && window.OpenSkyEventColors) {
-            const stripe = window.OpenSkyEventColors.stripe(ev);
-            if (stripe) { out.class = "evc-multi"; out.color = stripe; return out; }   // shared by several calendars: striped bar
+            const multi = window.OpenSkyEventColors.multi(ev);
+            if (multi) { out.class = "evc-multi"; out.color = multi; return out; }   // shared by several calendars: box shows all their colors
             const c = window.OpenSkyEventColors.name(ev);
             // a palette name → its class; a color code → evc-custom, colored through CX3's --calendarColor (= out.color)
             if (c.startsWith("#")) { out.class = "evc-custom"; out.color = c; } else out.class = `evc-${c}`;

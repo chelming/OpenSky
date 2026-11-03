@@ -57,7 +57,7 @@ Module.register("MMM-OpenSky-Calendars", {
   /* calendar.mergeShared: one event that sits on several calendars (the kids were invited, or it was entered on each) is
    * shown once. Same event = same Google iCalUID + start, else same title + start + end. A source with role "shared"
    * (the family calendar) is merged in but isn't named. Result fields: calendarNames (who it's for), colors (one per
-   * name, for the striped bar); calendarName stays the organizer's copy, the one the event editor changes.
+   * name, for the blended box); calendarName stays the organizer's copy, the one the event editor changes.
    * A copy the person declined is left out. */
   mergeShared(list) {
     const src = new Map(this.config.sources.map((s) => [s.name, s]));
