@@ -276,7 +276,7 @@ module.exports = NodeHelper.create({
       try { presets = fs.readdirSync(path.join(__dirname, "..", "..", "lib", "pickup-presets")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)); } catch (e) { /* none */ }
       return this.send(res, 200, {
         settings: settings || readJson(EXAMPLE, {}), secretsSet: secretPaths(readJson(SECRETS, {})), shown: shownSecrets(readJson(SECRETS, {})), presets,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, service: !!process.env.INVOCATION_ID || DOCKER || DRY,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, service: !!process.env.INVOCATION_ID || DOCKER || DRY, docker: DOCKER,
         addons: { music: musicInstalled() }
       });
     }
@@ -355,7 +355,7 @@ module.exports = NodeHelper.create({
     if (url.pathname.startsWith("/api/photos")) {
       const P = readJson(SETTINGS, {}).photos || {};
       if (url.pathname === "/api/photos" && req.method === "GET") {
-        return this.send(res, 200, { folder: P.folder || "~/Pictures", photos: photos.listFolder(P).map(({ id, name, size }) => ({ id, name, size })) });
+        return this.send(res, 200, { folder: DOCKER ? null : P.folder || "~/Pictures", photos: photos.listFolder(P).map(({ id, name, size }) => ({ id, name, size })) });
       }
       if (url.pathname === "/api/photos" && req.method === "POST") {
         try {
