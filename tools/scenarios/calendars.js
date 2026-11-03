@@ -2,9 +2,11 @@
 // colors by source and keyword rule, delivered to the Home page as CALENDAR_EVENTS.
 module.exports = async (page, h) => {
   const R = {}; const ok = (k, v, i) => { R[k] = v; h.log(`${v ? "PASS" : "FAIL"}  ${k}${i !== undefined ? "  — " + JSON.stringify(i) : ""}`); };
+  // today's tile ranks by the time of day: pin it to 6 AM so the day's events are all still ahead (see home-today.js)
+  await page.evaluate(() => { const hm = MM.getModules().withClass("MMM-OpenSky-Home")[0], t = new Date(); hm.nowMs = () => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 6).getTime(); hm.renderCalendar(); });
   for (let i = 0; i < 30 && (await page.evaluate(() => document.querySelectorAll(".hd-week .hd-event").length)) < 3; i++) await h.sleep(1000);
   const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-day:not(.hd-nextweek)")].flatMap((t) => [...t.querySelectorAll(".hd-event")].map((p) => ({
-    day: t.querySelector(".hd-day-name").textContent, title: p.querySelector(".hd-event-title").textContent, time: p.querySelector(".hd-event-time").textContent, bar: getComputedStyle(p).borderLeftColor }))));
+    day: t.querySelector(".hd-day-name").textContent, title: p.querySelector(".hd-event-title").textContent, time: p.querySelector(".hd-event-time").textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor }))));
   const titles = [...new Set(pills.map((p) => p.title))];
   ok("events from both sources this week", ["Soccer practice", "Family dinner", "Dentist", "School assembly"].every((t) => titles.includes(t)), titles);
   const one = (t) => pills.find((p) => p.title === t) || {};

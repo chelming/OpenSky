@@ -299,3 +299,34 @@
 .hd-root.hd-no-lists .hd-photo { flex: 1 1 auto; }
 /* Two-weekly recycling gets its own icon */
 .hd-pickup-recycle { color: #2e8bd6; }
+
+/* ---- calendar label on every pill: dot + name at the end of the time row (the name gives way before the time) ---- */
+.hd-ev-meta { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+.hd-ev-meta .hd-event-time { font-size: 13px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-event-rel { flex: 0 0 auto; white-space: nowrap; font-size: 13px; font-weight: 800; color: #1f2937; }
+/* the name shrinks first (flex-shrink 1000, down to the dots, whose width JS sets as min-width), then the time */
+.hd-cal { margin-left: auto; display: flex; align-items: center; gap: 5px; overflow: hidden; flex: 0 1000 auto; }
+.hd-cal-dots { flex: 0 0 auto; display: inline-flex; gap: 3px; }
+.hd-cal-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--evc-bar, #9ca3af); }
+.hd-cal-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; color: #374151; }
+
+/* ---- today's tile: what's left (live → upcoming; the rest folded into "N done") ---- */
+.hd-event.hd-strip { flex-direction: row; align-items: center; gap: 8px; padding: 6px 10px; }
+.hd-strip .hd-event-title { flex: 1 1 auto; min-width: 0; width: auto; font-size: 15px; }
+.hd-strip-tag { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #374151; }
+.hd-strip .hd-cal { margin-left: 0; }
+.hd-event.live { box-shadow: 0 0 0 2px #1f2937; }
+.hd-event.live .hd-event-title { font-weight: 800; }
+.hd-live-row { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.hd-now { padding: 2px 8px; border-radius: 999px; background: #1f2937; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.hd-progress { display: block; width: 100%; height: 5px; border-radius: 3px; background: rgba(31, 41, 55, .15); overflow: hidden; margin-top: 4px; }
+.hd-progress > i { display: block; height: 100%; background: #1f2937; border-radius: 3px; }
+.hd-event.recent, .hd-event.done { background: #eff1f4; padding: 8px 10px; }
+.hd-event.recent .hd-event-title, .hd-event.done .hd-event-title { display: flex; align-items: center; gap: 6px; font-size: 15px; color: #4b5563; }
+.hd-event.recent .hd-event-title > span, .hd-event.done .hd-event-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hd-event.recent .hd-event-time, .hd-event.done .hd-event-time { font-size: 13px; color: #4b5563; }
+.hd-event.recent .hd-icon, .hd-event.done .hd-icon, .hd-done-chip .hd-icon, .hd-empty .hd-icon { width: 14px; height: 14px; flex: 0 0 auto; }
+.hd-done-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; box-sizing: border-box; }
+.hd-empty { display: flex; align-items: center; gap: 6px; padding: 4px 4px; font-size: 15px; font-weight: 700; color: #4b5563; }
+/* the done list open: the tile scrolls instead of clipping */
+.hd-day.hd-done-open .hd-day-events { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
