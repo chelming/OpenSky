@@ -1,17 +1,5 @@
 # Changelog
 
-## Unreleased
-- **Home Assistant address is shown** in phone setup as plain text (it was a hidden password field); the token stays hidden.
-- **People**: add family members (name + color) in phone setup → Your family → People, and choose *Who is it for?* for each calendar
-  and list (one can be for several people). The top bar shows a circle with each person's initial; tap it to show only
-  their calendars and lists. A calendar for one person can use (and follow) that person's color. See docs/configure.md.
-- **One event on several calendars shows once** (`calendar.mergeShared`, off by default). Invite the kids to an event
-  and each gets a copy; OpenSky merges copies with the same Google event ID and start, shows the names, and a striped
-  bar in their colors. A family calendar can be marked `"role": "shared"`. Turn it on in phone setup (Calendars → Show shared events once). See docs/configure.md.
-- **Run in Docker**: a `Dockerfile` and `docker-compose.yml`; tablets and PCs open the screen in a browser
-  ([docs/docker.md](docs/docker.md)). `OPENSKY_SETUP_URL` sets the address phone setup shows in its QR code.
-  In Docker, Settings hides Restart Pi and Shut down, and Restart OpenSky (and finishing phone setup) really restarts it.
-
 ## 1.0.4 — 2026-10-27
 - **Phone setup: any color for a calendar or a list** — besides the palette chips, the phone's color picker or a
   typed color code (like #8cbfc4), the same as for the accent color.
