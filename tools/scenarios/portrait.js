@@ -73,7 +73,8 @@ module.exports = async (page, h) => {
   // back to landscape: the Today tile and Next Week are back in the grid
   await page.setViewportSize({ width: 1920, height: 1080 }); await h.sleep(1500); await h.tap(".os-page-home"); await h.sleep(800);
   const b = await page.evaluate(() => ({ layout: document.documentElement.dataset.layout, today: !!document.querySelector(".hd-week > .hd-is-today"), nw: !!document.querySelector(".hd-week > .hd-nextweek"), slots: document.querySelectorAll(".hd-today-slot > *, .hd-nw-slot > *").length }));
-  ok("12 back to landscape: Today and Next Week are in the week grid again", b.layout === "full" && b.today && b.nw && b.slots === 0, b);
+  const lc = await page.evaluate(() => { const c = document.querySelector(".hd-calendar").getBoundingClientRect(), r = document.querySelector(".hd-right").getBoundingClientRect(), l = document.querySelector(".hd-lists").getBoundingClientRect(); return { cal: [Math.round(c.left), Math.round(c.top), Math.round(c.width)], right: [Math.round(r.left), Math.round(r.top), Math.round(r.height)], listsH: Math.round(l.height) }; });
+  ok("12 back to landscape: Today and Next Week are in the week grid again, calendar left, lists + photo right (the empty slots take no room)", b.layout === "full" && b.today && b.nw && b.slots === 0 && lc.cal[0] < lc.right[0] && lc.cal[1] === lc.right[1] && lc.right[2] > 800 && lc.listsH > 300, { b, lc });
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };

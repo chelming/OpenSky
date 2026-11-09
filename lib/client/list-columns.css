@@ -43,6 +43,7 @@
   font: inherit;
   font-size: 18px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 .lc-add-item svg { width: 20px; height: 20px; }

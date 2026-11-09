@@ -77,6 +77,7 @@ Module.register("MMM-OpenSky-Sidebar", {
       st.setProperty("--tile-gap", "0px");
       st.setProperty("--icon-size", "34px");
       st.setProperty("--label-size", `${pageWidth / n < 120 ? 15 : 17}px`);
+      document.documentElement.dataset.nav = "labels";
       return;
     }
     const compact = layout === "compact", k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`;
@@ -92,6 +93,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     st.setProperty("--tile-gap", `${gap}px`);
     st.setProperty("--icon-size", squeeze ? `${Math.max(20, Math.round(ui.icon * k * tile / (ui.tile * k)))}px` : px(ui.icon));
     st.setProperty("--label-size", compact ? "11px" : `${ui.font}px`);
+    document.documentElement.dataset.nav = tile < 52 ? "icons" : "labels";   // too squeezed for a label under the icon: icons only
   },
 
   // Settings → Text size: apply at once (the choice is saved separately)

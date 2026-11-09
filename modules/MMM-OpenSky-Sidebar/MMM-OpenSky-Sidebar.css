@@ -129,3 +129,6 @@ html[data-layout="portrait"] .os-page-home .os-icon, html[data-layout="portrait"
 html[data-layout="portrait"] .os-page-home .os-icon { width: 34px; height: 34px; overflow: visible; }
 html[data-layout="portrait"] .os-page-home { gap: 7px; }
 html[data-layout="portrait"] .os-badge { width: 40px; height: 40px; flex: none; font-size: 25px; }
+
+/* a very short page (big text on a small screen): icons only, no labels */
+html[data-nav="icons"] .os-label { display: none; }

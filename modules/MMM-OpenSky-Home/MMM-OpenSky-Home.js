@@ -635,9 +635,10 @@ Module.register("MMM-OpenSky-Home", {
     card.hidden = !all.length;
     this.root.classList.toggle("hd-no-lists", !all.length);
     const cols = card.querySelector(".hd-list-columns");
-    cols.style.setProperty("--list-count", Math.min(3, Math.max(1, all.length)));
+    cols.style.setProperty("--list-count", Math.min(this.portrait() ? 4 : 3, Math.max(1, all.length)));
+    card.classList.toggle("hd-many", all.length > 2);
     cols.innerHTML = "";
-    all.slice(0, 3).forEach((list, idx) => {
+    all.slice(0, this.portrait() ? 4 : 3).forEach((list, idx) => {   // (the Lists page has them all)
       const send = (n, extra) => this.sendNotification(n, { source: list.source, listId: list.id, ...extra });
       cols.appendChild(window.OpenSkyListColumn.render(list, {
         add: () => send("OPENSKY_LIST_ADD"),

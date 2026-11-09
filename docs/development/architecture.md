@@ -94,6 +94,10 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   than 1600 or shorter than 880 px (so big text on a big screen gets the dense layout).
 - Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
+- **Things drop out instead of overflowing** (big text, small screens): Home uses container queries (they see the card, not
+  the screen): below a card height the photo card hides, below a card width "Add Event" becomes "+", the week range and a day tile's
+  count / weather text go; the sidebar shows icons only when its tiles get under 52 px. Lists become a grid (auto-fit, 210 px
+  minimum; two columns and a taller card in portrait). Home shows 3 lists (4 in portrait); the Lists page shows all.
 - Look at a layout: `SIZES=1024x600,1280x720 tools/docker-test.sh scenario tools/dev-scenarios/layout-shots.js` (screenshots in
   `tools/out/lay-*.png`); `tools/scenarios/screen-sizes.js` checks that nothing is cut off from 800×480 to 4K, at every text size.
 - **Portrait** (page taller than wide → `data-layout="portrait"`, design 1080×1920, fitted like the others): the Sidebar is a
