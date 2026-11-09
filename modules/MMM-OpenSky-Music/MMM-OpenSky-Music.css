@@ -1,8 +1,8 @@
 /* MMM-OpenSky-Music — the Music page */
 .mu-root {
   position: fixed;
-  top: 92px; bottom: 22px;
-  left: var(--os-content-left, 112px); right: 24px;
+  top: var(--os-content-top, 92px); bottom: var(--os-content-bottom, 22px);
+  left: var(--os-content-left, 112px); right: var(--os-content-right, 24px);
   display: flex; flex-direction: column; gap: 14px; color: #1f2937; text-align: left; font-family: inherit; user-select: none;
 }
 

@@ -84,6 +84,20 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   what's on, restart only when the rendered config differs). AirPlay's position isn't reported by shairport-sync:
   lib/music.js counts it per song. Cover pictures go to the page once (`OS_MUSIC_ART`, states carry `art:<id>`).
 
+## Screen sizes and layouts (MMM-OpenSky-Sidebar → applyScale)
+- The whole UI is scaled with `body { zoom }` (`--os-zoom`), so CSS `px` are *design* pixels, not screen pixels. Media queries
+  see the real viewport, so **don't use `@media` for layout**: the Sidebar sets `<html data-layout="full|compact">` and
+  `<html data-orient="landscape|portrait">` from the *zoomed* page size, and modules write `html[data-layout="compact"] …`
+  rules at the bottom of their own CSS.
+- Two designs: **full** = 1920×1080, **compact** = 1280×720 (chosen when the fitted full zoom would be under 0.8, i.e. screens
+  below about 1536×864). `look.textSize` multiplies the zoom; compact also switches on whenever the zoomed page is narrower
+  than 1600 or shorter than 880 px (so big text on a big screen gets the dense layout).
+- Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
+  per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
+- Look at a layout: `SIZES=1024x600,1280x720 tools/docker-test.sh scenario tools/scenarios/layout-shots.js` (screenshots in
+  `tools/out/lay-*.png`); `tools/scenarios/screen-sizes.js` checks that nothing is cut off from 800×480 to 4K, at every text size.
+- Portrait (`data-orient="portrait"`) is set but has no layout yet.
+
 ## MagicMirror 2.38 notes
 - Electron's language (date/time boxes) comes from the `LANGUAGE` environment variable on Linux, not from
   `--lang` or the page: `tools/opensky-start` sets it from `locale.locale` (the harness does the same).

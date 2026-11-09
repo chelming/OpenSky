@@ -133,3 +133,10 @@
 .hb-profile-photo{ background-size:cover; background-position:center; background-color:var(--hb-pc); }
 .hb-profiles:has(.hb-profile-on) .hb-profile:not(.hb-profile-on){ opacity:.4; }
 .hb-profile-on{ border-color:#fff; box-shadow:0 0 0 3px var(--hb-pc); }
+
+/* compact layout (small screens, big text) */
+html[data-layout="compact"] .hb-row { gap: 18px; padding: 8px var(--os-content-right, 16px) 4px 0; }
+html[data-layout="compact"] .hb-title, html[data-layout="compact"] .hb-time { font-size: 26px; }
+html[data-layout="compact"] .hb-weather { font-size: 26px; gap: 8px; }
+html[data-layout="compact"] .hb-wx-ico, html[data-layout="compact"] .hb-wx-ico svg { width: 26px; height: 26px; }
+html[data-layout="compact"] .hb-profile { width: 38px; height: 38px; font-size: 17px; }
