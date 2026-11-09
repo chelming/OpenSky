@@ -56,6 +56,12 @@ layout, designed for 1280×720, on smaller screens (1024×600, 1280×720, 1366×
 readable instead of shrinking to half size. Want everything bigger or smaller? Use a number, e.g. `1.2`, or better, the
 text size below. The compact layout also switches on by itself when big text leaves too little room.
 
+**Portrait screens** (a monitor turned upright, e.g. 1080×1920) get a third layout automatically: the sidebar becomes a bar
+along the bottom, and Home becomes one column: the clock and weather at the top, the next holiday or birthday as a banner,
+a Today card (what's left today, with "in 30 min" on the next event and "N done" for the rest), one row per other day of the
+week (up to three events, then "+N more"), Lists beside Next Week, and a strip of two photos. Nothing to set: turn the
+screen (the Pi's display settings) and restart OpenSky.
+
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
 at once, like a smaller screen. Pick it on the screen (Settings → Look & extras → Text size, applied at once) or on the

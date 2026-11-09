@@ -40,7 +40,14 @@ Module.register("MMM-OpenSky-Home", {
     this.notes = [];             // posted from the family's phones (lib/share.js), see renderNotes
     setInterval(() => this.sendSocketNotification("NOTES_GET"), 20 * 1000);   // (a small file read)
     this.armTick();
+    let shape = this.portrait();
+    window.addEventListener("resize", () => { clearTimeout(this.reshapeTimer); this.reshapeTimer = setTimeout(() => { if (this.portrait() !== shape) { shape = this.portrait(); this.renderCalendar(); this.nextPhoto(); } }, 300); });
   },
+
+  // Portrait screens (<html data-layout="portrait", see the Sidebar): Today gets its own card, the other days are rows of
+  // chips (at most 3, then "+N more"), Next Week sits beside the lists (all in css; the two tiles are moved out of the grid here)
+  portrait() { return document.documentElement.dataset.layout === "portrait"; },
+  maxEvents() { return this.portrait() ? 3 : this.config.maxEventsPerDay; },
 
   // The one clock for "what's left today" (scenarios pin it: home.nowMs = () => …)
   nowMs() { return Date.now(); },
@@ -56,7 +63,7 @@ Module.register("MMM-OpenSky-Home", {
     if (today !== this.lastDay) { this.lastDay = today; this.weekOffset = 0; this.doneOpen = false; this.render(); return; }
     const tile = this.todayTile;
     if (this.weekOffset !== 0 || !tile || !tile.isConnected) return;
-    const sig = window.OpenSkyDayAgenda.signature(this.todayAgenda(tile, this.config.maxEventsPerDay));
+    const sig = window.OpenSkyDayAgenda.signature(this.todayAgenda(tile, this.maxEvents()));
     if (sig !== tile._sig) this.renderToday(tile);
   },
 
@@ -110,6 +117,7 @@ Module.register("MMM-OpenSky-Home", {
 
   // Cut-off event names get a second line, but only while every pill (and "+N more") still fits
   fitTitles() {
+    if (this.portrait()) return;   // chips are one line, ellipsis
     if (!this.root || !window.OpenSkyFit) return;
     this.root.querySelectorAll(".hd-day:not(.hd-nextweek)").forEach((tile) => {
       const pills = [...tile.querySelectorAll(".hd-event")];
@@ -125,6 +133,7 @@ Module.register("MMM-OpenSky-Home", {
     const root = document.createElement("div");
     root.className = "hd-root";
     root.innerHTML = `
+      <div class="hd-today-slot"></div>
       <section class="hd-card hd-calendar">
         <header class="hd-card-head">
           <span class="hd-card-label">${this.icon("calendar")} Calendar</span>
@@ -139,6 +148,7 @@ Module.register("MMM-OpenSky-Home", {
         </header>
         <div class="hd-week"></div>
       </section>
+      <div class="hd-nw-slot"></div>
       <div class="hd-right">
         <section class="hd-notes" aria-label="Notes" hidden></section>
         <section class="hd-card hd-lists" hidden>
@@ -187,7 +197,7 @@ Module.register("MMM-OpenSky-Home", {
   nextPhoto() {
     if (this.photoPending && Date.now() - this.photoPending < 20000) return;   // one request at a time
     this.photoPending = Date.now();
-    this.sendSocketNotification("PHOTO_NEXT");
+    this.sendSocketNotification("PHOTO_NEXT", { wide: this.portrait() });
   },
 
   /* ======================= notes (posted from the family's phones: lib/share.js) ======================= */
@@ -317,15 +327,19 @@ Module.register("MMM-OpenSky-Home", {
       `${fmt(first, { month: "short", day: "numeric" })} – ${fmt(last, { month: first.getMonth() === last.getMonth() ? undefined : "short", day: "numeric" })}`;
     this.root.querySelector(".hd-today").classList.toggle("active", this.weekOffset === 0);
     week.innerHTML = "";
+    const todaySlot = this.root.querySelector(".hd-today-slot"), nwSlot = this.root.querySelector(".hd-nw-slot");
+    todaySlot.innerHTML = ""; nwSlot.innerHTML = "";
+    const portrait = this.portrait();
     this.todayTile = null;
     for (let i = 0; i < 7; i++) {
       const day = new Date(first); day.setDate(first.getDate() + i);
       const next = new Date(day); next.setDate(day.getDate() + 1);
-      week.appendChild(this.dayTile(day, this.eventsBetween(events, day, next), day.getTime() === todayKey));
+      const tile = this.dayTile(day, this.eventsBetween(events, day, next), day.getTime() === todayKey);
+      (portrait && tile.classList.contains("hd-is-today") ? todaySlot : week).appendChild(tile);
     }
     const nwStart = new Date(first); nwStart.setDate(first.getDate() + 7);
     const nwEnd = new Date(nwStart); nwEnd.setDate(nwStart.getDate() + 7);
-    week.appendChild(this.nextWeekTile(nwStart, nwEnd, this.eventsBetween(events, nwStart, nwEnd)));
+    (portrait ? nwSlot : week).appendChild(this.nextWeekTile(nwStart, nwEnd, this.eventsBetween(events, nwStart, nwEnd)));
     this.fitToday();
     this.fitTitles();
   },
@@ -345,9 +359,9 @@ Module.register("MMM-OpenSky-Home", {
     tile.onclick = (e) => { if (!e.target.closest(".hd-event, .hd-done-chip")) this.sendNotification("CALENDAR_DAY_CLICKED", { date: day.getTime(), events }); };
     if (isToday && this.weekOffset === 0 && window.OpenSkyDayAgenda) return this.todayBody(tile, events, day);
     const list = tile.querySelector(".hd-day-events");
-    const max = this.config.maxEventsPerDay;
-    const shown = events.length > max ? events.slice(0, max - 1) : events;
-    shown.forEach((ev) => list.appendChild(this.eventPill(ev, day)));
+    const max = this.maxEvents();
+    const shown = this.portrait() ? events.slice(0, max) : events.length > max ? events.slice(0, max - 1) : events;
+    shown.forEach((ev) => list.appendChild(this.eventPill(ev, day, undefined, this.portrait())));
     if (events.length > shown.length) {
       const more = document.createElement("button");
       more.className = "hd-more";
@@ -363,7 +377,7 @@ Module.register("MMM-OpenSky-Home", {
     tile._today = { events, day, dayStart: new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime(), dayEnd: next.getTime() };
     tile._plainCount = tile.querySelector(".hd-day-count > span").textContent;
     this.todayTile = tile;
-    this.drawToday(tile, this.todayAgenda(tile, this.config.maxEventsPerDay));
+    this.drawToday(tile, this.todayAgenda(tile, this.maxEvents()));
     return tile;
   },
 
@@ -374,7 +388,7 @@ Module.register("MMM-OpenSky-Home", {
 
   // redraw today's tile from scratch (full cap, then shrink until it fits)
   renderToday(tile) {
-    this.drawToday(tile, this.todayAgenda(tile, this.config.maxEventsPerDay));
+    this.drawToday(tile, this.todayAgenda(tile, this.maxEvents()));
     this.fitToday();
     this.fitTitles();
   },
@@ -386,7 +400,7 @@ Module.register("MMM-OpenSky-Home", {
     if (tile.getBoundingClientRect().height === 0) return;   // another page is showing: PAGE_CHANGED fits it later
     const inner = () => tile.getBoundingClientRect().bottom - parseFloat(getComputedStyle(tile).paddingBottom);
     const fits = () => { const last = tile.querySelector(".hd-day-events").lastElementChild; return !last || last.getBoundingClientRect().bottom <= inner() + 0.5; };
-    let a = this.todayAgenda(tile, this.config.maxEventsPerDay);   // start from the full agenda: a shrunk one may have room now
+    let a = this.todayAgenda(tile, this.maxEvents());   // start from the full agenda: a shrunk one may have room now
     this.drawToday(tile, a);
     while (!fits()) {
       const s = window.OpenSkyDayAgenda.shrink(a);
@@ -399,8 +413,9 @@ Module.register("MMM-OpenSky-Home", {
   drawToday(tile, a) {
     const { day } = tile._today;
     // what's on screen is judged by the full-cap agenda, so a fit-shrunk tile isn't redrawn every minute for nothing
-    tile._sig = window.OpenSkyDayAgenda.signature(this.todayAgenda(tile, this.config.maxEventsPerDay));
+    tile._sig = window.OpenSkyDayAgenda.signature(this.todayAgenda(tile, this.maxEvents()));
     tile.classList.toggle("hd-done-open", this.doneOpen && a.doneCount > 0);
+    this.root.classList.toggle("hd-today-busy", a.rows.some((r) => r.kind !== "recent"));   // portrait: a shorter photo strip
     tile.querySelector(".hd-day-count > span").textContent = a.counter || tile._plainCount;
     const list = tile.querySelector(".hd-day-events");
     list.innerHTML = "";
@@ -416,7 +431,7 @@ Module.register("MMM-OpenSky-Home", {
     if (a.state === "allDone") {
       const empty = document.createElement("div");
       empty.className = "hd-empty";
-      empty.innerHTML = `${this.icon("check")}<span>Nothing left today</span>`;
+      empty.innerHTML = `${this.icon("check")}<span>${this.portrait() ? "All done" : "Nothing left today"}</span>`;
       list.appendChild(empty);
     }
     if (a.doneCount) {
@@ -539,19 +554,20 @@ Module.register("MMM-OpenSky-Home", {
     return pill;
   },
 
-  eventPill(ev, day, rel) {
+  // short: just the start time (a portrait week row has three chips and "+N more" on one line)
+  eventPill(ev, day, rel, short) {
     const pill = document.createElement("button");
     pill.className = "hd-event" + (ev.endDate < this.nowMs() && !ev.allDay ? " passed" : "");
     this.colored(pill, ev);
     pill.appendChild(this.topRow("", ev));
     pill.insertAdjacentHTML("beforeend", `<span class="hd-ev-meta"><span class="hd-event-time"></span></span>`);
     pill.querySelector(".hd-event-title").textContent = ev.title;
-    pill.querySelector(".hd-event-time").textContent = this.when(ev, day);
+    pill.querySelector(".hd-event-time").textContent = short && !ev.allDay && new Date(ev.startDate).toDateString() === day.toDateString() ? this.clock(new Date(ev.startDate)) : this.when(ev, day);
     const meta = pill.querySelector(".hd-ev-meta");
     if (rel) {
       const r = document.createElement("span");
       r.className = "hd-event-rel";
-      r.textContent = `${rel} ·`;
+      r.textContent = this.portrait() ? rel : `${rel} ·`;
       meta.prepend(r);
     }
     pill.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
