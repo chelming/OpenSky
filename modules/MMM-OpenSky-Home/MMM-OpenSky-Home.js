@@ -37,6 +37,8 @@ Module.register("MMM-OpenSky-Home", {
     this.forecast = {};          // "YYYY-MM-DD" → { high, id }
     this.doneOpen = false;       // today's "N done" list is expanded (always back to tidy at midnight / idle / wake)
     this.lastDay = new Date(this.nowMs()).toDateString();
+    this.notes = [];             // posted from the family's phones (lib/share.js), see renderNotes
+    setInterval(() => this.sendSocketNotification("NOTES_GET"), 20 * 1000);   // (a small file read)
     this.armTick();
   },
 
@@ -97,6 +99,7 @@ Module.register("MMM-OpenSky-Home", {
       if (window.OpenSkyEventColors) window.OpenSkyEventColors.configure(this.config.eventColors);
       this.render();
       this.startPhotos();
+      this.sendSocketNotification("NOTES_GET");
       this.sendNotification("OPENSKY_LISTS_REFRESH");
     } else if (n === "OPENSKY_IDLE_RESET") {
       if (this.weekOffset !== 0 || this.doneOpen) { this.weekOffset = 0; this.doneOpen = false; this.renderCalendar(); }
@@ -137,6 +140,7 @@ Module.register("MMM-OpenSky-Home", {
         <div class="hd-week"></div>
       </section>
       <div class="hd-right">
+        <section class="hd-notes" aria-label="Notes" hidden></section>
         <section class="hd-card hd-lists" hidden>
           <header class="hd-card-head">
             <span class="hd-card-label">${this.icon("list")} Lists</span>
@@ -162,7 +166,7 @@ Module.register("MMM-OpenSky-Home", {
     return root;
   },
 
-  render() { this.renderCalendar(); this.renderLists(); },
+  render() { this.renderCalendar(); this.renderLists(); this._notesKey = null; this.renderNotes(); },
 
   /* ======================= photos ======================= */
   photosOn() { return !!(this.config.photos && this.config.photos.enabled !== false); },
@@ -186,8 +190,32 @@ Module.register("MMM-OpenSky-Home", {
     this.sendSocketNotification("PHOTO_NEXT");
   },
 
+  /* ======================= notes (posted from the family's phones: lib/share.js) ======================= */
+  renderNotes() {
+    const box = this.root && this.root.querySelector(".hd-notes");
+    if (!box) return;
+    const key = JSON.stringify(this.notes.map((n) => n.id));
+    if (key === this._notesKey) return;   // (unchanged: don't redraw every poll)
+    this._notesKey = key;
+    box.hidden = !this.notes.length;
+    box.replaceChildren(...this.notes.slice(0, 3).map((n) => {
+      const el = document.createElement("div");
+      el.className = "hd-note";
+      const t = document.createElement("div"); t.className = "hd-note-text"; t.textContent = n.text;   // (text, never HTML)
+      el.append(t);
+      if (n.from) { const f = document.createElement("div"); f.className = "hd-note-from"; f.textContent = n.from; el.append(f); }
+      const x = document.createElement("button");
+      x.className = "hd-note-x"; x.setAttribute("aria-label", "Remove this note"); x.innerHTML = this.icon("x");
+      x.onclick = () => { this.notes = this.notes.filter((m) => m.id !== n.id); this.renderNotes(); this.sendSocketNotification("NOTES_DISMISS", { id: n.id }); };
+      el.append(x);
+      return el;
+    }));
+    if (this.notes.length > 3) { const more = document.createElement("div"); more.className = "hd-note-more"; more.textContent = `+${this.notes.length - 3} more notes`; box.append(more); }
+  },
+
   socketNotificationReceived(n, p) {
-    if (n === "PHOTO") this.showPhoto(p);
+    if (n === "NOTES") { this.notes = (p && Array.isArray(p.notes)) ? p.notes : []; this.renderNotes(); }
+    else if (n === "PHOTO") this.showPhoto(p);
     else if (n === "PHOTO_ERROR") {
       this.photoPending = 0;
       const msg = this.root && this.root.querySelector(".hd-photo-msg");
@@ -643,7 +671,7 @@ Module.register("MMM-OpenSky-Home", {
       calendar: `<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>`,
       list: `<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>`,
       image: `<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>`,
-      check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`,
+      check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`, x: `<path d="M6 6l12 12M18 6L6 18"/>`,
       left: `<path d="M15 5l-7 7 7 7"/>`, right: `<path d="M9 5l7 7-7 7"/>`, plus: `<path d="M12 5v14M5 12h14"/>`
     }[name];
     return `<svg class="hd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;

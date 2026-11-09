@@ -8,6 +8,7 @@ services:
     ports:
       - "8080:8080"   # the screen: open this address in a browser on each tablet
       - "8090:8090"   # phone setup page (answers only while the pairing card is open)
+      - "8091:8091"   # family share page (photos + notes from phones; answers only when switched on in setup)
     volumes:
       - ./docker-config:/config   # your settings and data; back this up
     environment:
@@ -17,3 +18,5 @@ services:
       # What phones type or scan to reach the setup page, if it isn't http://<container's address>:8090
       # (the QR code would otherwise show the container's internal address). Comma-separated.
       OPENSKY_SETUP_URL: ${OPENSKY_SETUP_URL:-}
+      # Same for the family share page (port 8091), if it isn't http://<container's address>:8091. Comma-separated.
+      OPENSKY_SHARE_URL: ${OPENSKY_SHARE_URL:-}

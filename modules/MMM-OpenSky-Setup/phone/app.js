@@ -174,7 +174,7 @@
     try {
       const d = await api("GET", "/api/state");
       S = d.settings; secretsSet = new Set(d.secretsSet || []); shown = d.shown || {}; pending = {}; info = d; dirty = false; saved = false;
-      for (const k of ["family", "locale", "location", "weather", "header", "calendar", "lists", "photos", "pickup", "wordgame", "embeds"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
+      for (const k of ["family", "locale", "location", "weather", "header", "calendar", "lists", "photos", "share", "pickup", "wordgame", "embeds"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
       if (!Array.isArray(S.pages)) S.pages = ["home", "calendar", "lists", "timer"];
       if (!Array.isArray(S.profiles)) S.profiles = [];
       if (!Array.isArray(S.calendar.sources)) S.calendar.sources = [];
@@ -188,8 +188,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["photos", "Photos"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), photosCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -607,6 +607,34 @@
       seg([["folder", info.docker ? "Uploaded" : "On the Pi"], ["immich", "Immich"], ["off", "Off"]], mode, (m) => { P.enabled = m !== "off"; if (m !== "off") P.provider = m; change(); draw(m); }),
       body,
       field("Change photo every", select([[15, "15 seconds"], [30, "30 seconds"], [60, "1 minute"], [300, "5 minutes"]], Number(P.intervalSeconds) || 30, (v) => { P.intervalSeconds = Number(v); change(); })));
+  }
+
+  // The share page: family phones add photos and post notes with a private link; it can't change any setting
+  function shareCard() {
+    const Sh = S.share, body = el("div");
+    const draw = async () => {
+      if (!Sh.enabled) return body.replaceChildren(el("p", { class: "hint" }, "Off. Switch it on to get a private link the family can open on their phones to add photos or post a note."));
+      body.replaceChildren(el("p", { class: "hint" }, "Checking…"));
+      let d;
+      try { d = await api("GET", "/api/share"); } catch (e) { return body.replaceChildren(el("p", { class: "hint bad" }, e.message)); }
+      if (!d.running) return body.replaceChildren(el("p", { class: "hint" }, "Tap Finish below: the share page starts when OpenSky restarts, and the link appears here."));
+      const link = d.links[0] || "";
+      const input = el("input", { type: "text", class: "input", readonly: true, value: link, "aria-label": "Family link", onfocus: (e) => e.target.select() });
+      const copy = el("button", { type: "button", class: "btn", onclick: () => {
+        input.focus(); input.select(); input.setSelectionRange(0, link.length);
+        let ok = false; try { ok = document.execCommand("copy"); } catch (e) { /* the field stays selected: long-press to copy */ }
+        toast(ok ? "Link copied" : "Selected — long-press to copy");
+      } }, "Copy link");
+      const rotate = el("button", { type: "button", class: "btn", onclick: () => sheet("Make a new link?", (b) => b.append(el("p", { class: "hint" }, "The old link stops working. Everyone who has used it needs the new one.")),
+        [["Cancel", "", () => {}], ["New link", "danger", () => { api("POST", "/api/share/rotate").then(draw).catch((e) => toast(e.message, "bad")); }]]) }, "New link");
+      body.replaceChildren(field("Family link", input, "Send it to the family once. Opening it on a phone remembers that phone, so they can add it to their home screen."),
+        el("div", { class: "line" }, copy, rotate),
+        el("p", { class: "hint" }, "Anyone with the link can add photos and notes, but can't see or change your settings. It works on your home Wi-Fi."));
+    };
+    draw();
+    return section("share", "photos", "Share with the family", "Photos and notes from their own phones",
+      el("div", { class: "line" }, el("span", {}, el("b", {}, "Family share page"), el("small", {}, "Add photos, post a note to the screen")),
+        toggle(!!Sh.enabled, (v) => { Sh.enabled = v; change(); draw(); }, "Family share page")), body);
   }
 
   function pagesCard() {

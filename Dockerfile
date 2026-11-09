@@ -35,7 +35,7 @@ ENV OPENSKY_SETTINGS=/config/opensky.json \
     OPENSKY_DOCKER=1 \
     TZ=UTC
 VOLUME /config
-EXPOSE 8080 8090
+EXPOSE 8080 8090 8091
 
 COPY tools/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

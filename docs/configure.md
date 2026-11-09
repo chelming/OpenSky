@@ -336,6 +336,24 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now; keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 
+## Family share page (photos and notes from everyone's phone)
+```json
+"share": { "enabled": true, "port": 8091 }
+```
+A small page that family members open on their own phones to **add photos** to the slideshow or **post a note** that shows
+on the Home screen. It is separate from phone setup, which stays closed except while you are setting things up.
+- Switch it on in Set up from your phone → **Share with the family**, tap **Finish** (OpenSky restarts), and the same card then shows the
+  **family link**. Send it to the family once (a message is fine). Opening it on a phone remembers that phone for a year; they can
+  add the page to their home screen.
+- What the page can do: add photos (JPEG, PNG, WebP; up to 40 MB each, 20 per 10 minutes), post a note (up to 280 characters, kept for a day, a week or until
+  removed, 20 at a time) and remove notes. It **cannot** see or change settings, passwords, calendars or backups. Notes also go away when someone taps the
+  **x** on the screen. They are kept in `notes.json` next to `opensky.json`.
+- The link is a long random secret kept in `secrets.json → share.token`. Anyone with it can add photos and notes, so don't post it publicly. **New link**
+  (in the same card) replaces it and locks every phone out until it gets the new one. Wrong guesses are rate limited.
+- It only works on your home network (plain `http`, like phone setup). With **Immich** as the photo source, the page only offers notes, because photos
+  have to be added in Immich.
+- `port`: change it if something else uses 8091. In Docker, set `OPENSKY_SHARE_URL` to the address phones use ([docker.md](docker.md#family-share-page)).
+
 ## Phone setup
 ```json
 "setup": { "port": 8090 }

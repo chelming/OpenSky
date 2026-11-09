@@ -1,0 +1,47 @@
+/* OpenSky share page — a small, warm, phone-first page (same palette as phone setup) */
+:root {
+  --bg: #fff7f3; --card: #fff; --ink: #1f2937; --muted: #6b7280; --faint: #9ca3af; --line: #f0e7e2;
+  --accent: #e8663f; --accent-2: #ffb08f; --accent-soft: #fff1ea; --good: #3f9467; --bad: #c2412c;
+  --radius: 22px; --shadow: 0 1px 2px rgba(31, 41, 55, .04), 0 10px 30px rgba(31, 41, 55, .07);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-size: 16px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+svg { width: 100%; height: 100%; display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#app { max-width: 560px; margin: 0 auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); }
+.boot { padding: 30vh 0; text-align: center; color: var(--faint); }
+h1 { margin: 6px 2px 18px; font-size: 26px; letter-spacing: -.3px; }
+.card { margin: 0 0 18px; padding: 20px 18px 18px; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+.card h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: 19px; }
+.card h2 .ic { width: 22px; height: 22px; color: var(--accent); }
+.card p.sub { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+textarea, input[type=text], select { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border: 2px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); }
+textarea { min-height: 96px; resize: vertical; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+.row { display: flex; gap: 10px; margin-top: 10px; }
+.row > * { flex: 1 1 0; min-width: 0; }
+.count { margin-top: 6px; text-align: right; font-size: 12px; color: var(--faint); }
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 18px; border: 0; border-radius: 16px; background: linear-gradient(140deg, var(--accent-2), var(--accent)); color: #fff; font-size: 17px; font-weight: 700; box-shadow: 0 8px 18px rgba(232, 102, 63, .28); }
+.btn[disabled] { opacity: .55; box-shadow: none; }
+.btn .ic { width: 20px; height: 20px; }
+.btn.plain { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
+.msg { min-height: 22px; margin: 12px 2px 0; font-size: 15px; color: var(--muted); }
+.msg.bad { color: var(--bad); font-weight: 600; }
+.msg.good { color: var(--good); font-weight: 600; }
+.notes { margin: 14px 0 0; padding: 0; list-style: none; }
+.notes li { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.notes .t { flex: 1 1 auto; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notes small { display: block; color: var(--faint); font-size: 12px; margin-top: 2px; }
+.notes button { flex: 0 0 auto; width: 36px; height: 36px; padding: 8px; border: 0; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+.notes-head { margin: 18px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--faint); }
+.locked { min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px 8px; }
+.locked img { width: 84px; height: 84px; margin-bottom: 14px; }
+.locked p { color: var(--muted); max-width: 320px; }
+.previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.previews .p { position: relative; width: 64px; height: 64px; border-radius: 12px; background: var(--accent-soft) center/cover; overflow: hidden; }
+.previews .p.done::after, .previews .p.bad::after { content: ""; position: absolute; inset: 0; background: rgba(63, 148, 103, .55); }
+.previews .p.bad::after { background: rgba(194, 65, 44, .6); }
+.previews .p.busy { opacity: .5; }
+input[type=file] { display: none; }
