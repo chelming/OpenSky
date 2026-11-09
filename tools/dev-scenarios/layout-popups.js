@@ -1,3 +1,4 @@
+// (not run by test-all.sh: a tool for looking, see docs/development/architecture.md)
 module.exports = async (page, h) => {
   const [w, hh] = (process.env.SIZE || "1024x600").split("x").map(Number);
   await page.setViewportSize({ width: w, height: hh }); await h.sleep(1000);

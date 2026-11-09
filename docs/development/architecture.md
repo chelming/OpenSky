@@ -94,7 +94,7 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   than 1600 or shorter than 880 px (so big text on a big screen gets the dense layout).
 - Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
-- Look at a layout: `SIZES=1024x600,1280x720 tools/docker-test.sh scenario tools/scenarios/layout-shots.js` (screenshots in
+- Look at a layout: `SIZES=1024x600,1280x720 tools/docker-test.sh scenario tools/dev-scenarios/layout-shots.js` (screenshots in
   `tools/out/lay-*.png`); `tools/scenarios/screen-sizes.js` checks that nothing is cut off from 800×480 to 4K, at every text size.
 - **Portrait** (page taller than wide → `data-layout="portrait"`, design 1080×1920, fitted like the others): the Sidebar is a
   112 px bottom bar (`--os-nav-height`), pages keep 40 px at the sides and start below the header (`--os-header-h`, measured by the
