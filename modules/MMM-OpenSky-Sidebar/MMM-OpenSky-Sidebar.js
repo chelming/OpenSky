@@ -21,6 +21,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     showSettings: false,         // true once a settings page/module is installed
     accent: null,                // opensky.json → look.accent: a palette color name ("teal") or "#rrggbb"; null = peach
     scale: "auto",               // opensky.json → look.scale: "auto" fits the 1920×1080 design to the screen; or a number (e.g. 1.2)
+    textSize: "normal",          // opensky.json → look.textSize: "small" | "normal" | "large" | "xlarge" (on top of scale)
     ui: { width: 92, gap: 8, tile: 76, icon: 28, font: 12 }
   },
 
@@ -42,13 +43,18 @@ Module.register("MMM-OpenSky-Sidebar", {
 
   // OpenSky is laid out for 1920×1080; other screens get the same layout scaled to fit (a 1280×720 screen at 2/3,
   // a 4K screen at 2×), so nothing is cut off or tiny. look.scale overrides it.
+  // look.textSize makes everything bigger or smaller on top of that (the layout then has less room, like a smaller screen).
   applyScale() {
     const fixed = Number(this.config.scale);
     const auto = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    const z = fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, auto));
+    const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.config.textSize) : 1;
+    const z = (fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, auto))) * text;
     document.body.style.zoom = Math.abs(z - 1) < 0.01 ? "" : String(z);
     document.documentElement.style.setProperty("--os-zoom", String(z));
   },
+
+  // Settings → Text size: apply at once (the choice is saved separately)
+  setTextSize(size) { this.config.textSize = size; this.applyScale(); },
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {

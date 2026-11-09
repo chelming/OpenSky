@@ -48,10 +48,15 @@ After changing either file, run **`opensky restart`**. If the screen doesn't com
 
 ## Accent color and size
 ```json
-"look": { "accent": "teal", "scale": "auto" }
+"look": { "accent": "teal", "scale": "auto", "textSize": "large" }
 ```
 `scale`: OpenSky is laid out for a 1920×1080 screen and is scaled to fit yours (`"auto"`): a 1280×720 screen shows
 the same layout at two-thirds size, a 4K screen at double size. Want it bigger or smaller? Use a number, e.g. `1.2`.
+
+`textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
+(0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
+at once, like a smaller screen. Pick it on the screen (Settings → Look & extras → Text size, applied at once) or on the
+phone (Extras → Text size).
 
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
@@ -324,7 +329,7 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Sleep at night | The screen goes dark at "Off at" and comes back at "On at". A touch wakes it; it sleeps again after 3 quiet minutes. A running timer keeps it on. |
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. |
 | Pages | Turn pages on/off and change their order (also on the phone). |
-| Look & extras | Accent color, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Look & extras | Accent color, text size, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now; keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 

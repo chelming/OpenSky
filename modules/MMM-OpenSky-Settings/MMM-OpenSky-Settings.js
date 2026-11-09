@@ -263,6 +263,7 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips">${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === P.prefs.accent ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
         <div class="ost-row"><span class="ost-label">Or a color code</span><span class="ost-swatch"></span><input class="ost-input ost-hex" maxlength="7" data-okb-caps="off" autocomplete="off" spellcheck="false" placeholder="#3b82f6" value="${esc(this.hexDraft)}"><button class="ost-btn ost-hex-use">Use</button></div>
         <div class="ost-note ost-hex-note">Any color as a code, e.g. your team's color (the # is optional).</div>
+        <div class="ost-row"><span class="ost-label">Text size</span><span class="ost-seg" data-seg="textSize">${Object.entries(window.OpenSkyTextSize.LABELS).map(([v, l]) => `<button data-v="${v}" class="${P.prefs.textSize === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
         <div class="ost-row"><span class="ost-label">Word game</span><span class="ost-seg" data-seg="wordgame"><button data-v="nyt" class="${P.prefs.wordgame === "nyt" ? "on" : ""}">NYT's daily word</button><button data-v="opensky" class="${P.prefs.wordgame === "opensky" ? "on" : ""}">OpenSky's words</button></span></div>
         <div class="ost-row">${this.toggle("photos", P.prefs.photos)}<span class="ost-label">Photo slideshow on Home</span></div>
         <div class="ost-row"><span class="ost-label">Trash day</span><select class="ost-select" data-pref="trashDay">${[["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]].map(([v, l]) => `<option value="${v}" ${v === P.prefs.trashDay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
@@ -317,6 +318,9 @@ Module.register("MMM-OpenSky-Settings", {
     hexIn.onkeydown = (e) => { if (e.key === "Enter") useHex(); };
     box.querySelector(".ost-hex-use").onclick = useHex;
     preview();
+    box.querySelectorAll('[data-seg="textSize"] button').forEach((b) => {
+      b.onclick = () => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.setTextSize(b.dataset.v); this.savePrefs({ textSize: b.dataset.v }); };
+    });
     box.querySelectorAll('[data-seg="wordgame"] button').forEach((b) => { b.onclick = () => this.savePrefs({ wordgame: b.dataset.v }); });
     box.querySelector('.ost-toggle[data-id="photos"]').onclick = () => this.savePrefs({ photos: !P.prefs.photos });
     box.querySelector('[data-pref="trashDay"]').onchange = (e) => this.savePrefs({ trashDay: e.target.value });

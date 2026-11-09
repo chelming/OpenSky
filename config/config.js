@@ -37,6 +37,13 @@ function accentOf(v) {
   return m ? `#${m[1].length === 3 ? m[1].replace(/./g, "$&$&") : m[1]}` : null;
 }
 
+// look.textSize: "small" | "normal" | "large" | "xlarge" (same rule as lib/text-size.js)
+function textSizeOf(v) {
+  const s = String(v == null ? "" : v).trim().toLowerCase().replace(/[\s_-]/g, "");
+  const k = s === "extralarge" ? "xlarge" : s;
+  return ["small", "normal", "large", "xlarge"].includes(k) ? k : "normal";
+}
+
 const { file: settingsFile, dir: settingsDir, settings: s } = readSettings();
 const locale = s.locale || {};
 
@@ -294,7 +301,8 @@ const fixed = [
       screenServiceUrl: (s.screen && s.screen.serviceUrl) || null,
       showSettings: true,
       accent: accentOf(s.look && s.look.accent),
-      scale: (s.look && s.look.scale) || "auto"
+      scale: (s.look && s.look.scale) || "auto",
+      textSize: textSizeOf(s.look && s.look.textSize)
     }
   }
 ];
