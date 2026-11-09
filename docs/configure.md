@@ -342,15 +342,17 @@ if you use a real keyboard. Dates and times use pickers instead.
 ```
 A small page that family members open on their own phones to **add photos** to the slideshow or **post a note** that shows
 on the Home screen. It is separate from phone setup, which stays closed except while you are setting things up.
-- Switch it on in Set up from your phone → **Share with the family**, tap **Finish** (OpenSky restarts), and the same card then shows the
-  **family link**. Send it to the family once (a message is fine). Opening it on a phone remembers that phone for a year; they can
-  add the page to their home screen.
+- Switch it on in Set up from your phone → **Share with the family**, choose a **family passcode** (6+ characters) and tap **Finish** (OpenSky
+  restarts). The card then shows the page's address. Each family member opens it once, types the passcode and stays signed in for 90 days; they
+  can add the page to their home screen. There is no secret link: without the passcode the page shows only a sign-in box.
 - What the page can do: add photos (JPEG, PNG, WebP; up to 40 MB each, 20 per 10 minutes), post a note (up to 280 characters, kept for a day, a week or until
   removed, 20 at a time) and remove notes. It **cannot** see or change settings, passwords, calendars or backups. Notes also go away when someone taps the
   **x** on the screen. They are kept in `notes.json` next to `opensky.json`.
-- The link is a long random secret kept in `secrets.json → share.token`. Anyone with it can add photos and notes, so don't post it publicly. **New link**
-  (in the same card) replaces it and locks every phone out until it gets the new one. Wrong guesses are rate limited.
-- It only works on your home network (plain `http`, like phone setup). With **Immich** as the photo source, the page only offers notes, because photos
+- The passcode is kept only as a salted scrypt hash in `secrets.json → share.hash`; signed-in phones carry a cookie signed with `share.secret`.
+  **Changing the passcode** (same card) makes a new secret and signs every phone out. Five wrong passcodes from one phone pause that phone for a
+  minute, and many wrong ones from anywhere pause everyone for a few minutes.
+- Over plain `http` (a Pi on your Wi-Fi) the passcode crosses the network unencrypted, like the phone setup code; put the page behind HTTPS
+  (a reverse proxy, see [docker.md](docker.md#family-share-page)) if that matters to you. With **Immich** as the photo source, the page only offers notes, because photos
   have to be added in Immich.
 - `port`: change it if something else uses 8091. In Docker, set `OPENSKY_SHARE_URL` to the address phones use ([docker.md](docker.md#family-share-page)).
 

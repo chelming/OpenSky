@@ -26,16 +26,25 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   ok("7 a damaged notes.json → empty list, a copy is kept", notes.list().length === 0 && fs.readdirSync(tmp).some((f) => f.startsWith("notes.json.damaged-")));
   fs.rmSync(process.env.OPENSKY_NOTES, { force: true });
 
-  // ---- the token ----
-  fs.writeFileSync(process.env.OPENSKY_SECRETS, JSON.stringify({ weather: { openweathermap: { apiKey: "keep-me" } } }));
-  const t1 = share.token();
+  // ---- the passcode ----
+  const PASS = "family-pass-9";
+  fs.writeFileSync(process.env.OPENSKY_SECRETS, JSON.stringify({ weather: { openweathermap: { apiKey: "keep-me" } }, share: { token: "old-link-token" } }));
   const sec = () => JSON.parse(fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8"));
-  ok("8 the link token is made once, saved in secrets.json (0600), other secrets kept", /^[a-f0-9]{48}$/.test(t1) && share.token() === t1 && sec().share.token === t1 && sec().weather.openweathermap.apiKey === "keep-me" && (fs.statSync(process.env.OPENSKY_SECRETS).mode & 0o777) === 0o600);
-  const t2 = share.token(true);
-  ok("9 rotating makes a different token", t2 !== t1 && share.currentToken() === t2);
+  ok("8a no passcode yet", share.hasPasscode() === false && share.checkPasscode("anything") === false);
+  share.setPasscode(PASS);
+  const raw = fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8");
+  ok("8 only a salted hash is kept (never the passcode), 0600, other secrets kept, the old link token dropped",
+    !raw.includes(PASS) && /^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(sec().share.hash) && sec().weather.openweathermap.apiKey === "keep-me" && sec().share.token === undefined && (fs.statSync(process.env.OPENSKY_SECRETS).mode & 0o777) === 0o600);
+  ok("9 the right passcode checks out (spaces around it ignored), wrong ones don't", share.checkPasscode(PASS) && share.checkPasscode(`  ${PASS} `) && !share.checkPasscode("family-pass-8") && !share.checkPasscode("") && !share.checkPasscode(undefined));
+  ok("9b too short or too long → refused, nothing changed", bad(() => share.setPasscode("12345")) === 400 && bad(() => share.setPasscode("x".repeat(65))) === 400 && share.checkPasscode(PASS));
+  const s1 = share.newSession(), oldSecret = sec().share.secret;
+  ok("9c a session is valid until it expires, never after, and a tampered one is not", share.validSession(s1) && !share.validSession(s1, Date.now() + 91 * 86400000) && !share.validSession(s1.replace(/.$/, (c) => (c === "0" ? "1" : "0"))) && !share.validSession("") && !share.validSession("1.2"));
+  share.setPasscode("a-new-passcode");
+  ok("10 a new passcode signs every phone out (new signing secret)", sec().share.secret !== oldSecret && !share.validSession(s1) && share.checkPasscode("a-new-passcode") && !share.checkPasscode(PASS));
+  const good = fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8");
   fs.writeFileSync(process.env.OPENSKY_SECRETS, "{ broken");
-  ok("10 a damaged secrets.json is never overwritten", bad(() => share.token(true)) === 409 && fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8") === "{ broken");
-  fs.writeFileSync(process.env.OPENSKY_SECRETS, JSON.stringify({ share: { token: t2 } }));
+  ok("10b a damaged secrets.json is never overwritten", bad(() => share.setPasscode("another-one")) === 409 && fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8") === "{ broken");
+  fs.writeFileSync(process.env.OPENSKY_SECRETS, good);
 
   // ---- the server ----
   const pics = path.join(tmp, "pics");
@@ -52,12 +61,16 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
     q.end(data);
   });
   let r = await call("GET", "/");
-  ok("11 the page itself loads without the link (it explains what to do)", r.status === 200 && /Share with the family screen/.test(r.text));
+  ok("11 the page itself loads without signing in (it shows the passcode box)", r.status === 200 && /Share with the family screen/.test(r.text));
   r = await call("GET", "/api/state");
-  ok("12 ...but the data needs the link", r.status === 401 && r.body.link === true);
-  r = await call("GET", `/s/${t2}`);
+  ok("12 ...but the data needs signing in", r.status === 401 && r.body.login === true && r.body.passcodeSet === true);
+  r = await call("POST", "/api/login", { passcode: "wrong-passcode" });
+  ok("13a a wrong passcode is refused, no cookie", r.status === 401 && !r.headers["set-cookie"]);
+  ok("13b a login needs the X-OpenSky header", (await call("POST", "/api/login", { passcode: "a-new-passcode" }, { "X-OpenSky": "0" })).status === 403);
+  r = await call("POST", "/api/login", { passcode: "a-new-passcode" }, { "X-Forwarded-Proto": "https" });
   const cookie = String(r.headers["set-cookie"] || "").split(";")[0];
-  ok("13 the right link sets a long-lived cookie and goes to the page", r.status === 302 && r.headers.location === "/" && /^os_share=[a-f0-9]{48}$/.test(cookie) && /Max-Age=\d{7,}/.test(r.headers["set-cookie"]) && /HttpOnly/.test(r.headers["set-cookie"]));
+  ok("13 the right passcode sets a signed, long-lived, HttpOnly cookie (Secure behind https)", r.status === 200 && /^os_share=\d+\.[a-f0-9]{64}$/.test(cookie) && /Max-Age=\d{7,}/.test(r.headers["set-cookie"]) && /HttpOnly/.test(r.headers["set-cookie"]) && /Secure/.test(r.headers["set-cookie"]));
+  ok("13c a forged or altered cookie gets nothing", (await call("GET", "/api/state", undefined, { Cookie: "os_share=9999999999." + "a".repeat(64) })).status === 401 && (await call("GET", "/api/state", undefined, { Cookie: cookie.replace(/\d\./, "9.") })).status === 401);
   const as = { Cookie: cookie };
   r = await call("GET", "/api/state", undefined, as);
   ok("14 with the cookie: notes and whether photos can be added", r.status === 200 && Array.isArray(r.body.notes) && r.body.photos === true, r.body);
@@ -73,7 +86,7 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   ok("19 something that isn't a photo is refused", r.status === 400 && /JPEG, PNG and WebP/.test(r.body.error), r.body);
   ok("20 no cookie → no photo", (await call("POST", "/api/photos?name=y.jpg", undefined, {}, jpeg)).status === 401 && fs.readdirSync(pics).length === 1);
   // everything setup can do is out of reach
-  const reach = [["GET", "/api/backup"], ["POST", "/api/save"], ["POST", "/api/restore"], ["POST", "/api/done"], ["GET", "/api/share"], ["POST", "/api/share/rotate"], ["GET", "/api/google"], ["GET", "/api/photos"]];
+  const reach = [["GET", "/api/backup"], ["POST", "/api/save"], ["POST", "/api/restore"], ["POST", "/api/done"], ["GET", "/api/share"], ["POST", "/api/share/passcode"],["GET", "/api/google"], ["GET", "/api/photos"]];
   const codes = [];
   for (const [m, p] of reach) { const x = await call(m, p, m === "POST" ? {} : undefined, as); codes.push(x.status); }
   ok("21 a share phone can't reach settings, secrets, backups, restore or the link itself", codes.every((c) => c === 404) && !/opensky-backup|settings/.test((await call("GET", "/api/backup", undefined, as)).text), codes.join(","));
@@ -84,15 +97,19 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   settings = { photos: { enabled: false } };
   ok("23 photos switched off → refused", (await call("POST", "/api/photos?name=z.jpg", undefined, as, jpeg)).status === 409);
   ok("24 a wrong Host is refused", (await call("GET", "/", undefined, { Host: "evil.example" })).status === 421);
-  // rotate: old cookie stops working
-  const t3 = share.token(true);
-  ok("25 after a new link, the old cookie stops working", (await call("GET", "/api/state", undefined, as)).status === 401 && (await call("GET", `/s/${t3}`)).status === 302);
-  // wrong links are rate limited
+  r = await call("POST", "/api/logout", {}, as);
+  ok("25a signing out clears the cookie", r.status === 200 && /Max-Age=0/.test(r.headers["set-cookie"]));
+  // changing the passcode: old sessions stop working
+  share.setPasscode("third-passcode");
+  ok("25 after a new passcode the old cookie stops working, the new passcode signs in", (await call("GET", "/api/state", undefined, as)).status === 401 && (await call("POST", "/api/login", { passcode: "third-passcode" })).status === 200);
+  // guessing: 5 wrong from one phone → pause (even the right passcode waits)
   let last;
-  for (let i = 0; i < 12; i++) last = await call("GET", `/s/${"a".repeat(20)}`);
-  ok("26 guessing links is rate limited", last.status === 429);
-  ok("27 ...and even the right link waits", (await call("GET", `/s/${t3}`)).status === 429);
-  ok("28 logs never include a note's text or the token", !logs.join(" ").includes("Dinner") && !logs.join(" ").includes(t2));
+  for (let i = 0; i < 6; i++) last = await call("POST", "/api/login", { passcode: `guess-${i}-xx` }, { "X-Forwarded-For": "10.0.0.7" });
+  ok("26 guessing is rate limited per phone", last.status === 429);
+  ok("27 ...even the right passcode waits for that phone, while another phone can still sign in", (await call("POST", "/api/login", { passcode: "third-passcode" }, { "X-Forwarded-For": "10.0.0.7" })).status === 429 && (await call("POST", "/api/login", { passcode: "third-passcode" }, { "X-Forwarded-For": "10.0.0.8" })).status === 200);
+  for (let i = 0; i < 45; i++) await call("POST", "/api/login", { passcode: `bad-${i}-xxx` }, { "X-Forwarded-For": `10.1.0.${i}` });
+  ok("27b many phones guessing (or forged addresses) → everyone waits a while", (await call("POST", "/api/login", { passcode: "third-passcode" }, { "X-Forwarded-For": "10.9.9.9" })).status === 429);
+  ok("28 logs never include a note's text or any passcode", !logs.join(" ").includes("Dinner") && !/passcode/i.test(logs.join(" ").replace(/a phone signed in/g, "")) && !logs.join(" ").includes("third-passcode"));
 
   server.close();
   fs.rmSync(tmp, { recursive: true, force: true });

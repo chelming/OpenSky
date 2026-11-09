@@ -17,6 +17,8 @@
  *   GET /api/music/speakers → {speakers: [{id, name, state}]} (Home Assistant media players, for the Music page)
  *   Photos in the Pi's folder: GET /api/photos → {folder, photos: [{id, name, size}]} · GET /api/photos/<id> (the image)
  *     · POST /api/photos?name= (the raw image as the body) · POST /api/photos/delete {id}
+ *   The family share page (lib/share.js, always on when share.enabled): GET /api/share → {running, passcodeSet, addresses}
+ *     · POST /api/share/passcode {passcode} (hashed; a new one signs every family phone out)
  *   GET /api/backup[?secrets=1] (a download: settings + on-device data, passwords only when asked) · POST /api/restore {backup}
  */
 const NodeHelper = require("node_helper");
@@ -122,16 +124,16 @@ module.exports = NodeHelper.create({
     return String(process.env.OPENSKY_SHARE_URL || "").split(",").map((u) => u.trim().replace(/\/+$/, "")).filter((u) => /^https?:\/\/[^/\s]+$/i.test(u));
   },
 
-  shareLinks(token) {
+  shareAddresses() {
     const { ips, host } = this.addresses();
     const base = this.shareOwn();
-    return (base.length ? base : [...ips.map((ip) => `http://${ip}:${this.sharePort()}`), `http://${host}:${this.sharePort()}`]).map((b) => `${b}/s/${token}`);
+    return base.length ? base : [...ips.map((ip) => `http://${ip}:${this.sharePort()}`), `http://${host}:${this.sharePort()}`];
   },
 
   startShare() {
     const s = readJson(SETTINGS, {});
     if (!s.share || s.share.enabled !== true) return;
-    try { share.token(); } catch (e) { return console.error(`[OpenSky] share page not started: ${e.message}`); }
+    if (!share.hasPasscode()) console.log("[OpenSky] share page: no passcode yet — set one in phone setup (Share with the family)");
     const own = this.shareOwn().map((u) => new URL(u).hostname.toLowerCase());
     const hostOk = (req) => this.hostOk(req) || own.includes(String(req.headers.host || "").replace(/:\d+$/, "").toLowerCase());
     this.shareServer = share.create({ hostOk, settings: () => readJson(SETTINGS, {}), log: (m) => console.log(`[OpenSky] share page: ${m}`) });
@@ -349,19 +351,15 @@ module.exports = NodeHelper.create({
       }
     }
 
-    // the share page's family link (rotating it signs every family phone out)
+    // the share page: its addresses, and the family passcode (only a hash is kept; a new passcode signs every family phone out)
     if (url.pathname === "/api/share" && req.method === "GET") {
-      if (!this.shareServer) return this.send(res, 200, { running: false, links: [] });
-      try { return this.send(res, 200, { running: true, links: this.shareLinks(share.token()) }); }
-      catch (e) { return this.send(res, e.status || 500, { error: e.message }); }
+      return this.send(res, 200, { running: !!this.shareServer, passcodeSet: share.hasPasscode(), addresses: this.shareServer ? this.shareAddresses() : [], minLength: share.MIN_PASSCODE });
     }
-    if (url.pathname === "/api/share/rotate" && req.method === "POST") {
-      if (!this.shareServer) return this.send(res, 409, { error: "The share page is switched off" });
-      try {
-        const t = share.token(true);
-        console.log("[OpenSky] phone setup: the share link was replaced");
-        return this.send(res, 200, { running: true, links: this.shareLinks(t) });
-      } catch (e) { return this.send(res, e.status || 500, { error: e.message }); }
+    if (url.pathname === "/api/share/passcode" && req.method === "POST") {
+      const { passcode } = await this.body(req, 4 * 1024);
+      try { share.setPasscode(passcode); } catch (e) { return this.send(res, e.status || 500, { error: e.status ? e.message : "Couldn't save the passcode on the Pi" }); }
+      console.log("[OpenSky] phone setup: the share passcode was changed");
+      return this.send(res, 200, { ok: true, passcodeSet: true });
     }
 
     if (url.pathname === "/api/google" && req.method === "GET") {

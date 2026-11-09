@@ -27,7 +27,7 @@ timers, photos, weather and smart-home controls on one screen. Built on [MagicMi
 - **Home:** the week ahead with everyone's events in their colors, weather, trash-day icons, your lists and a photo.
 - **Calendar:** month / two-week / week view; tap to see, add, edit or delete events.
   - Works with Google, Outlook, iCloud, Fastmail, Nextcloud or any calendar link — or no account at all.
-- **Share:** family members add photos and post notes to the screen from their own phones (a private link; no access to settings).
+- **Share:** family members add photos and post notes to the screen from their own phones (they sign in with a family passcode; no access to settings).
 - **Lists:** to-dos and groceries — kept on the Pi, or in Todoist. Check off with Undo.
 - **Timer**, holiday & birthday countdown, your team's game day, sleep button, photos from a folder, USB stick or Immich.
 - **Add-on — Music:** the screen becomes an AirPlay and Spotify speaker, with a Music page

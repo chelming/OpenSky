@@ -613,23 +613,22 @@
   function shareCard() {
     const Sh = S.share, body = el("div");
     const draw = async () => {
-      if (!Sh.enabled) return body.replaceChildren(el("p", { class: "hint" }, "Off. Switch it on to get a private link the family can open on their phones to add photos or post a note."));
+      if (!Sh.enabled) return body.replaceChildren(el("p", { class: "hint" }, "Off. Switch it on to let the family add photos or post a note from their own phones, signing in with a family passcode."));
       body.replaceChildren(el("p", { class: "hint" }, "Checking…"));
       let d;
       try { d = await api("GET", "/api/share"); } catch (e) { return body.replaceChildren(el("p", { class: "hint bad" }, e.message)); }
-      if (!d.running) return body.replaceChildren(el("p", { class: "hint" }, "Tap Finish below: the share page starts when OpenSky restarts, and the link appears here."));
-      const link = d.links[0] || "";
-      const input = el("input", { type: "text", class: "input", readonly: true, value: link, "aria-label": "Family link", onfocus: (e) => e.target.select() });
-      const copy = el("button", { type: "button", class: "btn", onclick: () => {
-        input.focus(); input.select(); input.setSelectionRange(0, link.length);
-        let ok = false; try { ok = document.execCommand("copy"); } catch (e) { /* the field stays selected: long-press to copy */ }
-        toast(ok ? "Link copied" : "Selected — long-press to copy");
-      } }, "Copy link");
-      const rotate = el("button", { type: "button", class: "btn", onclick: () => sheet("Make a new link?", (b) => b.append(el("p", { class: "hint" }, "The old link stops working. Everyone who has used it needs the new one.")),
-        [["Cancel", "", () => {}], ["New link", "danger", () => { api("POST", "/api/share/rotate").then(draw).catch((e) => toast(e.message, "bad")); }]]) }, "New link");
-      body.replaceChildren(field("Family link", input, "Send it to the family once. Opening it on a phone remembers that phone, so they can add it to their home screen."),
-        el("div", { class: "line" }, copy, rotate),
-        el("p", { class: "hint" }, "Anyone with the link can add photos and notes, but can't see or change your settings. It works on your home Wi-Fi."));
+      const pass = el("input", { type: "password", class: "input", autocomplete: "new-password", placeholder: d.passcodeSet ? "Type a new passcode to change it" : `Choose a passcode (${d.minLength}+ characters)`, "aria-label": "Family passcode" });
+      const err = el("p", { class: "err" });
+      const save = el("button", { type: "button", class: "btn primary", onclick: async () => {
+        err.textContent = "";
+        try { await api("POST", "/api/share/passcode", { passcode: pass.value }); pass.value = ""; toast(d.passcodeSet ? "New passcode saved — phones sign in again" : "Passcode saved"); draw(); }
+        catch (e) { err.textContent = e.message; }
+      } }, d.passcodeSet ? "Change passcode" : "Save passcode");
+      const parts = [field("Family passcode", pass, d.passcodeSet ? "Saved. Changing it signs every family phone out." : "Everyone in the family uses the same one. It is kept scrambled (hashed) on the Pi."), save, err];
+      if (!d.running) parts.push(el("p", { class: "hint" }, "Tap Finish below: the share page starts when OpenSky restarts, and its address appears here."));
+      else parts.push(el("div", { class: "field" }, el("span", { class: "label" }, "Address for the family"), ...d.addresses.slice(0, 2).map((a) => el("code", { class: "addr" }, a)),
+        el("span", { class: "hint" }, "Open it on each phone, sign in once, and add it to the home screen. It works on your home network.")));
+      body.replaceChildren(...parts);
     };
     draw();
     return section("share", "photos", "Share with the family", "Photos and notes from their own phones",
