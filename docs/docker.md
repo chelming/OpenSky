@@ -19,6 +19,7 @@ Environment variables in `docker-compose.yml` (or a `.env` file next to it):
 | `TZ` | `UTC` | The time zone, e.g. `America/Chicago`. |
 | `PUID` / `PGID` | `1000` / `1000` | The user and group the container runs as, so the files in `docker-config/` are yours. `id` shows yours. |
 | `OPENSKY_SETUP_URL` | | How phones reach the [phone setup](configure.md#phone-setup) page, e.g. `http://nas.local:8090`. See below. |
+| `OPENSKY_SHARE_URL` | | How phones reach the [family share page](configure.md#family-share-page-photos-and-notes-from-everyones-phone), e.g. `http://nas.local:8091`. See below. |
 | `OPENSKY_IP_WHITELIST` | `all` | Who may open the screen: `all`, or addresses separated by commas. |
 
 Edit `docker-config/opensky.json` and `secrets.json` the same way as on a Pi ([configure.md](configure.md)), then
@@ -33,6 +34,15 @@ OPENSKY_SETUP_URL=http://nas.local:8090
 ```
 Publish port 8090 (the compose file does), or route that address to it from your reverse proxy. To use other ports on the computer, change the left side of the mapping (`"9000:8080"`, `"9090:8090"`); the ports inside the container stay 8080 and 8090. Put the port phones type in `OPENSKY_SETUP_URL` (here `http://nas.local:9090`). The QR code then shows
 this address, and requests for any other name are still refused. When you finish, OpenSky restarts by itself.
+
+## Family share page
+Switch on **Share with the family** in phone setup to let family members add photos and post notes from their own phones. It is a separate
+small server on port 8091 (published by the compose file) that stays on while OpenSky runs. As with phone setup, tell it the address phones use:
+```
+OPENSKY_SHARE_URL=http://nas.local:8091
+```
+The family link in phone setup then starts with that address. It only grants adding photos and notes, never settings; still, keep port 8091 on your
+home network (or behind your reverse proxy's login), since anyone who has the link can post to the screen.
 
 ## Good to know
 - **Anyone who can reach port 8080 can use the screen** (there is no login), so keep it on your home network or behind

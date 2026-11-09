@@ -29,6 +29,7 @@ MagicMirror². This file is the entry point; read it first, then the docs it poi
 | The user's settings + data (back this up) | `~/OpenSky/config/`: `opensky.json`, `secrets.json` (chmod 600), `device.json` (Settings panel), `local-calendar.json`, `lists.json`, `calendar-cache/` |
 | Runtime (re-creatable by `./install.sh`) | `~/.local/share/opensky/`: `MagicMirror/` (pinned tag, OpenSky linked in by `tools/link-mm.sh`), `node/` (only if the system Node is too old), `venv/` |
 | Services | systemd **user** units `opensky.service` (Electron) + `opensky-calendar.service` (CalDAV helper); started by `~/.config/autostart/opensky.desktop` |
+| Family share page | `lib/share.js` (server, started by the Setup helper when `share.enabled`), `lib/share/` (the phone page), `lib/notes.js` (`notes.json`); token in `secrets.json → share.token`; port 8091 (`OPENSKY_SHARE_PORT`, `OPENSKY_SHARE_URL` for Docker) |
 | Commands | `opensky status · logs · check · restart · edit · secrets · update` (`tools/opensky`) |
 
 The settings files are found through environment variables set by the services (`OPENSKY_SETTINGS`, `OPENSKY_SECRETS`,
@@ -39,6 +40,10 @@ Everything above lives in the `/config` volume (`./docker-config/` on the host) 
 (set in the `Dockerfile`). There is no systemd, display or hardware, so `OPENSKY_DOCKER=1` is set: Settings hides Restart Pi / Shut down, and
 "Restart OpenSky" (and finishing phone setup) exits the process so the compose restart policy starts it again
 (`docker restart opensky` does the same from outside). `OPENSKY_SETUP_URL` is the address phone setup shows in its QR code and accepts as its Host.
+
+**Two kinds of phone access, never mixed:** phone *setup* (pairing code, short-lived, can change everything) and the *share* page
+(private link, always on when enabled, can only add photos and notes). Keep it that way: a new share endpoint must never read or write
+settings, secrets, backups or calendars, and `tools/test-share.js` checks what a share phone can't reach.
 
 ## Helping a user (checklist)
 1. `opensky status`, `opensky check`, `opensky logs` — most problems are a JSON typo or a wrong link/password.

@@ -30,6 +30,7 @@ const google = require(path.join(global.root_path || process.cwd(), "modules", "
 const backup = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "backup.js"));
 const photos = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "photos.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
+const share = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "share.js"));
 
 const DRY = process.env.OPENSKY_DRY_RUN === "1";
 const DOCKER = process.env.OPENSKY_DOCKER === "1";   // the container restarts when this process exits (restart policy)
@@ -107,6 +108,38 @@ module.exports = NodeHelper.create({
   start() {
     this.server = null;
     this.sessions = new Set();
+    this.startShare();
+  },
+
+  /* ---------------- the share page (photos + notes from family phones; always on when enabled) ---------------- */
+  sharePort() {
+    const s = readJson(SETTINGS, {});
+    return Number(process.env.OPENSKY_SHARE_PORT) || (s.share && Number(s.share.port)) || 8091;
+  },
+
+  // OPENSKY_SHARE_URL: the address(es) family phones use when it isn't the machine's own (Docker, a proxy), comma-separated
+  shareOwn() {
+    return String(process.env.OPENSKY_SHARE_URL || "").split(",").map((u) => u.trim().replace(/\/+$/, "")).filter((u) => /^https?:\/\/[^/\s]+$/i.test(u));
+  },
+
+  shareLinks(token) {
+    const { ips, host } = this.addresses();
+    const base = this.shareOwn();
+    return (base.length ? base : [...ips.map((ip) => `http://${ip}:${this.sharePort()}`), `http://${host}:${this.sharePort()}`]).map((b) => `${b}/s/${token}`);
+  },
+
+  startShare() {
+    const s = readJson(SETTINGS, {});
+    if (!s.share || s.share.enabled !== true) return;
+    try { share.token(); } catch (e) { return console.error(`[OpenSky] share page not started: ${e.message}`); }
+    const own = this.shareOwn().map((u) => new URL(u).hostname.toLowerCase());
+    const hostOk = (req) => this.hostOk(req) || own.includes(String(req.headers.host || "").replace(/:\d+$/, "").toLowerCase());
+    this.shareServer = share.create({ hostOk, settings: () => readJson(SETTINGS, {}), log: (m) => console.log(`[OpenSky] share page: ${m}`) });
+    this.shareServer.on("error", (e) => {
+      console.error(`[OpenSky] share page: ${e.code === "EADDRINUSE" ? `port ${this.sharePort()} is busy` : e.message}`);
+      this.shareServer = null;
+    });
+    this.shareServer.listen(this.sharePort(), "0.0.0.0", () => console.log(`[OpenSky] share page open on port ${this.sharePort()}`));
   },
 
   socketNotificationReceived(n) {
@@ -314,6 +347,21 @@ module.exports = NodeHelper.create({
       } catch (e) {
         return this.send(res, 502, { error: "Couldn't look that up — is the Pi online?" });
       }
+    }
+
+    // the share page's family link (rotating it signs every family phone out)
+    if (url.pathname === "/api/share" && req.method === "GET") {
+      if (!this.shareServer) return this.send(res, 200, { running: false, links: [] });
+      try { return this.send(res, 200, { running: true, links: this.shareLinks(share.token()) }); }
+      catch (e) { return this.send(res, e.status || 500, { error: e.message }); }
+    }
+    if (url.pathname === "/api/share/rotate" && req.method === "POST") {
+      if (!this.shareServer) return this.send(res, 409, { error: "The share page is switched off" });
+      try {
+        const t = share.token(true);
+        console.log("[OpenSky] phone setup: the share link was replaced");
+        return this.send(res, 200, { running: true, links: this.shareLinks(t) });
+      } catch (e) { return this.send(res, e.status || 500, { error: e.message }); }
     }
 
     if (url.pathname === "/api/google" && req.method === "GET") {

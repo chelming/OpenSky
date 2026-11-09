@@ -28,6 +28,8 @@ fs.rmSync(DEVICE, { force: true });
 const WELCOME = path.join(OUT, "welcomed.test");
 fs.writeFileSync(WELCOME, "test\n");
 // word game board + stats, fresh each run
+const NOTES = path.join(OUT, "notes.test.json");
+fs.rmSync(NOTES, { force: true });
 const WORDGAME = path.join(OUT, "wordgame.test.json");
 fs.rmSync(WORDGAME, { force: true });
 // on-device lists, seeded fresh each run (Groceries: Milk, Apples · Chores: empty)
@@ -78,6 +80,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       OPENSKY_LOCAL_LISTS: LOCAL_LISTS,
       OPENSKY_DEVICE_SETTINGS: DEVICE,
       OPENSKY_WORDGAME: WORDGAME,
+      OPENSKY_NOTES: NOTES,
       OPENSKY_SETUP_PORT: "8091",
       OPENSKY_WELCOME_FILE: WELCOME,
       OPENSKY_NYT_URL: "http://127.0.0.1:9/nyt",   // never the real NYT from tests: unreachable → OpenSky's own word

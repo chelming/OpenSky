@@ -43,6 +43,7 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 | Lists | Todoist (2 projects) ✅ | **on-device lists** default (no account) ✅; Todoist ✅; Home Assistant to-do ✅ (covers Google Tasks etc. connected to HA); Google Tasks; Microsoft To Do; Apple Reminders (CalDAV VTODO); 💭 Grocy, AnyList, Mealie | Any number of lists, user-named |
 | Weather (header + day tiles) | OpenWeatherMap (header) + Open-Meteo (7-day) ✅ | **Open-Meteo** default (no key) ✅; OpenWeatherMap ✅; 💭 NWS, Met.no | °F/°C, location by address search |
 | Photos | Immich ✅ | **local folder / USB stick** default ✅; Immich ✅; 🔜 PhotoPrism; Nextcloud/WebDAV; iCloud shared album link; 💭 Google Photos (API is very limited now) | Portrait pairing ✅ |
+| Family sharing | — | **share page** ✅ (private link: add photos, post a note to the Home screen; no settings access); 💭 email-to-frame, photo approval | Separate from phone setup, which stays short-lived |
 | Smart Home page | Home Assistant dashboard (webview) ✅ | Home Assistant; **any URL** embed; none | Generic "embedded page" with optional PIN |
 | HA integration | screen switch/sensor, presence, sleep helpers ✅ | optional: auto-create HA entities via MQTT discovery or a small HA integration 💭 | Reference build uses REST + templates |
 | Header countdown pill | US holidays + birthdays ✅ | holidays by **country** ✅ (US: Google list; ~200 others: Nager.Date, + regions); birthdays from a calendar or a list | Themed icons ✅ |
