@@ -33,7 +33,7 @@ module.exports = NodeHelper.create({
     } else if (n === "PHOTO_NEXT") {
       if (!this.source) return this.sendSocketNotification("PHOTO_ERROR", { message: "Photos aren't set up" });
       try {
-        this.sendSocketNotification("PHOTO", await this.source.next());
+        this.sendSocketNotification("PHOTO", await this.source.next(p || {}));
       } catch (e) {
         const folder = this.settings.provider === "immich" ? null : (this.settings.folder || "~/Pictures");
         const docker = process.env.OPENSKY_DOCKER === "1";   // no Pi folder or USB stick to point at

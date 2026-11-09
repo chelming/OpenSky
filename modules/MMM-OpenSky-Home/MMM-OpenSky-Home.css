@@ -370,3 +370,103 @@ html[data-layout="compact"] .hd-nw-list { gap: 6px; }
 html[data-layout="compact"] .hd-nw-row { font-size: 13px; }
 html[data-layout="compact"] .hd-nw-day { width: 30px; }
 html[data-layout="compact"] .hd-list-columns { gap: 10px; }
+
+/* ---------- portrait layout (<html data-layout="portrait">, designed for 1080×1920) ----------
+   top to bottom: Today card · week card (one row per other day, the flexible part) · lists + Next Week · photo strip.
+   (Home.js moves the Today and Next Week tiles out of the week grid into .hd-today-slot / .hd-nw-slot.) */
+html[data-layout="portrait"] .hd-root {
+  grid-template-columns: 560px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "today today" "cal cal" "lists nw" "photo photo";
+  gap: 20px;
+}
+html[data-layout="portrait"] .hd-today-slot { grid-area: today; display: block; }
+html[data-layout="portrait"] .hd-today-slot:empty { display: none; }
+html[data-layout="portrait"] .hd-calendar { grid-area: cal; border-radius: 30px; padding: 20px 24px 22px; }
+html[data-layout="portrait"] .hd-right { display: contents; }
+html[data-layout="portrait"] .hd-lists { grid-area: lists; flex: none; height: 330px; border-radius: 30px; padding: 16px 18px 18px; }
+html[data-layout="portrait"] .hd-nw-slot { grid-area: nw; display: block; min-width: 0; min-height: 0; }
+html[data-layout="portrait"] .hd-nw-slot > .hd-nextweek { height: 330px; box-sizing: border-box; border-radius: 30px; padding: 20px 24px; overflow: hidden; }
+html[data-layout="portrait"] .hd-photo { grid-area: photo; flex: none; height: 250px; border-radius: 28px; }
+html[data-layout="portrait"] .hd-root.hd-today-busy .hd-photo { height: 200px; }
+html[data-layout="portrait"] .hd-root.hd-no-lists .hd-photo { height: 250px; }
+html[data-layout="portrait"] .hd-root:not(.hd-no-lists) .hd-nw-slot:empty { display: none; }
+html[data-layout="portrait"] .hd-nav-btn { height: 48px; min-width: 48px; font-size: 17px; border-radius: 24px; }
+html[data-layout="portrait"] .hd-prev, html[data-layout="portrait"] .hd-next { width: 48px; }
+html[data-layout="portrait"] .hd-card-label { font-size: 30px; }
+html[data-layout="portrait"] .hd-week-range { font-size: 22px; }
+
+/* week: one row per day */
+html[data-layout="portrait"] .hd-week { display: flex; flex-direction: column; gap: 10px; }
+html[data-layout="portrait"] .hd-week > .hd-day {
+  flex: 1 1 0; min-height: 0; overflow: hidden;
+  display: grid; grid-template-columns: 128px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; column-gap: 16px;
+  padding: 4px 18px; border-radius: 20px;
+}
+html[data-layout="portrait"] .hd-week > .hd-day .hd-day-head { grid-column: 1; grid-row: 1; flex-wrap: wrap; gap: 0 8px; align-self: end; }
+html[data-layout="portrait"] .hd-week > .hd-day .hd-day-count { grid-column: 1; grid-row: 2; margin: 0; font-size: 14px; line-height: 1.2; align-self: start; }
+html[data-layout="portrait"] .hd-week > .hd-day .hd-day-events { grid-column: 2; grid-row: 1 / span 2; flex-direction: row; flex-wrap: wrap; align-content: center; align-items: center; gap: 10px; }
+html[data-layout="portrait"] .hd-day-name { font-size: 26px; line-height: 1.1; }
+html[data-layout="portrait"] .hd-day-num { min-width: 30px; height: 30px; font-size: 20px; border-radius: 15px; }
+html[data-layout="portrait"] .hd-day-wx { margin-left: 0; flex: 0 0 100%; font-size: 16px; line-height: 1.1; }
+html[data-layout="portrait"] .hd-wx-icon, html[data-layout="portrait"] .hd-wx-icon svg { width: 20px; height: 20px; }
+
+/* a chip: color dot, title (one line), time */
+html[data-layout="portrait"] .hd-week .hd-event {
+  flex-direction: row; align-items: center; width: auto; max-width: 100%; gap: 10px; padding: 8px 16px; border-radius: 14px;
+}
+html[data-layout="portrait"] .hd-event .hd-ev-top { display: contents; }
+html[data-layout="portrait"] .hd-event .hd-cal, html[data-layout="portrait"] .hd-event .hd-badges { order: -1; margin: 0; }
+html[data-layout="portrait"] .hd-event .hd-cal-dot { width: 12px; height: 12px; }
+html[data-layout="portrait"] .hd-event .hd-cal-name { display: none; }
+html[data-layout="portrait"] .hd-event .hd-event-title { font-size: 21px; flex: 0 1 auto; min-width: 0; max-width: 360px; width: auto; }
+html[data-layout="portrait"] .hd-event .hd-ev-meta { width: auto; flex: 0 0 auto; }
+html[data-layout="portrait"] .hd-event .hd-event-time { font-size: 19px; }
+html[data-layout="portrait"] .hd-more { padding: 8px 16px; border-radius: 14px; font-size: 19px; min-height: 44px; box-sizing: border-box; }
+
+/* Today card: day + date + weather on the left, what's left as full-width rows, "N done" on the right */
+html[data-layout="portrait"] .hd-today-slot > .hd-day {
+  display: grid; grid-template-columns: 230px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 20px;
+  padding: 18px 24px; border-radius: 30px; background: var(--os-accent-tint, #fff6f2); box-shadow: inset 0 0 0 3px var(--os-accent-soft, #ffcfbd);
+}
+html[data-layout="portrait"] .hd-today-slot .hd-day-head { grid-column: 1; grid-row: 1; flex-wrap: wrap; gap: 4px 10px; align-self: start; }
+html[data-layout="portrait"] .hd-today-slot .hd-day-name { font-size: 40px; }
+html[data-layout="portrait"] .hd-today-slot .hd-day-num { min-width: 46px; height: 46px; border-radius: 23px; font-size: 30px; color: #1f2937; }
+html[data-layout="portrait"] .hd-day.hd-is-today .hd-day-num { color: #1f2937; }   /* dark text on the coral badge (white fails contrast) */
+html[data-layout="portrait"] .hd-today-slot .hd-day-wx { flex: 0 0 100%; margin: 0; font-size: 26px; }
+html[data-layout="portrait"] .hd-today-slot .hd-wx-icon, html[data-layout="portrait"] .hd-today-slot .hd-wx-icon svg { width: 34px; height: 34px; }
+html[data-layout="portrait"] .hd-today-slot .hd-day-count { grid-column: 1; grid-row: 2; margin: 6px 0 0; font-size: 18px; align-self: start; }
+html[data-layout="portrait"] .hd-today-slot .hd-day-events { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-content: center; align-items: center; }
+html[data-layout="portrait"] .hd-today-slot .hd-event {
+  grid-column: 1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding: 12px 20px; border-radius: 14px; width: 100%;
+}
+html[data-layout="portrait"] .hd-today-slot .hd-ev-meta { display: contents; }
+html[data-layout="portrait"] .hd-today-slot .hd-event .hd-cal, html[data-layout="portrait"] .hd-today-slot .hd-event .hd-badges { order: 8; }
+html[data-layout="portrait"] .hd-today-slot .hd-event-time { order: -1; flex: 0 0 190px; font-size: 24px; font-weight: 600; text-align: left; }
+html[data-layout="portrait"] .hd-today-slot .hd-event-title { flex: 1 1 0; font-size: 32px; max-width: none; }
+html[data-layout="portrait"] .hd-today-slot .hd-event-rel,
+html[data-layout="portrait"] .hd-today-slot .hd-live-row { order: 9; margin-left: auto; padding: 4px 14px; border-radius: 999px; background: var(--os-accent-mid, #f58b6b); color: #1f2937; font-size: 19px; font-weight: 800; }
+html[data-layout="portrait"] .hd-today-slot .hd-live-row { background: none; padding: 0; gap: 12px; }
+html[data-layout="portrait"] .hd-today-slot .hd-live-row .hd-event-rel { margin-left: 0; order: 0; }
+html[data-layout="portrait"] .hd-today-slot .hd-now { font-size: 16px; padding: 4px 12px; }
+html[data-layout="portrait"] .hd-today-slot .hd-progress { order: 20; flex: 0 0 100%; margin: 0; }
+html[data-layout="portrait"] .hd-today-slot .hd-event.recent .hd-event-title, html[data-layout="portrait"] .hd-today-slot .hd-event.done .hd-event-title { font-size: 28px; }
+html[data-layout="portrait"] .hd-today-slot .hd-event.recent .hd-event-time, html[data-layout="portrait"] .hd-today-slot .hd-event.done .hd-event-time { font-size: 22px; }
+html[data-layout="portrait"] .hd-today-slot .hd-event.recent .hd-icon, html[data-layout="portrait"] .hd-today-slot .hd-event.done .hd-icon { width: 22px; height: 22px; }
+html[data-layout="portrait"] .hd-today-slot .hd-strip .hd-event-title { font-size: 26px; }
+html[data-layout="portrait"] .hd-today-slot .hd-strip-tag { font-size: 18px; }
+html[data-layout="portrait"] .hd-today-slot .hd-done-chip { grid-column: 2; grid-row: 1; align-self: start; padding: 10px 20px; font-size: 22px; border-radius: 999px; background: var(--os-accent-soft, #ffd8c9); color: #1f2937; }
+html[data-layout="portrait"] .hd-today-slot .hd-done-chip .hd-icon { width: 22px; height: 22px; }
+html[data-layout="portrait"] .hd-today-slot .hd-more:not(.hd-done-chip) { grid-column: 1; justify-self: start; font-size: 22px; padding: 10px 20px; }
+html[data-layout="portrait"] .hd-today-slot .hd-empty { grid-column: 1; font-size: 30px; font-weight: 800; }
+html[data-layout="portrait"] .hd-today-slot .hd-empty .hd-icon { width: 30px; height: 30px; }
+
+/* Next Week card */
+html[data-layout="portrait"] .hd-nextweek .hd-nw-title { font-size: 30px; }
+html[data-layout="portrait"] .hd-nextweek .hd-day-count { font-size: 17px; margin-bottom: 8px; }
+html[data-layout="portrait"] .hd-nw-list { gap: 8px; }
+html[data-layout="portrait"] .hd-nw-row { font-size: 21px; gap: 12px; }
+html[data-layout="portrait"] .hd-nw-dot { width: 12px; height: 12px; }
+html[data-layout="portrait"] .hd-nw-day { width: 56px; }
+html[data-layout="portrait"] .hd-nw-more { font-size: 18px; }
+html[data-layout="portrait"] .hd-list-columns { gap: 10px; }

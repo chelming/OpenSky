@@ -96,7 +96,11 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
 - Look at a layout: `SIZES=1024x600,1280x720 tools/docker-test.sh scenario tools/scenarios/layout-shots.js` (screenshots in
   `tools/out/lay-*.png`); `tools/scenarios/screen-sizes.js` checks that nothing is cut off from 800×480 to 4K, at every text size.
-- Portrait (`data-orient="portrait"`) is set but has no layout yet.
+- **Portrait** (page taller than wide → `data-layout="portrait"`, design 1080×1920, fitted like the others): the Sidebar is a
+  112 px bottom bar (`--os-nav-height`), pages keep 40 px at the sides and start below the header (`--os-header-h`, measured by the
+  Header module, whose countdown is a full-width banner row). Home moves its Today and Next Week tiles out of the week grid
+  into `.hd-today-slot` / `.hd-nw-slot` and lays itself out as a grid (css `html[data-layout="portrait"]`); photos ask for two
+  at a time (`PHOTO_NEXT {wide: true}`). Spec: `vertical.md`. Scenario: `tools/scenarios/portrait.js`.
 
 ## MagicMirror 2.38 notes
 - Electron's language (date/time boxes) comes from the `LANGUAGE` environment variable on Linux, not from

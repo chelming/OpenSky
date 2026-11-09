@@ -112,3 +112,10 @@ html[data-layout="compact"] .wg-nums b { font-size: 26px; }
 html[data-layout="compact"] .wg-dist { gap: 4px; }
 html[data-layout="compact"] .wg-drow { font-size: 14px; }
 html[data-layout="compact"] .wg-bar { padding: 2px 8px; }
+
+/* ---------- portrait: the board and keyboard on top, the result and stats below ---------- */
+html[data-layout="portrait"] .wg-title { white-space: nowrap; }
+html[data-layout="portrait"] .wg-head { flex-wrap: wrap; gap: 4px 18px; }
+html[data-layout="portrait"] .wg-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 20px; }
+html[data-layout="portrait"] .wg-play { padding: 20px 0; gap: 22px; }
+html[data-layout="portrait"] .wg-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }

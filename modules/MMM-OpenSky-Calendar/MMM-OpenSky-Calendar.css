@@ -3,8 +3,8 @@
 /* ---------- toolbar on the month title line, right-aligned: [+ Add Event]  [‹] [Today] [›] ---------- */
 .os-cal-nav {
   position: absolute;
-  top: 102px;            /* level with the month title */
-  right: 24px;           /* matches the calendar's right padding */
+  top: calc(var(--os-content-top, 92px) + 10px);   /* level with the month title */
+  right: var(--os-content-right, 24px);            /* matches the calendar's right padding */
   display: flex;
   flex-direction: row;
   gap: 10px;

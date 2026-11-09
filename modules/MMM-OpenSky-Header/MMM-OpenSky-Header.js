@@ -84,7 +84,20 @@ Module.register("MMM-OpenSky-Header", {
       row.appendChild(cd);
     }
 
+    this._measureLater();
     return row;
+  },
+
+  // Portrait: the pages start below the header, whose height changes (the banner row comes and goes) → css --os-header-h
+  _measureLater() {
+    if (!this._resizeHooked) { this._resizeHooked = true; window.addEventListener("resize", () => this._measureLater()); }
+    clearTimeout(this._measureTimer);
+    this._measureTimer = setTimeout(() => {
+      const row = document.querySelector(".hb-row"), root = document.documentElement;
+      if (!row || root.dataset.layout !== "portrait") return;
+      const zoom = Number(getComputedStyle(root).getPropertyValue("--os-zoom")) || 1;
+      root.style.setProperty("--os-header-h", `${Math.ceil(row.getBoundingClientRect().bottom / zoom)}px`);
+    }, 60);
   },
 
   // One circle per profile (initial on its color). Tap = show only that person's calendars and lists (one person at a

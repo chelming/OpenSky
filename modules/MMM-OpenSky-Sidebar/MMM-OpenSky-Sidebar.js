@@ -51,22 +51,36 @@ Module.register("MMM-OpenSky-Sidebar", {
   applyScale() {
     const W = window.innerWidth, H = window.innerHeight;
     const fixed = Number(this.config.scale);
+    const portrait = H > W * 1.1;
     const full = Math.min(W / 1920, H / 1080);
-    const [dw, dh] = full < 0.8 ? [1280, 720] : [1920, 1080];
+    const [dw, dh] = portrait ? [1080, 1920] : full < 0.8 ? [1280, 720] : [1920, 1080];
     const fit = fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, Math.min(W / dw, H / dh)));
     const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.config.textSize) : 1;
     const z = fit * text;
     const root = document.documentElement;
     document.body.style.zoom = Math.abs(z - 1) < 0.01 ? "" : String(z);
     root.style.setProperty("--os-zoom", String(z));
-    root.dataset.layout = (W / z < 1600 || H / z < 880) ? "compact" : "full";
-    root.dataset.orient = H > W * 1.1 ? "portrait" : "landscape";
-    this.applySizes(root.dataset.layout === "compact", H / z);
+    root.dataset.layout = portrait ? "portrait" : (W / z < 1600 || H / z < 880) ? "compact" : "full";
+    root.dataset.orient = portrait ? "portrait" : "landscape";
+    this.applySizes(root.dataset.layout, H / z, W / z);
   },
 
   // The sidebar's sizes (and with them where the pages start) for the current layout; see ui in the defaults
-  applySizes(compact, pageHeight) {
-    const ui = this.config.ui, k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`, st = document.documentElement.style;
+  applySizes(layout, pageHeight, pageWidth) {
+    const ui = this.config.ui, st = document.documentElement.style;
+    if (layout === "portrait") {
+      // the sidebar becomes a bar along the bottom (css: html[data-layout="portrait"]); the pages keep 40 px at the sides
+      st.setProperty("--os-nav-height", "112px");
+      st.setProperty("--os-content-left", "40px");
+      const n = this.config.pages.length + 1 + (this.config.showSettings ? 1 : 0);
+      st.setProperty("--tile-size", "96px");
+      st.setProperty("--tile-gap", "0px");
+      st.setProperty("--icon-size", "34px");
+      st.setProperty("--label-size", `${pageWidth / n < 120 ? 15 : 17}px`);
+      return;
+    }
+    const compact = layout === "compact", k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`;
+    st.setProperty("--os-nav-height", "0px");
     const side = Math.round(ui.width * (compact ? 0.87 : 1));
     const gap = compact ? 4 : ui.gap, n = this.config.pages.length + 1 + (this.config.showSettings ? 1 : 0);   // pages + Sleep (+ Settings)
     // every tile still fits when the page is short (big text on a small screen, or many pages): shrink them, down to 44 px

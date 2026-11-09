@@ -20,6 +20,8 @@ const DIR = path.join(__dirname, "fixtures", "photos");
   ok("6 serves image bytes by opaque id", img && img.body.length > 1000 && /image\//.test(img.type));
   ok("7 unknown id → nothing (no path tricks)", (await src.image("../../etc/passwd")) === null);
   const empty = createPhotoSource({ provider: "folder", folder: "/nonexistent-folder", usb: false }, () => null);
+  let wideOk = true; for (let k = 0; k < 20; k++) { const n = await src.next({ wide: true }); if (n.photos.length !== 2 || n.photos[0].id === n.photos[1].id) wideOk = false; }
+  ok("7b wide strip (portrait screens): always two different photos side by side", wideOk);
   ok("8 empty folder → clear error", await empty.next().then(() => false, (e) => /no photos/.test(e.message)));
   const im = createPhotoSource({ provider: "immich", url: "" }, () => null);
   ok("9 Immich without settings → explains what's missing", await im.next().then(() => false, (e) => /photos\.url/.test(e.message)));

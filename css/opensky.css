@@ -31,6 +31,13 @@ html, body {
 }
 /* The compact layout (screens under about 1536×864, or big text: the Sidebar sets <html data-layout>); the Sidebar
    also sets the sidebar's sizes and --os-content-left for it. Each module's CSS has its own compact rules. */
+/* Portrait screens (taller than wide): the sidebar is a 112 px bar along the bottom, pages keep 40 px at the sides.
+   --os-header-h is the bottom of the header (the Header module measures it: its banner row comes and goes). */
+html[data-layout="portrait"] {
+  --os-content-top: calc(var(--os-header-h, 190px) + 20px);
+  --os-content-bottom: calc(var(--os-nav-height, 112px) + 20px);
+  --os-content-right: 40px;
+}
 html[data-layout="compact"] {
   --os-content-top: 70px;
   --os-content-bottom: 14px;
