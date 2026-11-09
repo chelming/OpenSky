@@ -19,6 +19,16 @@ Module.register("MMM-OpenSky-Header", {
   getScripts() { return ["modules/opensky-lib/client/opensky-client.js"]; },
 
   start() {
+    // browser/window title + favicon (inline SVG, nothing to serve)
+    document.title = "OpenSky";
+    try {
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='#1d2433'/>"
+        + "<circle cx='42' cy='24' r='10' fill='#f4a46a'/><path d='M14 46a10 10 0 0 1 3-19 13 13 0 0 1 25 3 8 8 0 0 1 2 16z' fill='#fff'/></svg>";
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+      link.type = "image/svg+xml";
+      link.href = "data:image/svg+xml," + encodeURIComponent(svg);
+    } catch (e) { /* cosmetic only */ }
     this.now = new Date();
     this.picked = [];       // the person whose circle is on: [name], or [] = everyone
     this.temp = null;
