@@ -519,9 +519,11 @@ html[data-layout="portrait"] .hd-nw-slot > .hd-nextweek { height: 100%; min-heig
 @container hdcal (max-width: 700px) { .hd-calendar .hd-nav-btn.hd-add { font-size: 0; gap: 0; padding: 0; width: 42px; min-width: 42px; margin-right: 0; } }
 @container hdcal (max-width: 520px) { .hd-week-range { display: none; } }
 @container hdcal (max-width: 440px) { .hd-card-label { font-size: 0; gap: 0; } }
-@container (max-width: 150px) { .hd-day-count { display: none; } .hd-day-wx > span:not(.hd-wx-icon) { display: none; } }
+@container (max-width: 150px) { .hd-day-count { display: none; } .hd-day-wx > span:not(.hd-wx-icon) { display: none; } .hd-day-head { margin-bottom: 8px; } }
 @container (max-width: 110px) { .hd-wx-icon { display: none; } }
 html[data-layout="portrait"] .hd-right { container-type: normal; }
 html[data-layout="portrait"] .hd-calendar { container-type: inline-size; }
 .hd-live-row, .hd-ev-meta { flex-wrap: wrap; }   /* "NOW · 2 min left" goes under itself rather than out of the pill */
 .hd-live-row { flex: 0 1 auto; min-width: 0; }
+.hd-event.live { margin: 2px 0; }   /* its dark ring sits outside the box: keep it off the date above */
+.hd-live-row { gap: 4px 8px; }
