@@ -61,6 +61,15 @@ const notice = () => (sent.filter(([n]) => n === "OS_SET_NOTICE").pop() || [])[1
   const now = JSON.parse(read(process.env.OPENSKY_SETTINGS));
   ok("6 fixed → the change is saved and everything else kept", now.look.accent === "green" && now.family.name === "The Testers" && now.pages.length === 3);
 
+  // 7 text size is saved (normal = left out) and a bad value is refused
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { textSize: "xlarge" } });
+  const big = JSON.parse(read(process.env.OPENSKY_SETTINGS)).look.textSize;
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { textSize: "gigantic" } });
+  const stillBig = JSON.parse(read(process.env.OPENSKY_SETTINGS)).look.textSize;
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { textSize: "normal" } });
+  const back = JSON.parse(read(process.env.OPENSKY_SETTINGS)).look;
+  ok("7 text size: saved, a bad value refused, normal removes it", big === "xlarge" && stillBig === "xlarge" && !("textSize" in back) && back.accent === "green", { big, stillBig, back });
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);
   process.exit(failed ? 1 : 0);

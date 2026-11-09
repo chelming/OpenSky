@@ -117,6 +117,16 @@ const same = cases.filter(([v]) => typeof v === "string").every(([v, want]) => l
 ok("18 the Pi's rule (lib/accent.js) and the screen/phone's (OpenSkyAccent) agree; a typed code may leave out the #; light colors are flagged",
   same && SA.code("3B82F6") === "#3b82f6" && SA.code("teal") === null && SA.hex("teal") === "#11998e" && SA.hex("peach") === "#e8663f" &&
   SA.light("#fff4cc") && SA.light("#ffffff") && !SA.light("#e8663f") && !SA.light("#1d4ed8"));
+
+// text size: small / normal / large / xlarge — the config, the Pi (lib/text-size.js) and the screen + phone (OpenSkyTextSize) agree
+const sizeIn = (v) => mod(build({ look: { textSize: v } }), "MMM-OpenSky-Sidebar").config.textSize;
+const sizeCases = [["large", "large"], [" Extra Large ", "xlarge"], ["extra-large", "xlarge"], ["SMALL", "small"], ["huge", "normal"], ["", "normal"], [3, "normal"], [undefined, "normal"]];
+const sizeGot = sizeCases.map(([v]) => sizeIn(v));
+ok("19 text size: names reach the screen; anything else → normal", sizeGot.every((g, i) => g === sizeCases[i][1]), sizeGot);
+const libSize = require(path.join(__dirname, "..", "lib", "text-size.js")), ST = global.window.OpenSkyTextSize;
+ok("20 the Pi's rule (lib/text-size.js) and the screen/phone's (OpenSkyTextSize) agree; unknown → 1×",
+  sizeCases.filter(([v]) => typeof v === "string").every(([v]) => (libSize.normalize(v) || "normal") === sizeIn(v) && (ST.normalize(v) || "normal") === sizeIn(v)) &&
+  ST.factor("xlarge") === 1.3 && ST.factor("small") === 0.9 && ST.factor("nope") === 1 && ST.factor() === 1);
 delete global.window; delete global.document;
 
 

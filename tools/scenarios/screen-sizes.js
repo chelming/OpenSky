@@ -12,6 +12,20 @@ module.exports = async (page, h) => {
     });
     ok(`${w}×${hh}: scaled ${g.zoom.toFixed(2)}×, every sidebar tile and the whole Home page on screen`, Math.abs(g.zoom - Math.min(w / 1920, hh / 1080)) < 0.01 && g.lastTile <= g.H + 1 && g.home <= g.H + 1 && g.right <= g.W + 1, g);
   }
+  // Text size (Settings → Look & extras): bigger text on top of the fitted scale; every sidebar tile and the Home page still fit
+  for (const [w, hh, size, mult] of [[1920, 1080, "large", 1.15], [1920, 1080, "xlarge", 1.3], [1920, 1080, "small", 0.9], [1280, 720, "xlarge", 1.3], [1024, 600, "large", 1.15]]) {
+    await page.setViewportSize({ width: w, height: hh });
+    await page.evaluate((s) => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].setTextSize(s), size);
+    await h.sleep(1000);
+    const g = await page.evaluate(() => {
+      const r = (sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect() : null; };
+      const tiles = [...document.querySelectorAll(".os-side-col > *")].filter((t) => t.getBoundingClientRect().height).map((t) => t.getBoundingClientRect().bottom);
+      return { zoom: Number(getComputedStyle(document.documentElement).getPropertyValue("--os-zoom")), lastTile: Math.max(...tiles), home: r(".hd-root").bottom, right: r(".hd-root").right, W: innerWidth, H: innerHeight };
+    });
+    ok(`${w}×${hh} text ${size}: ${g.zoom.toFixed(2)}×, sidebar and Home still on screen`, Math.abs(g.zoom - Math.min(w / 1920, hh / 1080) * mult) < 0.01 && g.lastTile <= g.H + 1 && g.home <= g.H + 1 && g.right <= g.W + 1, g);
+    await h.shot(`text-${size}-${w}`);
+  }
+  await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].setTextSize("normal"));
   await page.setViewportSize({ width: 1280, height: 720 }); await h.sleep(800);
   await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Home")[0].sendNotification("CALENDAR_ADD_EVENT", { date: new Date() }));
   await h.sleep(500);

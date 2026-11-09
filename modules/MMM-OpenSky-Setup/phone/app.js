@@ -702,6 +702,8 @@
     drawWeather(w.provider || "open-meteo");
     return section("extras", "extras", "Extras", null,
       accentField(),
+      field("Text size", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
+        "Makes everything on the screen bigger or smaller. Large and Extra large show less at once."),
       field("Trash day", select(days, pk.trashDay || "", (v) => { pk.trashDay = v; change(); })),
       (info.presets || []).length ? field("City pickup schedule", select([["", "None — just my trash day"], ...info.presets.map((p) => [p, p.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ (\w\w)$/, (m) => m.toUpperCase())])], pk.preset || "", (v) => { pk.preset = v; change(); }), "Adds recycling, yard waste and holiday delays.") : null,
       field("Or a pickup calendar link", el("input", { type: "password", class: "input", autocomplete: "off", inputmode: "url",
