@@ -41,8 +41,9 @@ small server on port 8091 (published by the compose file) that stays on while Op
 ```
 OPENSKY_SHARE_URL=http://nas.local:8091
 ```
-The family link in phone setup then starts with that address. It only grants adding photos and notes, never settings; still, keep port 8091 on your
-home network (or behind your reverse proxy's login), since anyone who has the link can post to the screen.
+Phone setup shows that address next to the family passcode. A signed-in phone can only add photos and notes, never touch settings. Behind a reverse
+proxy that terminates HTTPS, pass `X-Forwarded-Proto` and `X-Forwarded-For` (most proxies, Traefik included, do): sign-in cookies are then marked
+Secure and the wrong-passcode pause is per phone rather than for the proxy as a whole.
 
 ## Good to know
 - **Anyone who can reach port 8080 can use the screen** (there is no login), so keep it on your home network or behind
