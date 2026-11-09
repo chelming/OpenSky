@@ -3,10 +3,10 @@
 .hd-root {
   text-decoration: none;
   position: fixed;
-  top: 92px;                          /* below the header bar */
-  bottom: 22px;
+  top: var(--os-content-top, 92px);                          /* below the header bar */
+  bottom: var(--os-content-bottom, 22px);
   left: var(--os-content-left, 112px);
-  right: 24px;
+  right: var(--os-content-right, 24px);
   display: grid;
   grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); /* minmax(0,…): content can never widen a column */
   gap: 22px;
@@ -348,3 +348,25 @@
 .hd-empty { display: flex; align-items: center; gap: 6px; padding: 4px 4px; font-size: 13px; font-weight: 700; color: #4b5563; }
 /* the done list open: the tile scrolls instead of clipping */
 .hd-day.hd-done-open .hd-day-events { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* ---------- compact layout (small screens, big text: <html data-layout="compact">, designed for 1280×720) ---------- */
+html[data-layout="compact"] .hd-root { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 14px; }
+html[data-layout="compact"] .hd-right { gap: 14px; }
+html[data-layout="compact"] .hd-photo { flex-basis: 34%; border-radius: 20px; }
+html[data-layout="compact"] .hd-week { gap: 8px; }
+html[data-layout="compact"] .hd-day { padding: 10px 8px 8px; border-radius: 16px; }
+html[data-layout="compact"] .hd-day-head { gap: 5px; padding: 0; }
+html[data-layout="compact"] .hd-day-name { font-size: 19px; }
+html[data-layout="compact"] .hd-day-num { min-width: 26px; height: 26px; font-size: 16px; border-radius: 13px; padding: 0 4px; }
+html[data-layout="compact"] .hd-day-wx { font-size: 13px; gap: 2px; }
+html[data-layout="compact"] .hd-wx-icon, html[data-layout="compact"] .hd-wx-icon svg { width: 20px; height: 20px; }
+html[data-layout="compact"] .hd-day-count { margin: 2px 0 6px; font-size: 12px; }
+html[data-layout="compact"] .hd-day-events { gap: 6px; }
+html[data-layout="compact"] .hd-event { padding: 6px 8px 6px 9px; border-radius: 10px; }
+html[data-layout="compact"] .hd-event-title { font-size: 13px; }
+html[data-layout="compact"] .hd-event-time { font-size: 11px; }
+html[data-layout="compact"] .hd-nw-title { font-size: 19px; }
+html[data-layout="compact"] .hd-nw-list { gap: 6px; }
+html[data-layout="compact"] .hd-nw-row { font-size: 13px; }
+html[data-layout="compact"] .hd-nw-day { width: 30px; }
+html[data-layout="compact"] .hd-list-columns { gap: 10px; }

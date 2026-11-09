@@ -2,10 +2,10 @@
 
 .timer-wrapper {
   position: fixed;
-  top: 90px;                       /* below the header */
+  top: calc(var(--os-content-top, 92px) - 2px);                       /* below the header */
   bottom: 0;
   left: var(--os-content-left, 112px);     /* right of the sidebar */
-  right: 24px;
+  right: var(--os-content-right, 24px);
   display: flex;
   flex-direction: column;
   align-items: center;

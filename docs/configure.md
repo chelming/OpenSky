@@ -50,8 +50,11 @@ After changing either file, run **`opensky restart`**. If the screen doesn't com
 ```json
 "look": { "accent": "teal", "scale": "auto", "textSize": "large" }
 ```
-`scale`: OpenSky is laid out for a 1920×1080 screen and is scaled to fit yours (`"auto"`): a 1280×720 screen shows
-the same layout at two-thirds size, a 4K screen at double size. Want it bigger or smaller? Use a number, e.g. `1.2`.
+`scale`: OpenSky has two layouts and scales the right one to fit your screen (`"auto"`): the **full** layout, designed
+for 1920×1080, on screens of about 1536×864 and up (a 4K screen shows it at double size), and a denser **compact**
+layout, designed for 1280×720, on smaller screens (1024×600, 1280×720, 1366×768, the Pi touch display), so text stays
+readable instead of shrinking to half size. Want everything bigger or smaller? Use a number, e.g. `1.2`, or better, the
+text size below. The compact layout also switches on by itself when big text leaves too little room.
 
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less

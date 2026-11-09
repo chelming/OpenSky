@@ -23,7 +23,19 @@ html, body {
 [hidden] { display: none !important; }
 
 /* Left edge of page content = sidebar width + gutter (pages position themselves with it) */
-:root { --os-content-left: 112px; }
+:root {
+  --os-content-left: 112px;
+  --os-content-top: 92px;       /* below the header bar */
+  --os-content-bottom: 22px;
+  --os-content-right: 24px;
+}
+/* The compact layout (screens under about 1536×864, or big text: the Sidebar sets <html data-layout>); the Sidebar
+   also sets the sidebar's sizes and --os-content-left for it. Each module's CSS has its own compact rules. */
+html[data-layout="compact"] {
+  --os-content-top: 70px;
+  --os-content-bottom: 14px;
+  --os-content-right: 16px;
+}
 
 /* Fullscreen regions fill the viewport */
 .region.fullscreen.above,

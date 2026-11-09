@@ -35,22 +35,49 @@ Module.register("MMM-OpenSky-Sidebar", {
     const touch = () => { this.lastActivity = Date.now(); this.idleHandled = false; };
     ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, touch, { capture: true, passive: true }));
     if (this.config.idleReturnMinutes > 0) setInterval(() => this.checkIdle(), 10 * 1000);
-    document.documentElement.style.setProperty("--os-side-width", `${this.config.ui.width}px`);
     this.applyAccent(this.config.accent);
     this.applyScale();
     window.addEventListener("resize", () => this.applyScale());
   },
 
-  // OpenSky is laid out for 1920×1080; other screens get the same layout scaled to fit (a 1280×720 screen at 2/3,
-  // a 4K screen at 2×), so nothing is cut off or tiny. look.scale overrides it.
-  // look.textSize makes everything bigger or smaller on top of that (the layout then has less room, like a smaller screen).
+  // OpenSky has two layouts, both scaled to fit the screen (body zoom), so nothing is cut off:
+  //  - "full", designed for 1920×1080: used on screens of about 1536×864 and up;
+  //  - "compact", designed for 1280×720: smaller screens (a 1024×600 or 1280×720 monitor, the Pi touch display) get
+  //    this denser layout at a readable size instead of the big one shrunk to 53 %.
+  // look.textSize multiplies the zoom (bigger text = less room), and the layout follows the room that is left: whenever
+  // the page is narrower than 1600 or shorter than 880 CSS px, <html data-layout="compact"> switches the compact rules on
+  // (css/layout.css and each module's CSS). look.scale (a number) overrides the fitted zoom.
+  // <html data-orient> is "landscape" or "portrait" (a screen taller than wide).
   applyScale() {
+    const W = window.innerWidth, H = window.innerHeight;
     const fixed = Number(this.config.scale);
-    const auto = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    const full = Math.min(W / 1920, H / 1080);
+    const [dw, dh] = full < 0.8 ? [1280, 720] : [1920, 1080];
+    const fit = fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, Math.min(W / dw, H / dh)));
     const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.config.textSize) : 1;
-    const z = (fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, auto))) * text;
+    const z = fit * text;
+    const root = document.documentElement;
     document.body.style.zoom = Math.abs(z - 1) < 0.01 ? "" : String(z);
-    document.documentElement.style.setProperty("--os-zoom", String(z));
+    root.style.setProperty("--os-zoom", String(z));
+    root.dataset.layout = (W / z < 1600 || H / z < 880) ? "compact" : "full";
+    root.dataset.orient = H > W * 1.1 ? "portrait" : "landscape";
+    this.applySizes(root.dataset.layout === "compact", H / z);
+  },
+
+  // The sidebar's sizes (and with them where the pages start) for the current layout; see ui in the defaults
+  applySizes(compact, pageHeight) {
+    const ui = this.config.ui, k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`, st = document.documentElement.style;
+    const side = Math.round(ui.width * (compact ? 0.87 : 1));
+    const gap = compact ? 4 : ui.gap, n = this.config.pages.length + 1 + (this.config.showSettings ? 1 : 0);   // pages + Sleep (+ Settings)
+    // every tile still fits when the page is short (big text on a small screen, or many pages): shrink them, down to 44 px
+    const tile = Math.max(44, Math.min(Math.round(ui.tile * k), Math.floor((pageHeight - 26 - (n - 1) * gap) / n)));
+    const squeeze = tile < Math.round(ui.tile * k);
+    st.setProperty("--os-side-width", `${side}px`);
+    st.setProperty("--os-content-left", `${side + (compact ? 14 : 20)}px`);
+    st.setProperty("--tile-size", `${tile}px`);
+    st.setProperty("--tile-gap", `${gap}px`);
+    st.setProperty("--icon-size", squeeze ? `${Math.max(20, Math.round(ui.icon * k * tile / (ui.tile * k)))}px` : px(ui.icon));
+    st.setProperty("--label-size", compact ? "11px" : `${ui.font}px`);
   },
 
   // Settings → Text size: apply at once (the choice is saved separately)
@@ -114,13 +141,8 @@ Module.register("MMM-OpenSky-Sidebar", {
 
   /* ---------------- DOM ---------------- */
   getDom() {
-    const ui = this.config.ui;
     const wrap = document.createElement("div");
     wrap.className = "os-side-wrap";
-    wrap.style.setProperty("--tile-gap", `${ui.gap}px`);
-    wrap.style.setProperty("--tile-size", `${ui.tile}px`);
-    wrap.style.setProperty("--icon-size", `${ui.icon}px`);
-    wrap.style.setProperty("--label-size", `${ui.font}px`);
     wrap.innerHTML = `<div class="os-side-track"></div><div class="os-side-col"></div>`;
     const col = wrap.querySelector(".os-side-col");
 

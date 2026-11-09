@@ -65,7 +65,7 @@
 
 /* Main container: right of the sidebar, ending at the same place as the Home cards */
 .MMM-CalendarExt3 {
-  padding: 56px 24px 9px var(--os-content-left, 112px);
+  padding: calc(var(--os-content-top, 92px) - 36px) var(--os-content-right, 24px) 9px var(--os-content-left, 112px);
   box-sizing: border-box;
 }
 

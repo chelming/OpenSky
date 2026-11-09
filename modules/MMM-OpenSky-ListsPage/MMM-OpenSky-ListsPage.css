@@ -2,10 +2,10 @@
 
 .lp-root {
   position: fixed;
-  top: 92px;                          /* below the header bar */
-  bottom: 22px;
+  top: var(--os-content-top, 92px);                          /* below the header bar */
+  bottom: var(--os-content-bottom, 22px);
   left: var(--os-content-left, 112px);
-  right: 24px;
+  right: var(--os-content-right, 24px);
   display: flex;
   flex-direction: column;
   padding: 18px 20px 20px;
