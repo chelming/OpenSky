@@ -1,0 +1,102 @@
+/* MMM-OpenSky-Chores — one card per child, side by side (stacked on a portrait screen) */
+
+.ch-root {
+  position: fixed;
+  top: var(--os-content-top, 92px);
+  bottom: var(--os-content-bottom, 22px);
+  left: var(--os-content-left, 112px);
+  right: var(--os-content-right, 24px);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 20px;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 28px rgba(31, 41, 55, .07);
+  box-sizing: border-box;
+  color: #1f2937;
+  font-family: inherit;
+}
+.ch-head {
+  text-transform: none;               /* MagicMirror's main.css uppercases every <header> */
+  font-family: inherit;
+  line-height: normal;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0 4px 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #374151;
+}
+.ch-title { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; }
+.ch-title svg { width: 26px; height: 26px; color: var(--os-accent); }
+
+.ch-kids {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.ch-kids[data-count="1"] { grid-auto-columns: minmax(0, 640px); }
+html[data-orient="portrait"] .ch-kids { grid-auto-flow: row; grid-auto-columns: auto; grid-auto-rows: minmax(0, 1fr); }
+
+.ch-card {
+  --ch-accent: #5b8def; --ch-tint: #f3f7ff; --ch-dark: #2f5fb8;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 18px 16px 12px;
+  border-radius: 22px;
+  background: var(--ch-tint);
+  overflow: hidden;
+}
+.ch-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 4px; }
+.ch-name { font-size: 30px; font-weight: 800; color: var(--ch-dark); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-count { font-size: 20px; font-weight: 800; color: var(--ch-dark); white-space: nowrap; }
+.ch-meta { margin: 2px 4px 0; font-size: 16px; font-weight: 700; color: color-mix(in srgb, var(--ch-dark) 80%, white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-bar { height: 10px; margin: 10px 4px 12px; border-radius: 5px; background: color-mix(in srgb, var(--ch-accent) 22%, white); overflow: hidden; }
+.ch-bar span { display: block; height: 100%; border-radius: 5px; background: var(--ch-accent); transition: width .25s; }
+
+.ch-items { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.ch-item {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  color: #1f2937;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-check {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--ch-accent);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+}
+.ch-check svg { width: 22px; height: 22px; }
+.ch-text { min-width: 0; overflow-wrap: anywhere; }
+.ch-item.is-done { background: transparent; box-shadow: none; color: #6b7280; }
+.ch-item.is-done .ch-text { text-decoration: line-through; }
+.ch-item.is-done .ch-check { background: var(--ch-accent); color: #fff; }
+.ch-item.is-overdue .ch-check { border-color: #d9534f; }
+.ch-alldone { flex: none; padding: 10px 6px 4px; font-size: 24px; font-weight: 800; color: var(--ch-dark); text-align: center; }
+.ch-empty { margin: auto; padding: 20px; font-size: 20px; color: #6b7280; text-align: center; }
+.ch-error { color: #b4532f; }
+.ch-none { margin: 40px auto; font-size: 20px; color: #6b7280; text-align: center; }

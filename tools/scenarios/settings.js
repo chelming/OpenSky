@@ -87,6 +87,23 @@ module.exports = async (page, h) => {
   await page.evaluate(() => document.querySelector('.ost-page[data-page="lists"] [data-move="-1"]').click());
   await until(async () => S().pages.indexOf("lists") < before.indexOf("lists"));
   ok("Pages: move one up", S().pages.indexOf("lists") === before.indexOf("lists") - 1, S().pages);
+  // drag and drop: the last turned-on page's grip dragged above the second one
+  const dragBefore = S().pages;
+  const lastKey = dragBefore[dragBefore.length - 1], secondKey = dragBefore[1];
+  await page.evaluate((k) => document.querySelector(`.ost-page[data-page="${k}"]`).scrollIntoView({ block: "center" }), lastKey); await h.sleep(300);
+  const gb = (k, sel) => page.evaluate(([k, sel]) => { const r = document.querySelector(`.ost-page[data-page="${k}"] ${sel}`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, top: r.top }; }, [k, sel]);
+  const from = await gb(lastKey, ".ost-grip"), to = await gb(secondKey, ".ost-label");
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  await page.mouse.move(from.x, (from.y + to.y) / 2, { steps: 4 }); await page.mouse.move(from.x, to.top + 4, { steps: 6 });
+  await page.mouse.up();
+  await until(async () => S().pages.indexOf(lastKey) === 1);
+  ok("Pages: drag a page by its grip to a new place → saved in that order", S().pages.indexOf(lastKey) === 1 && S().pages.length === dragBefore.length, { was: dragBefore, now: S().pages });
+  // …and back to the bottom (the web-page check below expects Timer last)
+  const back = await gb(lastKey, ".ost-grip"), bottom = await gb(dragBefore[dragBefore.length - 2], ".ost-grip");
+  await page.mouse.move(back.x, back.y); await page.mouse.down();
+  await page.mouse.move(back.x, (back.y + bottom.y) / 2, { steps: 4 }); await page.mouse.move(back.x, bottom.y + 20, { steps: 6 });
+  await page.mouse.up();
+  await until(async () => S().pages.join() === dragBefore.join());
   await page.evaluate(() => document.querySelector('[data-accent="teal"]').click());
   await until(async () => S().look && S().look.accent === "teal");
   ok("accent color from the screen: saved and applied at once", S().look.accent === "teal" && await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim()) === "#11998e");

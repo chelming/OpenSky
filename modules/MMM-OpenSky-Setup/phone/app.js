@@ -50,6 +50,8 @@
     web: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>`,
     extras: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></svg>`,
     plus: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`,
+    chores: `<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 12.5l2.2 2.2 4-4.4"/></svg>`,
+    grip: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg>`,
     up: `<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>`,
     down: `<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>`,
     trash: `<svg viewBox="0 0 24 24"><path d="M4 7h16M10 3.5h4M6 7l1 13h10l1-13"/></svg>`,
@@ -188,8 +190,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -567,6 +569,35 @@
     return box;
   }
 
+  // Chores: the Greenlight login, then which children show on the Chores page (turning the first one on also turns the page on)
+  const CH = {};
+  function choresCard() {
+    if (!S.chores || typeof S.chores !== "object") S.chores = {};
+    if (!Array.isArray(S.chores.kids)) S.chores.kids = [];
+    const kids = S.chores.kids, rows = el("div", { class: "rows" });
+    const known = CH.gkids || (CH.g && CH.g.signedIn ? CH.g.kids : null) || [];
+    const all = [...known.map((k) => ({ id: String(k.id), name: k.name })), ...kids.filter((k) => !known.some((x) => String(x.id) === k.id)).map((k) => ({ id: k.id, name: k.name }))];
+    const turnOn = (k, on) => {
+      const i = kids.findIndex((x) => x.id === k.id);
+      if (on && i < 0) {
+        const who = S.profiles.find((p) => p.name.toLowerCase() === String(k.name || "").trim().toLowerCase());
+        kids.push({ id: k.id, name: k.name || `Child ${k.id}`, ...(who ? { profile: who.name } : { color: COLORS[kids.length % COLORS.length] }) });
+        if (!S.pages.includes("chores")) S.pages.splice(Math.max(1, S.pages.length - (S.pages[S.pages.length - 1] === "timer" ? 1 : 0)), 0, "chores");
+      } else if (!on && i >= 0) kids.splice(i, 1);
+      change(); render();
+    };
+    all.forEach((k) => rows.append(el("div", { class: "line" }, el("span", {}, el("b", {}, k.name || `Child ${k.id}`)), toggle(kids.some((x) => x.id === k.id), (v) => turnOn(k, v), k.name || k.id))));
+    const manual = { name: "", id: "" };
+    return section("chores", "chores", "Chores", "Kids' chores from Greenlight, on their own page (unofficial — it can stop working if Greenlight changes)",
+      greenlightBox(CH, render),
+      all.length ? rows : null,
+      CH.gkids && !CH.gkids.length ? el("div", { class: "gbox" }, el("p", { class: "hint" }, "Greenlight didn't list the children — add each one by name and user ID."),
+        field("Child's name", text("", (v) => { manual.name = v.trim(); }, { placeholder: "e.g. Reese" })),
+        field("Greenlight user ID", text("", (v) => { manual.id = v.trim(); }, { placeholder: "digits", inputmode: "numeric" })),
+        el("button", { type: "button", class: "btn block", onclick: () => { if (/^\d+$/.test(manual.id) && manual.name) turnOn({ id: manual.id, name: manual.name }, true); } }, "Add child")) : null,
+      !kids.length && (CH.gkids || []).length ? el("p", { class: "hint" }, "Turn on the children to show. The Chores page then appears in Pages.") : null);
+  }
+
   function listsCard() {
     const L = S.lists, rows = el("div", { class: "rows" });
     const where = (l) => l.provider === "todoist" ? `Todoist${l.project && l.project !== l.name ? ` · project “${l.project}”` : ""}` : l.provider === "homeassistant" ? `Home Assistant · ${l.entity || "?"}` : l.provider === "mealie" ? `Mealie · ${l.shoppingList || "shopping list"}` : l.provider === "greenlight" ? "Greenlight chores" : "On this screen";
@@ -589,24 +620,21 @@
       const draw = () => extra.replaceChildren(...(d.provider === "todoist" ? [field("Todoist project", text(d.project, (v) => { d.project = v.trim(); }, { placeholder: "Same as the list's name if empty" }))]
         : d.provider === "homeassistant" ? [field("Home Assistant to-do list", text(d.entity, (v) => { d.entity = v.trim().toLowerCase(); }, { placeholder: "todo.shopping_list", autocapitalize: "off" }), "Its entity ID (Settings → Entities in Home Assistant). Address and token go below the lists.")]
         : d.provider === "mealie" ? [mealieBox(d, draw), ...(d.mlists ? [d.mlists.length ? field("Which shopping list?", select([["", "Choose…"], ...d.mlists.map((x) => [x.id, x.name])], d.mlist, (v) => { d.mlist = v; const x = d.mlists.find((y) => y.id === v); if (x && !d.name) { d.name = x.name.slice(0, 30); nameBox.value = d.name; } })) : el("p", { class: "hint" }, "Mealie has no shopping lists yet — make one in Mealie first (Shopping Lists).")] : [])]
-        : d.provider === "greenlight" ? [greenlightBox(d, draw), ...(d.gkids ? [d.gkids.length ? field("Which child?", select([["", "Choose…"], ...d.gkids.map((x) => [x.id, x.name || `Child ${x.id}`])], d.gkid, (v) => { d.gkid = v; const x = d.gkids.find((y) => y.id === v); if (x && x.name && !d.name) { d.name = `${x.name}'s chores`.slice(0, 30); nameBox.value = d.name; } })) : field("Child's Greenlight user ID", text(d.gkid, (v) => { d.gkid = v.trim(); }, { placeholder: "digits", inputmode: "numeric" }), "Greenlight didn't list the children — type the child's user ID.")] : [])]
         : [el("p", { class: "hint" }, "Kept on the Pi — no account needed.")]));
       const nameBox = text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Groceries" });
       b.append(field("Name", nameBox),
         colorField(d.color, (c) => { d.color = c; }), whoField(d.who, (n) => { d.who = n; }),
-        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"], ["mealie", "Mealie"], ["greenlight", "Greenlight"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
+        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"], ["mealie", "Mealie"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
       draw();
     }, [["Cancel", "", () => {}], ["Add", "primary", () => {
       const bad = nameOk(d.name, S.lists.lists.map((l) => l.name)) || (d.provider === "homeassistant" && !/^todo\.[a-z0-9_]+$/.test(d.entity) ? "The list's entity ID looks like todo.shopping_list" : null) ||
-        (d.provider === "mealie" && !d.mlist ? "Connect to Mealie and choose a shopping list" : null) ||
-        (d.provider === "greenlight" && !/^\d+$/.test(d.gkid || "") ? "Connect to Greenlight and choose a child" : null);
+        (d.provider === "mealie" && !d.mlist ? "Connect to Mealie and choose a shopping list" : null);
       if (bad) { err.textContent = bad; return false; }
       const l = { name: d.name, color: d.color };
       setLinks(l, d.who);
       if (d.provider === "todoist") { l.provider = "todoist"; if (d.project && d.project !== d.name) l.project = d.project; }
       if (d.provider === "homeassistant") { l.provider = "homeassistant"; l.entity = d.entity; }
       if (d.provider === "mealie") { const x = d.mlists.find((y) => y.id === d.mlist); l.provider = "mealie"; l.shoppingList = x.name; l.shoppingListId = x.id; }
-      if (d.provider === "greenlight") { l.provider = "greenlight"; l.kid = d.gkid; }
       S.lists.lists.push(l);
       if (!S.pages.includes("lists") && S.lists.lists.length > 3) S.pages.splice(Math.min(3, S.pages.length), 0, "lists");
       change(); render();
@@ -707,20 +735,45 @@
   }
 
   function pagesCard() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", wordgame: "Word Game", timer: "Timer", music: "Music" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", wordgame: "Word Game", timer: "Timer", music: "Music" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });
     all.forEach((k) => {
       const on = S.pages.includes(k), i = S.pages.indexOf(k);
-      box.append(el("div", { class: `pagerow${on ? "" : " off"}` },
+      box.append(el("div", { class: `pagerow${on ? "" : " off"}`, "data-page": k },
+        on ? el("span", { class: "grip", "aria-label": "Drag to reorder", html: ICON.grip }) : null,
         el("span", { class: "row-main" }, el("b", {}, names[k])),
         on ? el("span", { class: "order" },
           el("button", { type: "button", class: "mini", "aria-label": "Up", disabled: i === 0, onclick: () => { S.pages.splice(i, 1); S.pages.splice(i - 1, 0, k); change(); render(); }, html: ICON.up }),
           el("button", { type: "button", class: "mini", "aria-label": "Down", disabled: i === S.pages.length - 1, onclick: () => { S.pages.splice(i, 1); S.pages.splice(i + 1, 0, k); change(); render(); }, html: ICON.down })) : null,
         toggle(on, (v) => { if (v) S.pages.push(k); else if (S.pages.length > 1) S.pages.splice(S.pages.indexOf(k), 1); change(); render(); }, names[k])));
     });
-    return section("pages", "pages", "Pages", "The buttons down the left side, top to bottom. The first is where the screen goes back to when idle.", box);
+    // drag a page by its grip: the rows move as you drag, the order is saved on release
+    box.querySelectorAll(".grip").forEach((grip) => {
+      grip.onpointerdown = (ev) => {
+        const rowEl = grip.closest(".pagerow"), rows = () => [...box.querySelectorAll(".pagerow:not(.off)")];
+        ev.preventDefault();
+        grip.setPointerCapture(ev.pointerId);
+        rowEl.classList.add("dragging");
+        // put the row where the finger is by moving its NEIGHBOURS past it (moving the dragged row itself would drop the pointer capture)
+        const mid = (r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; };
+        const place = (y) => {
+          for (let q; (q = rowEl.previousElementSibling) && q.classList.contains("pagerow") && y < mid(q);) rowEl.after(q);
+          for (let q; (q = rowEl.nextElementSibling) && q.classList.contains("pagerow") && !q.classList.contains("off") && y > mid(q);) rowEl.before(q);
+        };
+        grip.onpointermove = (e) => place(e.clientY);
+        grip.onpointerup = grip.onpointercancel = (e) => {
+          if (e.type === "pointerup") place(e.clientY);
+          grip.onpointermove = grip.onpointerup = grip.onpointercancel = null;
+          rowEl.classList.remove("dragging");
+          const order = rows().map((r) => r.dataset.page);
+          if (order.join() !== S.pages.join()) { S.pages = order; change(); }
+          render();
+        };
+      };
+    });
+    return section("pages", "pages", "Pages", "The buttons down the left side, top to bottom. Drag a page by its grip to move it. The first is where the screen goes back to when idle.", box);
   }
 
   function webRow(k, e, sub, onclick, extra) {

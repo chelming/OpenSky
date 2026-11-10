@@ -46,6 +46,7 @@ const server = http.createServer((req, res) => {
       return refreshOk && f.get("grant_type") === "REFRESH_TOKEN" && f.get("refresh_token") === `refresh-${n}` ? send(200, account()) : send(400, {});
     }
     if (!(req.headers.authorization || "").startsWith("access-") || req.headers.authorization !== `access-${n}`) return send(401, {});
+    if (u.pathname === "/v2/chores-bff/dashboard") return send(200, { streak: { title: "Reese is on a 3 week streak!" }, earnings: { card: { tab: { chart: { title: "$4", subtitle: "so far" } } } } });
     if (u.pathname === "/v2/chores-bff/chores-checklist") {
       if (u.searchParams.get("user_id") !== "101") return send(200, { sections: [] });
       return send(200, { type: "SECTIONS", sections: [{ type: "CHORES", date: tomorrow, chores: [{ chore_instance_id: "9::t::NO_TIME::WEEKLY", title: "Tomorrow only", checked: false, enabled: true }] }, { type: "CHORES", date: today, chores }] });
@@ -90,6 +91,12 @@ const server = http.createServer((req, res) => {
   const before = seen.length;
   const msgs = [await fails(() => gl.provider.add(list, "x")), await fails(() => gl.provider.edit(list, { id: "1" }, "x")), await fails(() => gl.provider.remove(list, { id: "1" }))];
   ok("11 add / edit / remove are refused kindly and never reach Greenlight (no DELETE)", msgs.every((m) => /Greenlight app/.test(m)) && seen.length === before && !seen.some((s) => s.startsWith("DELETE")), msgs);
+
+  const c1 = await gl.choresOf("101");
+  ok("10b the Chores page gets today's chores with the done ones too, plus streak + allowance", c1.chores.map((x) => `${x.text}:${x.done ? 1 : 0}`).join("|") === "Make bed:0|Feed dog:1|Dishes:0" && c1.streak === "Reese is on a 3 week streak!" && c1.allowance === "$4 so far", c1);
+  await gl.setDone("1::t::NO_TIME::WEEKLY", true);
+  ok("10c setDone(true) ticks, setDone(false) un-ticks", (await gl.choresOf("101")).chores[0].done === true && (await gl.setDone("1::t::NO_TIME::WEEKLY", false), (await gl.choresOf("101")).chores[0].done === false));
+  ok("10d a bad child id is refused before anything is sent", /Pick which child/.test(await fails(() => gl.choresOf("abc"))));
 
   // token about to expire → refreshed with the rotating refresh token
   let s = state(); s.expiresAt = Date.now() + 60 * 1000; fs.writeFileSync(process.env.OPENSKY_GREENLIGHT_STATE, JSON.stringify(s));

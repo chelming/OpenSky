@@ -256,6 +256,7 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-note">The buttons down the left side, top to bottom.</div>
         ${all.map((k) => { const on = P.pages.includes(k), i = P.pages.indexOf(k); return `
           <div class="ost-row ost-page${on ? "" : " off"}" data-page="${esc(k)}">
+            ${on ? `<span class="ost-grip" aria-label="Drag to reorder" title="Drag to reorder"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg></span>` : ""}
             <span class="ost-label">${(P.embeds || []).some((e) => e.key === k) ? `<span class="ost-page-ic">${window.OpenSkyIcons.svg(P.embeds.find((e) => e.key === k).icon)}</span>` : ""}${esc(P.names[k])}</span>
             ${(P.embeds || []).some((e) => e.key === k) ? `<button class="ost-btn ost-small ost-edit-web" data-key="${esc(k)}">Edit</button>` : ""}
             <span class="ost-order">${on ? `<button class="ost-mini" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="Up">▲</button><button class="ost-mini" data-move="1" ${i === P.pages.length - 1 ? "disabled" : ""} aria-label="Down">▼</button>` : ""}</span>
@@ -296,7 +297,30 @@ Module.register("MMM-OpenSky-Settings", {
       };
       row.querySelectorAll("[data-move]").forEach((b) => { b.onclick = () => { const pages = [...P.pages], i = pages.indexOf(k), j = i + Number(b.dataset.move); [pages[i], pages[j]] = [pages[j], pages[i]]; this.savePrefs({ pages }); }; });
     });
-    box.querySelector(".ost-add-web").onclick = () => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.renderPrefs(); this.focusWebForm(); };
+    // drag a page by its grip to a new place (only turned-on pages have one); the rows move as you drag, the order is saved on release
+    box.querySelectorAll(".ost-grip").forEach((grip) => {
+      grip.onpointerdown = (ev) => {
+        const row = grip.closest(".ost-page"), rows = () => [...box.querySelectorAll(".ost-page:not(.off)")];
+        ev.preventDefault();
+        grip.setPointerCapture(ev.pointerId);
+        row.classList.add("ost-dragging");
+        // put the row where the finger is by moving its NEIGHBOURS past it (moving the dragged row itself would drop the pointer capture)
+        const mid = (r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; };
+        const place = (y) => {
+          for (let q; (q = row.previousElementSibling) && q.classList.contains("ost-page") && y < mid(q);) row.after(q);
+          for (let q; (q = row.nextElementSibling) && q.classList.contains("ost-page") && !q.classList.contains("off") && y > mid(q);) row.before(q);
+        };
+        grip.onpointermove = (e) => place(e.clientY);
+        grip.onpointerup = grip.onpointercancel = (e) => {
+          if (e.type === "pointerup") place(e.clientY);
+          grip.onpointermove = grip.onpointerup = grip.onpointercancel = null;
+          row.classList.remove("ost-dragging");
+          const pages = rows().map((r) => r.dataset.page);
+          if (pages.join() !== P.pages.join()) this.savePrefs({ pages });
+        };
+      };
+    });
+    box.querySelector(".ost-add-web").onclick =() => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.renderPrefs(); this.focusWebForm(); };
     box.querySelectorAll(".ost-edit-web").forEach((b) => { b.onclick = () => { const e = P.embeds.find((x) => x.key === b.dataset.key); this.webForm = { key: e.key, title: e.title, url: e.url || "", icon: e.icon, locked: e.locked, pin: null }; this.renderPrefs(); this.focusWebForm(); }; });
     if (this.webForm) this.bindWebForm(box);
     const pickAccent = (c) => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.applyAccent(A.hex(c)); this.savePrefs({ accent: c }); };

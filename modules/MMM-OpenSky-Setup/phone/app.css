@@ -202,3 +202,6 @@ ol.steps li { margin: 4px 0; }
 .pm-x { position: absolute; right: 5px; bottom: 5px; width: 28px; height: 28px; padding: 5px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; }
 .pm-big { display: block; max-width: 100%; max-height: 40vh; margin: 0 auto; border-radius: 12px; }
 .addr { display: block; margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); font-size: 14px; word-break: break-all; user-select: all; }
+.grip { flex: none; width: 32px; height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--faint); touch-action: none; user-select: none; -webkit-user-select: none; }
+.grip svg { width: 20px; height: 20px; }
+.pagerow.dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
