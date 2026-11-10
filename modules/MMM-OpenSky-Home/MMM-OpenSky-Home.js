@@ -255,7 +255,7 @@ Module.register("MMM-OpenSky-Home", {
       photos.forEach((ph, k) => {
         const img = imgs[k];
         const cellRatio = photos.length === 2 ? (box.width / 2) / box.height : box.width / box.height;
-        const cover = box.height > 0 && Math.abs(img.naturalWidth / img.naturalHeight - cellRatio) < 0.45;
+        const cover = box.height > 0 && this.fillsFrame(img.naturalWidth / img.naturalHeight, cellRatio);
         const cell = document.createElement("div");
         cell.className = "hd-ph-cell" + (cover ? " cover" : "");
         cell.innerHTML = `<div class="hd-ph-blur"></div><img class="hd-ph-img" alt="">`;
@@ -269,6 +269,13 @@ Module.register("MMM-OpenSky-Home", {
       requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add("shown")));
       setTimeout(() => { [...card.querySelectorAll(".hd-ph-layer")].slice(0, -1).forEach((l) => l.remove()); card.querySelector(".hd-photo-empty")?.remove(); }, 1200);
     }).catch(() => { this.photoPending = 0; });
+  },
+
+  // Fill the frame (cropping) only when little is lost: at most 20% of the height (heads are up there) or 30% of the
+  // width. Anything else is shown whole on a blurred copy of itself.
+  fillsFrame(imgRatio, frameRatio) {
+    const kept = imgRatio < frameRatio ? imgRatio / frameRatio : frameRatio / imgRatio;
+    return kept >= (imgRatio < frameRatio ? 0.8 : 0.7);
   },
 
   photoCaption(p) {

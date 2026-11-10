@@ -142,7 +142,9 @@ Module.register("MMM-OpenSky-Screensaver", {
       this.photoPending = 0;
       if (!this.visible) return;
       const box = this.root.getBoundingClientRect();
-      const cover = box.height > 0 && Math.abs(img.naturalWidth / img.naturalHeight - box.width / box.height) < 0.45;
+      const ir = img.naturalWidth / img.naturalHeight, fr = box.width / box.height;
+      const kept = ir < fr ? ir / fr : fr / ir;   // crop at most 20% of the height (heads) or 30% of the width
+      const cover = box.height > 0 && kept >= (ir < fr ? 0.8 : 0.7);
       const layer = document.createElement("div");
       layer.className = "ss-layer" + (cover ? " cover" : "");
       layer.innerHTML = `<div class="ss-blur"></div><img class="ss-img" alt="">`;
