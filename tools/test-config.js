@@ -107,6 +107,13 @@ ok("21 Meals on this screen: the page is editable, the data module is local with
   mod(ml, "MMM-OpenSky-MealsPage").config.editable === true && mod(ml, "MMM-OpenSky-Meals").config.local === true && mod(ml, "MMM-OpenSky-Meals").config.addToList === null &&
   mlcal.length === 1 && mlcal[0].type === "localmeals" && mod(ml, "MMM-OpenSky-Home").config.tonight === true, [mod(ml, "MMM-OpenSky-Meals").config, mlcal]);
 ok("22 Meals on Mealie stays read-only", mod(mc, "MMM-OpenSky-MealsPage").config.editable === false && mod(mc, "MMM-OpenSky-Meals").config.local === false);
+const wx = build({ pages: ["home", "weather"], location: { name: "Boston, MA", latitude: 42.36, longitude: -71.06 }, locale: { timeFormat: 24, units: "metric" }, weather: { radar: false } });
+const wxm = mod(wx, "MMM-OpenSky-WeatherPage");
+ok("23 Weather page: location, units and clock reach it; each extra is on unless switched off", wxm && wxm.config.latitude === 42.36 && wxm.config.placeName === "Boston, MA" && wxm.config.units === "metric" && wxm.config.hour12 === false &&
+  wxm.config.hourly === true && wxm.config.alerts === true && wxm.config.radar === false && mod(wx, "MMM-pages").config.modules.length === 2, wxm && wxm.config);
+const wx2 = build({ pages: ["weather"], weather: { hourly: false, alerts: false } });
+ok("24 Weather page without a location still builds (the page says to set the town); no key or secret in its config",
+  mod(wx2, "MMM-OpenSky-WeatherPage").config.latitude === null && mod(wx2, "MMM-OpenSky-WeatherPage").config.hourly === false && mod(wx2, "MMM-OpenSky-WeatherPage").config.radar === true && !/key|token|secret/i.test(JSON.stringify(mod(wx2, "MMM-OpenSky-WeatherPage").config)));
 const d = build({});
 ok("13 empty settings → a working default (home + timer, no crash)", JSON.stringify(mod(d, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-Timer"]]));
 

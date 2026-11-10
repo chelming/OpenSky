@@ -51,6 +51,7 @@
     extras: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></svg>`,
     plus: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`,
     meals: `<svg viewBox="0 0 24 24"><path d="M5 3v7a2 2 0 0 0 2 2h1v9M10 3v7M7.5 3v6"/><path d="M18 21V3c-2.2 0-4 2.2-4 6v4h4"/></svg>`,
+    weather: `<svg viewBox="0 0 24 24"><path d="M7 18.5h10a4.5 4.5 0 0 0 .6-9 6 6 0 0 0-11.4 1.6A3.8 3.8 0 0 0 7 18.5z"/></svg>`,
     chores: `<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 12.5l2.2 2.2 4-4.4"/></svg>`,
     grip: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg>`,
     up: `<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>`,
@@ -191,8 +192,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["weather", "Weather"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), mealsCard(), weatherCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -559,6 +560,22 @@
     return section("meals", "meals", "Meals", "Tonight's dinner and the week's meal plan", ...body);
   }
 
+  // Weather page: the next 24 hours, weather alerts (US) and a rain radar. Each part has its own switch; the page itself is one more page.
+  function weatherCard() {
+    const W = S.weather, hasPage = S.pages.includes("weather"), noTown = S.location.latitude == null;
+    const line = (title, sub, flag, onflip) => el("div", { class: "line" }, el("span", {}, el("b", {}, title), sub ? el("small", {}, sub) : null), toggle(flag, onflip, title));
+    const body = [line("Weather page", noTown ? "Set your town under Family first, the weather needs it" : "A page with the hours ahead, alerts and the radar", hasPage, (v) => {
+      if (v && !S.pages.includes("weather")) { const at = S.pages.indexOf("calendar"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "weather"); }
+      else if (!v && S.pages.length > 1) S.pages.splice(S.pages.indexOf("weather"), 1);
+      change(); render();
+    })];
+    if (hasPage) body.push(
+      line("Hour by hour", "The next 24 hours: temperature, sky and chance of rain", W.hourly !== false, (v) => { if (v) delete W.hourly; else W.hourly = false; change(); }),
+      line("Rain radar", "An animated map of the last hour. Needs the internet; it says so when it can't load", W.radar !== false, (v) => { if (v) delete W.radar; else W.radar = false; change(); }),
+      line("Weather alerts", "Warnings and watches from the US National Weather Service. Other countries show a short note instead", W.alerts !== false, (v) => { if (v) delete W.alerts; else W.alerts = false; change(); }));
+    return section("weather", "weather", "Weather", "Hours ahead, radar and alerts, free and with no account", ...body);
+  }
+
   // Mealie: its address + an API token (checked, and kept on the Pi as soon as they work), then the caller's own pickers.
   // `d` holds the state (m, mlists, mbusy, merr, murl, mtoken); `draw` redraws the sheet.
   function mealieBox(d, draw) {
@@ -778,7 +795,7 @@
   }
 
   function pagesCard() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", weather: "Weather", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });
