@@ -21,7 +21,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     showSettings: false,         // true once a settings page/module is installed
     accent: null,                // opensky.json → look.accent: a palette color name ("teal") or "#rrggbb"; null = peach
     scale: "auto",               // opensky.json → look.scale: "auto" fits the 1920×1080 design to the screen; or a number (e.g. 1.2)
-    textSize: "normal",          // opensky.json → look.textSize: "small" | "normal" | "large" | "xlarge" (on top of scale)
+    textSize: "normal",          // opensky.json → look.textSize: the default for every screen; a screen can pick its own (deviceTextSize)
     ui: { width: 92, gap: 8, tile: 76, icon: 28, font: 12 }
   },
 
@@ -55,7 +55,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const full = Math.min(W / 1920, H / 1080);
     const [dw, dh] = portrait ? [1080, 1920] : full < 0.8 ? [1280, 720] : [1920, 1080];
     const fit = fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, Math.min(W / dw, H / dh)));
-    const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.config.textSize) : 1;
+    const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.deviceTextSize() || this.config.textSize) : 1;
     const z = fit * text;
     const root = document.documentElement;
     document.body.style.zoom = Math.abs(z - 1) < 0.01 ? "" : String(z);
@@ -100,7 +100,18 @@ Module.register("MMM-OpenSky-Sidebar", {
   },
 
   // Settings → Text size: apply at once (the choice is saved separately)
-  setTextSize(size) { this.config.textSize = size; this.applyScale(); },
+  // The text size is per screen: this browser remembers its own choice (localStorage, never sent anywhere), and a screen that
+  // hasn't chosen follows the default from opensky.json (look.textSize).
+  deviceTextSize() {
+    try { return window.OpenSkyTextSize.normalize(localStorage.getItem("opensky.textSize")); } catch (e) { return this._textSizeFallback || null; }
+  },
+  // Settings → Text size on this screen: "small" | "normal" | "large" | "xlarge", or null / "default" = follow the default
+  setTextSize(size) {
+    const v = window.OpenSkyTextSize.normalize(size);
+    try { if (v) localStorage.setItem("opensky.textSize", v); else localStorage.removeItem("opensky.textSize"); } catch (e) { /* private window: this visit only */ this._textSizeFallback = v; }
+    this.applyScale();
+  },
+  setDefaultTextSize(size) { this.config.textSize = size; this.applyScale(); },
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {

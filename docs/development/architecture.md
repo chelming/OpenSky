@@ -93,6 +93,9 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
 - Two designs: **full** = 1920×1080, **compact** = 1280×720 (chosen when the fitted full zoom would be under 0.8, i.e. screens
   below about 1536×864). `look.textSize` multiplies the zoom; compact also switches on whenever the zoomed page is narrower
   than 1600 or shorter than 880 px (so big text on a big screen gets the dense layout).
+- The **text size is per device**: the default is `look.textSize` (opensky.json, shown as `config.textSize`, refreshed from the file
+  at start-up through `OS_LOOK`), and a screen's own pick lives in that browser's `localStorage["opensky.textSize"]`
+  (`Sidebar.deviceTextSize()` / `setTextSize()`); never written to the Pi. The harness starts Electron with a fresh profile each run.
 - Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
 - **Things drop out instead of overflowing** (big text, small screens): Home uses container queries (they see the card, not
