@@ -59,6 +59,7 @@ const PAGE_INFO = {
   calendar: { label: "Calendar" },
   lists: { label: "Lists" },
   meals: { label: "Meals", icon: "food" },
+  weather: { label: "Weather", icon: "cloud" },
   smarthome: { label: "Smart Home" },
   chores: { label: "Chores" },
   wordgame: { label: "Word Game" },
@@ -247,6 +248,19 @@ const PAGES = {
     position: "fullscreen_above",
     config: { firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0, types: mealTypes, editable: mealsLocal }
   }],
+  // hourly forecast, weather alerts (US) and a rain radar: opensky.json → weather: { hourly, alerts, radar } (each on unless false)
+  weather: () => {
+    const w = (s.weather && typeof s.weather === "object") ? s.weather : {}, l = s.location || {};
+    return [{
+      module: "MMM-OpenSky-WeatherPage",
+      position: "fullscreen_above",
+      config: {
+        latitude: Number.isFinite(l.latitude) ? l.latitude : null, longitude: Number.isFinite(l.longitude) ? l.longitude : null,
+        placeName: String(l.name || "").slice(0, 80), units: locale.units === "metric" ? "metric" : "imperial", hour12: locale.timeFormat !== 24,
+        hourly: w.hourly !== false, alerts: w.alerts !== false, radar: w.radar !== false
+      }
+    }];
+  },
   // the kids' chores from Greenlight (unofficial): opensky.json → chores.kids [{ id, name, profile?, color? }]; the login is secrets.json → greenlight
   chores: () => [{
     module: "MMM-OpenSky-Chores",

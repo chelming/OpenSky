@@ -1,0 +1,98 @@
+/* MMM-OpenSky-WeatherPage - hourly strip, weather alerts and a radar map */
+
+.wp-root {
+  position: fixed;
+  top: var(--os-content-top, 92px);
+  bottom: var(--os-content-bottom, 22px);
+  left: var(--os-content-left, 112px);
+  right: var(--os-content-right, 24px);
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 20px 20px; border-radius: 26px; box-sizing: border-box;
+  background: #fff; color: #1f2937; font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 28px rgba(31, 41, 55, .07);
+}
+.wp-root [hidden] { display: none !important; }
+.wp-head {
+  text-transform: none; font-family: inherit; line-height: normal;   /* MagicMirror's main.css uppercases every <header> */
+  display: flex; align-items: center; gap: 14px; min-height: 44px; margin: 0 4px; padding-bottom: 12px; border-bottom: 1px solid #374151;
+}
+.wp-title { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; color: #1f2937; }
+.wp-title svg { width: 26px; height: 26px; color: var(--os-accent); }
+.wp-place { flex: 1 1 auto; font-size: 18px; font-weight: 700; color: #6b7280; }
+.wp-msg { padding: 12px 16px; border-radius: 14px; background: #f3f4f6; color: #4b5563; font-size: 17px; }
+.wp-h { margin: 0 0 8px 4px; text-transform: none; font-family: inherit; font-size: 15px; font-weight: 800; letter-spacing: .4px; color: #6b7280; display: flex; gap: 10px; align-items: baseline; }
+.wp-stamp { font-weight: 700; color: var(--os-accent); }
+.wp-note { margin: 4px; padding: 10px 14px; border-radius: 14px; background: #f3f4f6; color: #4b5563; font-size: 16px; line-height: 1.35; }
+.wp-calm { background: #ecfdf3; color: #166534; }
+
+/* hourly */
+.wp-hourly { flex: 0 0 auto; }
+.wp-hours { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior: contain; padding-bottom: 4px; }
+.wp-hour {
+  flex: 0 0 auto; min-width: 84px; padding: 10px 6px 8px; border-radius: 18px; background: #f9fafb;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.wp-hour.wp-now { background: #fff; box-shadow: inset 0 0 0 2px var(--os-accent); }
+.wp-hour-time { font-size: 14px; font-weight: 800; color: #6b7280; }
+.wp-hour-ico { width: 38px; height: 38px; display: block; }
+.wp-hour-temp { font-size: 22px; }
+.wp-hour-rain { height: 16px; font-size: 13px; font-weight: 800; color: #2e8bd6; }
+
+/* alerts + radar side by side */
+.wp-lower { flex: 1 1 auto; min-height: 0; display: flex; gap: 16px; }
+.wp-alerts { flex: 0 0 36%; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.wp-no-radar .wp-alerts { flex-basis: 100%; }
+.wp-alert-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; }
+.wp-radar { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+
+/* an alert looks like an event pill: a tinted card with a colored bar */
+.wp-alert {
+  --evc-bg: #b9ddff; --evc-bar: #2e8bd6;
+  display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 10px 14px; border: 0; border-left: 6px solid var(--evc-bar);
+  border-radius: 14px; background: var(--evc-bg); color: #1f2937; font: inherit; text-align: left; cursor: pointer; flex: 0 0 auto;
+}
+.wp-sev-extreme { --evc-bg: #ffb3b3; --evc-bar: #e04848; }
+.wp-sev-severe { --evc-bg: #ffc9a3; --evc-bar: #ec7a2c; }
+.wp-sev-moderate { --evc-bg: #ffe882; --evc-bar: #cfa000; }
+.wp-alert-top { display: flex; align-items: baseline; gap: 10px; }
+.wp-alert-event { font-size: 19px; line-height: 1.2; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.wp-alert-sev { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #374151; }
+.wp-alert-body { display: flex; flex-direction: column; gap: 2px; font-size: 15px; line-height: 1.3; }
+.wp-alert-head { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wp-open .wp-alert-head { -webkit-line-clamp: unset; display: block; }
+.wp-alert-until { font-size: 13px; font-weight: 800; color: #374151; }
+.wp-alert-more { font-size: 14px; line-height: 1.4; color: #374151; overflow-wrap: anywhere; }
+
+/* radar */
+.wp-map { position: relative; flex: 1 1 auto; min-height: 0; border-radius: 18px; overflow: hidden; background: #e8edf2; }
+.wp-tiles, .wp-layer { position: absolute; inset: 0; }
+.wp-layer img { position: absolute; width: 256px; height: 256px; max-width: none; user-select: none; -webkit-user-drag: none; }
+.wp-frame { opacity: 0; pointer-events: none; }
+.wp-frame.on { opacity: .78; }
+.wp-pin { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; pointer-events: none; }
+.wp-map-msg {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(80%, 460px); padding: 14px 18px; border-radius: 16px;
+  background: rgba(255, 255, 255, .94); color: #4b5563; font-size: 17px; line-height: 1.35; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
+}
+.wp-map-ctl { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.wp-btn {
+  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 22px; cursor: pointer; background: #fff; color: #374151;
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+.wp-btn svg { width: 20px; height: 20px; }
+.wp-btn:disabled { opacity: .4; cursor: default; }
+.wp-credit { position: absolute; left: 0; bottom: 0; padding: 2px 8px; border-top-right-radius: 8px; background: rgba(255, 255, 255, .8); color: #6b7280; font-size: 11px; }
+
+/* compact screens */
+html[data-layout="compact"] .wp-root { gap: 10px; padding: 12px 14px 14px; }
+html[data-layout="compact"] .wp-hour { min-width: 66px; padding: 6px 4px; }
+html[data-layout="compact"] .wp-hour-ico { width: 30px; height: 30px; }
+html[data-layout="compact"] .wp-hour-temp { font-size: 18px; }
+html[data-layout="compact"] .wp-alert-event { font-size: 16px; }
+html[data-layout="compact"] .wp-alert-body { font-size: 13px; }
+html[data-layout="compact"] .wp-btn { width: 38px; height: 38px; }
+
+/* portrait: everything stacked, the map takes what is left */
+html[data-layout="portrait"] .wp-lower { flex-direction: column; }
+html[data-layout="portrait"] .wp-alerts { flex: 0 0 auto; max-height: 30%; }
+html[data-layout="portrait"] .wp-radar { flex: 1 1 0; min-height: 280px; }

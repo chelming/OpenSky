@@ -101,6 +101,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 |---|---|
 | `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
 | `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it |
+| `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `wordgame` | a daily five-letter word puzzle for the whole family (one shared board a day, family stats) |
 | `timer` | kitchen timers with a chime |
@@ -153,6 +154,18 @@ pick an icon, optionally lock it with a PIN, then **Restart now**. Edit or remov
 ```
 - `"open-meteo"` (default) is free and needs no account or key.
 - `"openweathermap"` needs a free API key from <https://openweathermap.org/>, put in `secrets.json → weather.openweathermap.apiKey`.
+
+### Weather page (hourly, radar, alerts)
+Add `"weather"` to `pages` (or phone setup → **Weather** → *Weather page*) for a page with three extras. Each one can be switched off:
+```json
+"weather": { "provider": "open-meteo", "hourly": true, "radar": true, "alerts": true }
+```
+- `hourly`: the next 24 hours with temperature, sky and chance of rain (Open-Meteo, free, no key). Scroll sideways for later hours.
+- `radar`: an animated map of the last hour of rain (RainViewer, free, no key), with a pause button and zoom. The map pictures come
+  straight from the internet; if they can't load, the map says so instead of staying blank. Everything else keeps working.
+- `alerts`: warnings and watches for your location from the US National Weather Service (free, no key). Tap one for the full text.
+  Outside the United States there is no free, worldwide alert service, so the page says alerts are US-only.
+- Each extra is on unless set to `false`. All three use your `location` and need the internet; there is nothing to enter, and no key is stored.
 
 ## Header (top bar)
 ```json
