@@ -16,13 +16,14 @@ module.exports = async (page, h) => {
       const vis = (e) => e && e.getBoundingClientRect().width > 0;
       const clipped = [...document.querySelectorAll(".hd-lists .lc-add-item, .hd-lists .lc-list-title, .hd-nav-btn, .hd-card-label, .hb-title, .hb-time")].filter((e) => vis(e) && e.scrollWidth > e.clientWidth + 1).map((e) => e.className);
       const wrapped = [...document.querySelectorAll(".hd-nav-btn, .hd-week-range, .lc-add-item")].filter((e) => vis(e) && e.getBoundingClientRect().height > 70 * Number(getComputedStyle(document.documentElement).getPropertyValue("--os-zoom"))).map((e) => e.className);
+      const stickOut = [...document.querySelectorAll('.hd-lists .lc-add-item')].filter((b) => { const t = b.closest('.lc-list').getBoundingClientRect(), r = b.getBoundingClientRect(); return r.bottom > t.bottom + 1 || r.right > t.right + 1; }).length;
       const cols = new Set([...document.querySelectorAll(".hd-lists .lc-list")].map((c) => Math.round(c.getBoundingClientRect().left))).size;
       const rows = new Set([...document.querySelectorAll(".hd-lists .lc-list")].map((c) => Math.round(c.getBoundingClientRect().top))).size;
       const cd = document.querySelector(".hb-countdown"), root = document.documentElement;
-      return { layout: root.dataset.layout, W: innerWidth, lists: document.querySelectorAll(".hd-lists .lc-list").length, cols, rows, clipped, wrapped,
+      return { stickOut, layout: root.dataset.layout, W: innerWidth, lists: document.querySelectorAll(".hd-lists .lc-list").length, cols, rows, clipped, wrapped,
         countdownRight: cd ? Math.round(cd.getBoundingClientRect().right) : 0, photo: vis(document.querySelector(".hd-photo")), listsBox: (() => { const b = document.querySelector(".hd-lists").getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)]; })() };
     });
-    ok(`${label}: 5 lists (3 shown on Home, 4 in portrait), none cut off, no wrapped buttons, header inside the screen`, g.lists === (g.layout === "portrait" ? 4 : 3) && !g.clipped.length && !g.wrapped.length && g.countdownRight <= g.W, g);
+    ok(`${label}: 5 lists (3 shown on Home, 4 in portrait), none cut off, no wrapped buttons, header inside the screen`, g.lists === (g.layout === "portrait" ? 4 : 3) && !g.clipped.length && !g.wrapped.length && g.stickOut === 0 && g.countdownRight <= g.W, g);
     await h.shot(`many-lists-${label.replace(/\W+/g, "-")}`);
     return g;
   };

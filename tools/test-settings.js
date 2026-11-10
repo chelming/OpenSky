@@ -70,6 +70,15 @@ const notice = () => (sent.filter(([n]) => n === "OS_SET_NOTICE").pop() || [])[1
   const back = JSON.parse(read(process.env.OPENSKY_SETTINGS)).look;
   ok("7 text size: saved, a bad value refused, normal removes it", big === "xlarge" && stillBig === "xlarge" && !("textSize" in back) && back.accent === "green", { big, stillBig, back });
 
+  // 8 a page refresh: the screen asks again at start-up (OS_SET_INIT) and is told the look that is saved NOW, not the one from the last restart
+  fs.writeFileSync(process.env.OPENSKY_SETTINGS, JSON.stringify({ family: { name: "The Testers" }, pages: ["home"], look: { textSize: "xlarge", accent: "teal" } }));
+  await h.socketNotificationReceived("OS_SET_INIT");
+  const lookA = (sent.filter(([n]) => n === "OS_LOOK").pop() || [])[1];
+  fs.writeFileSync(process.env.OPENSKY_SETTINGS, JSON.stringify({ family: { name: "The Testers" }, pages: ["home"] }));   // back to normal + peach: nothing stored
+  await h.socketNotificationReceived("OS_SET_INIT");
+  const lookB = (sent.filter(([n]) => n === "OS_LOOK").pop() || [])[1];
+  ok("8 after a refresh the saved look is sent: xlarge + teal, then normal + peach once they're set back", lookA && lookA.textSize === "xlarge" && lookA.accent === "teal" && lookB && lookB.textSize === "normal" && lookB.accent === "peach", { lookA, lookB });
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);
   process.exit(failed ? 1 : 0);

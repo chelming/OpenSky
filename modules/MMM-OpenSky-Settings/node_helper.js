@@ -117,6 +117,9 @@ module.exports = NodeHelper.create({
       this.applied = null;
       this.applyBrightness();
       this.sendState();
+      // MagicMirror serves the settings it read at start-up, so a page refresh would bring back the old look: say what the file says now
+      const s = this.readSettings();
+      this.sendSocketNotification("OS_LOOK", { textSize: textSize.normalize(s.look && s.look.textSize) || "normal", accent: accent.normalize(s.look && s.look.accent) || "peach" });
     } else if (n === "OS_SET_CHANGE") {
       await this.change(p || {});
     } else if (n === "OS_SET_ASLEEP") {

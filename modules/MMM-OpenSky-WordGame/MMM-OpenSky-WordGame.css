@@ -31,6 +31,7 @@
 .wg-board { display: grid; grid-template-rows: repeat(6, 80px); gap: 10px; }
 .wg-row { display: grid; grid-template-columns: repeat(5, 80px); gap: 10px; }
 .wg-tile {
+  box-sizing: border-box; min-height: 0; overflow: hidden; line-height: 1;   /* a letter never makes its tile taller than the row */
   display: flex; align-items: center; justify-content: center;
   border: 3px solid #e5e7eb; border-radius: 14px; background: #fff;
   font-size: 40px; font-weight: 800; text-transform: uppercase; color: #1f2937;
@@ -119,3 +120,4 @@ html[data-layout="portrait"] .wg-head { flex-wrap: wrap; gap: 4px 18px; }
 html[data-layout="portrait"] .wg-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 20px; }
 html[data-layout="portrait"] .wg-play { padding: 20px 0; gap: 22px; }
 html[data-layout="portrait"] .wg-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
+html[data-layout="compact"] .wg-tile { font-size: 30px; border-width: 2px; }
