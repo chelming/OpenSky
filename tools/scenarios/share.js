@@ -44,6 +44,7 @@ module.exports = async (page, h, app) => {
   const phone = await win(`http://localhost:${PORT}/`, (w) => w.url().includes(`:${PORT}`));
   await until(() => phone.evaluate(() => !!document.querySelector("input[type=password]")));
   ok("a phone that hasn't signed in sees only a passcode box (no notes, no upload)", await phone.evaluate(() => !document.querySelector("textarea") && !document.querySelector("input[type=file]")));
+  await phone.screenshot({ path: path.join(OUT, "share-login.png") });
   await phone.fill("input[type=password]", "not-the-passcode");
   await phone.click(".btn");
   await until(() => phone.evaluate(() => /not the passcode/.test(document.body.innerText)));
@@ -57,6 +58,7 @@ module.exports = async (page, h, app) => {
   await phone.click(".btn:not(.plain)");
   await until(() => phone.evaluate(() => /Posted/.test(document.body.innerText)));
   ok("the phone says the note was posted and lists it", await phone.evaluate(() => /Posted/.test(document.body.innerText) && /Dentist moved/.test(document.querySelector(".notes")?.innerText || "")));
+  await phone.screenshot({ path: path.join(OUT, "share-page.png") });
   await refresh();
   await until(async () => (await noteTexts()).length === 1);
   ok("the note shows on the Home screen", (await noteTexts())[0] === "Dentist moved to Thursday", await noteTexts());
