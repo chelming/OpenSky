@@ -430,6 +430,9 @@ html[data-layout="portrait"] .hd-photo { grid-area: photo; flex: none; height: 2
 html[data-layout="portrait"] .hd-root.hd-today-busy .hd-photo { height: 200px; }
 html[data-layout="portrait"] .hd-root.hd-no-lists .hd-photo { height: 250px; }
 html[data-layout="portrait"] .hd-root:not(.hd-no-lists) .hd-nw-slot:empty { display: none; }
+/* Extra large text on a portrait screen: a shorter photo strip, so the week's rows have room for their events */
+html[data-layout="portrait"][data-text="xlarge"] .hd-photo, html[data-layout="portrait"][data-text="xlarge"] .hd-root.hd-no-lists .hd-photo { height: 160px; }
+html[data-layout="portrait"][data-text="xlarge"] .hd-root.hd-today-busy .hd-photo { height: 120px; }
 html[data-layout="portrait"] .hd-nav-btn { height: 48px; min-width: 48px; font-size: 17px; border-radius: 24px; }
 html[data-layout="portrait"] .hd-prev, html[data-layout="portrait"] .hd-next { width: 48px; }
 html[data-layout="portrait"] .hd-card-label { font-size: 30px; }

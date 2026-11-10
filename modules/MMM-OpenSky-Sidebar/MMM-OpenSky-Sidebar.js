@@ -63,6 +63,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     root.style.setProperty("--os-zoom", String(z));
     root.dataset.layout = portrait ? "portrait" : (W / z < 1600 || H / z < 880) ? "compact" : "full";
     root.dataset.orient = portrait ? "portrait" : "landscape";
+    root.dataset.text = window.OpenSkyTextSize ? (window.OpenSkyTextSize.normalize(this.effectiveTextSize()) || "normal") : "normal";   // the text size in effect (css/modules can make room for "xlarge")
     this.applySizes(root.dataset.layout, H / z, W / z);
     const key = `${z.toFixed(3)} ${root.dataset.layout}`;
     if (this.layoutKey && key !== this.layoutKey) this.sendNotification("OPENSKY_LAYOUT_CHANGED");   // Home re-fits its day tiles

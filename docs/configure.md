@@ -60,7 +60,7 @@ text size below. The compact layout also switches on by itself when big text lea
 along the bottom, and Home becomes one column: the clock and weather at the top, the next holiday or birthday as a banner,
 a Today card (what's left today, with "in 30 min" on the next event and "N done" for the rest), one row per other day of the
 week (up to three events, then "+N more"), Lists beside Next Week, and a strip of two photos. Nothing to set: turn the
-screen (the Pi's display settings) and restart OpenSky.
+screen (the Pi's display settings) and restart OpenSky. With **Extra large** text on a portrait screen there is less room, so Today shows two events (instead of three) and the photo strip is shorter, which lets the week rows show their events instead of only "+N more".
 
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
