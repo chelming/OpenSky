@@ -34,6 +34,7 @@ opensky/
 | OpenSky module | From the reference build | Notes |
 |---|---|---|
 | MMM-OpenSky-Sidebar | MMM-SidebarNav | page list from settings; sleep/wake via the screen service |
+| MMM-OpenSky-Reminders | — | chime + banner `reminders.minutes` before an event (CALENDAR_EVENTS); chime = the Timer's `playChime()`; skips a sleeping screen (`Sidebar.isAsleep()`); already-reminded events kept in `localStorage["opensky.reminded"]`; `REMINDERS_TEST` (Settings Test); `config.js` turns `reminders.people` into calendar names |
 | MMM-OpenSky-Screensaver | — | idle photo slideshow + clock, weather, "Up next" (CALENDAR_EVENTS, OPENSKY_WEATHER); idle time from the Sidebar; own photo route `/opensky-saver-photo/<id>` (same source as Home, `next({single:true})`); styled with the dashboard's event-pill tokens (`--evc-*`) |
 | MMM-OpenSky-Header | MMM-HeaderBar | family name, clock, weather provider, countdown + sports pills |
 | MMM-OpenSky-Home | MMM-HomeDashboard | week tiles, lists card, photos card (providers), pickup icons |

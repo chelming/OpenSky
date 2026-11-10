@@ -64,6 +64,10 @@
     "upNext": true
   },
 
+  "reminders": {
+    "minutes": 0
+  },
+
   "sidebar": {
     "idleReturnMinutes": 5
   },

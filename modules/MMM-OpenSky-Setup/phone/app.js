@@ -279,7 +279,7 @@
   const countFor = (name) => [S.calendar.sources.filter((c) => linked(c).includes(name)).length, S.lists.lists.filter((l) => linked(l).includes(name)).length];
   const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
   // "Who is it for?": one round button per person (initial on their color); several can be on. Nothing shown until there are people.
-  function whoField(selected, onchange) {
+  function whoField(selected, onchange, label = "Who is it for?", hint = "Tapping a person's circle at the top of the screen shows only their calendars and lists.") {
     if (!S.profiles.length) return document.createDocumentFragment();
     const on = new Set(selected), box = el("div", { class: "people-pick" });
     S.profiles.forEach((p) => {
@@ -290,7 +290,7 @@
       } }, el("span", { class: "initial", style: `--c:${hex(p.color || "blue")}` }, Array.from(p.name)[0].toUpperCase()), p.name);
       box.append(b);
     });
-    return el("div", { class: "field" }, el("span", { class: "label" }, "Who is it for?"), box, el("span", { class: "hint" }, "Tapping a person's circle at the top of the screen shows only their calendars and lists."));
+    return el("div", { class: "field" }, el("span", { class: "label" }, label), box, el("span", { class: "hint" }, hint));
   }
   function whoColor(st) {
     const syncBox = el("div"), colorBox = el("div");
@@ -893,6 +893,17 @@
     const weatherKey = el("div");
     const drawWeather = (p) => weatherKey.replaceChildren(...(p === "openweathermap" ? [field("OpenWeatherMap API key", secretInput("weather.openweathermap.apiKey", "Paste the key"))] : []));
     drawWeather(w.provider || "open-meteo");
+    const remBox = el("div");
+    const drawRem = () => {
+      const r = S.reminders || {};
+      remBox.replaceChildren(...(r.minutes ? [
+        field("Reminder: play a chime", toggle(r.chime !== false, (v) => { if (v) delete r.chime; else r.chime = false; change(); }, "Play a chime before an event"), "The same bell as the timer. Not while the screen is asleep."),
+        field("Reminder: show a banner", toggle(r.banner !== false, (v) => { if (v) delete r.banner; else r.banner = false; change(); }, "Show a banner before an event")),
+        field("Reminder: all-day events too", toggle(r.allDay === true, (v) => { if (v) r.allDay = true; else delete r.allDay; change(); }, "Remind about all-day events"), "Once, at 8 in the morning."),
+        whoField(Array.isArray(r.people) ? r.people : [], (names) => { if (names.length) r.people = names; else delete r.people; change(); }, "Reminders for", "Nobody chosen = every calendar. Otherwise only the calendars linked to the people chosen (see People above).")
+      ] : []));
+    };
+    drawRem();
     return section("extras", "extras", "Extras", null,
       accentField(),
       field("Text size (default for every screen)", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
@@ -903,6 +914,12 @@
         change();
       }), "Shows your photos full screen with the time and what's up next. A touch brings the screen back."),
       field("Screensaver: show what's up next", toggle(!(S.screensaver && S.screensaver.upNext === false), (v) => { const sv = S.screensaver = S.screensaver || {}; if (v) delete sv.upNext; else sv.upNext = false; change(); }, "Show what's up next on the screensaver")),
+      field("Event reminders", select([["0", "Off"], ...[5, 10, 15, 30].map((m) => [String(m), `${m} minutes before an event`])], String((S.reminders && S.reminders.minutes) || 0), (v) => {
+        const r = S.reminders = S.reminders || {};
+        if (v === "0") delete r.minutes; else r.minutes = Number(v);
+        change(); drawRem();
+      }), "A chime and a banner on the screen shortly before an event starts. Each event only once."),
+      remBox,
       field("Trash day", select(days, pk.trashDay || "", (v) => { pk.trashDay = v; change(); })),
       (info.presets || []).length ? field("City pickup schedule", select([["", "None — just my trash day"], ...info.presets.map((p) => [p, p.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ (\w\w)$/, (m) => m.toUpperCase())])], pk.preset || "", (v) => { pk.preset = v; change(); }), "Adds recycling, yard waste and holiday delays.") : null,
       field("Or a pickup calendar link", el("input", { type: "password", class: "input", autocomplete: "off", inputmode: "url",

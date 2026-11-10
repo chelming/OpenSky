@@ -374,6 +374,19 @@ module.exports = async (page, h, app) => {
   S = settings();
   ok("extras: screensaver Off, Up next back on", S.screensaver?.enabled === false && S.screensaver.upNext === undefined, S.screensaver);
 
+  // ---- Event reminders: lead time, chime / banner / all-day, and who ----
+  await pick("#extras", "Event reminders", 15);
+  await tap("#extras", ".toggle", "Play a chime before an event");
+  await tap("#extras", ".toggle", "Remind about all-day events");
+  await tap("#extras", ".person", "Mom");
+  await save();
+  S = settings();
+  ok("extras: reminders 15 minutes, chime off, all-day on, for Mom", S.reminders?.minutes === 15 && S.reminders.chime === false && S.reminders.allDay === true && JSON.stringify(S.reminders.people) === '["Mom"]', S.reminders);
+  await pick("#extras", "Event reminders", 0);
+  await save();
+  S = settings();
+  ok("extras: reminders Off drops the lead time", S.reminders?.minutes === undefined, S.reminders);
+
   // ---- accent: any color as a code (typed, any case) or from the phone's color picker; then back to teal ----
   await type("#extras .hex-input", "#2E7D32");
   const chipOff = await phone.evaluate(() => !document.querySelector("#extras .chip.on") && document.querySelector("#extras .color-pick").value === "#2e7d32");

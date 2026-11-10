@@ -386,6 +386,21 @@ A small trash-can icon appears on pickup days in the week view. It moves a day l
 - **Sleep** (bottom left) blacks out the screen until the next touch.
 - `quickAddMinutes`: the timer's quick buttons. `chimeVolume` runs from 0 to 1.
 
+## Event reminders
+```json
+"reminders": { "minutes": 10, "chime": true, "banner": true, "allDay": false, "people": ["Mom"] }
+```
+Off unless `minutes` is set (1 to 120; the phone page and Settings offer 5, 10, 15 and 30). That many minutes before an event
+starts, the screen plays the timer's chime and shows a banner with the event and its start time (tap **OK** to hide it, or it
+goes after 90 seconds). Each event reminds once, also after a reload or a restart.
+- `chime` / `banner`: turn either off (the banner alone works as a silent reminder). At least one has to stay on.
+- `allDay`: all-day events too. They remind once, at 8 in the morning. Off by default.
+- `people`: only the calendars linked to these people (or named like them). Empty or left out = every calendar.
+- A sleeping screen (Sleep, or the night schedule) is left alone: nothing plays, and the reminder comes when someone wakes it if the event hasn't started yet.
+- Set it from the phone page (Extras -> Event reminders) or on the screen (Settings -> Look & extras -> Event reminders, with a **Test** button; a restart applies it).
+  The chime and who it is for are on the phone page.
+- In Docker the chime plays in the browser that shows the dashboard (the same Web Audio bell as the timer), so it needs that browser to have been touched once and not be muted; the banner always works.
+
 ## Screensaver
 ```json
 "screensaver": { "enabled": true, "afterMinutes": 10, "upNext": true, "showClock": true, "showWeather": true, "photoSeconds": 20 }

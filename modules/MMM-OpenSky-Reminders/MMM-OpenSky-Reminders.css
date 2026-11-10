@@ -1,0 +1,34 @@
+/* The event reminder banner: the Timer banner's pill, calmer (no pulsing), just under the Timer's when both show. */
+.rem-banner {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 40px);
+  padding: 12px 14px 12px 22px;
+  border-radius: 40px;
+  background: var(--os-accent);
+  color: #fff;
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--os-accent) 45%, transparent);
+}
+.rem-banner[hidden] { display: none; }
+.rem-icon svg { width: 30px; height: 30px; display: block; }
+.rem-text { display: flex; flex-direction: column; min-width: 0; }
+.rem-title { font-size: 24px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rem-sub { font-size: 17px; opacity: .92; }
+.rem-ok {
+  height: 52px;
+  padding: 0 30px;
+  border: none;
+  border-radius: 26px;
+  background: #fff;
+  color: var(--os-accent);
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+}
+body:has(.timer-banner:not([hidden])) .rem-banner { top: 96px; }

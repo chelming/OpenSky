@@ -55,6 +55,8 @@ settings, secrets, backups or calendars, and `tools/test-share.js` checks what a
 
 The **screensaver** (`modules/MMM-OpenSky-Screensaver`, `screensaver` in `opensky.json`, set from phone setup → Extras) works with page touches only, so it also runs in Docker with the screen shown in a browser. Keep its cards in the dashboard's event-pill styling (`--evc-*`), no new card looks.
 
+**Event reminders** (`modules/MMM-OpenSky-Reminders`, `opensky.json → reminders: { minutes, chime?, banner?, allDay?, people? }`, set from phone setup → Extras and on-screen Settings → Look & extras): chime (the Timer's `playChime`) and/or a banner `minutes` before an event, once per event (`localStorage["opensky.reminded"]`), never while the screen sleeps, so also in Docker (browser audio + banner). Tests: `tools/test-config.js` (23, 24), `tools/scenarios/reminders.js`, `tools/scenarios/phone-settings.js`.
+
 ## Helping a user (checklist)
 1. `opensky status`, `opensky check`, `opensky logs` — most problems are a JSON typo or a wrong link/password.
 2. Most people set things up with the **phone page** (Settings → Set up from your phone); by hand works too.
