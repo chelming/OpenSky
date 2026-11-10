@@ -303,7 +303,8 @@ module.exports = NodeHelper.create({
         textSize: textSize.normalize(s.look && s.look.textSize) || "normal",
         wordgame: (s.wordgame && s.wordgame.source) === "opensky" ? "opensky" : "nyt",
         photos: !(s.photos && s.photos.enabled === false),
-        trashDay: (s.pickup && s.pickup.trashDay) || ""
+        trashDay: (s.pickup && s.pickup.trashDay) || "",
+        reminders: Number.isInteger(s.reminders && s.reminders.minutes) && s.reminders.minutes > 0 ? s.reminders.minutes : 0
       },
       // web pages: what the screen needs to list / edit them (a PIN page's address and PIN stay in secrets.json)
       embeds: Object.entries(s.embeds || {}).map(([key, e]) => ({ key, title: (e && e.title) || key, icon: (e && e.icon) || (key === "smarthome" ? "smarthome" : "embed"), url: (e && e.url) || null, locked: this.embedLocked(key) })),
@@ -395,6 +396,12 @@ module.exports = NodeHelper.create({
     if ("wordgame" in patch) { s.wordgame = s.wordgame || {}; s.wordgame.source = patch.wordgame === "opensky" ? "opensky" : "nyt"; restartNeeded = true; }
     if ("photos" in patch) { s.photos = s.photos || {}; s.photos.enabled = !!patch.photos; restartNeeded = true; }
     if ("trashDay" in patch) { s.pickup = s.pickup || {}; s.pickup.trashDay = String(patch.trashDay || ""); restartNeeded = true; }
+    if ("reminders" in patch) {
+      const m = Number(patch.reminders);
+      s.reminders = s.reminders && typeof s.reminders === "object" ? s.reminders : {};
+      if (Number.isInteger(m) && m >= 1 && m <= 120) s.reminders.minutes = m; else delete s.reminders.minutes;   // off keeps the other choices
+      restartNeeded = true;
+    }
     if (patch.backup && typeof patch.backup === "object") {
       const b = { ...(s.backup || {}), ...patch.backup };
       if (!b.destination) delete b.destination;

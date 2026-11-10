@@ -175,6 +175,15 @@ ok("23 Home cards: not set → all four in the old order; a list → that order 
   JSON.stringify(hc1.cards) === '["photos","lists"]' && hc1.photos.enabled === true && hc1.tonight === false &&
   hc2.photos.enabled === false && hc2.tonight === false, [hc0.cards, hc1.cards, hc2.cards]);
 
+// reminders: off unless a lead time is set (and there are calendars); choices reach the module; people -> their calendars
+const remOf = (v, extra = {}) => mod(build({ reminders: v, locale: { timeFormat: 24 }, calendar: { sources: [{ name: "Mom", type: "local" }, { name: "Shared", type: "local", profiles: ["Dad"] }, { name: "Work", type: "local", profiles: ["Mom"] }] }, profiles: [{ name: "Mom" }, { name: "Dad" }], ...extra }), "MMM-OpenSky-Reminders");
+ok("24 reminders: absent / no lead time / bad lead time / chime and banner both off → no module", !remOf(undefined) && !remOf({ chime: true }) && !remOf({ minutes: 0 }) && !remOf({ minutes: "10" }) && !remOf({ minutes: 500 }) && !remOf({ minutes: 10, chime: false, banner: false }));
+const rem = remOf({ minutes: 15, chime: false, allDay: true, people: ["dad"] }), rem2 = remOf({ minutes: 5 }), rem3 = remOf({ minutes: 10, people: ["Mom"] });
+ok("25 reminders: choices reach the module; no people = every calendar; people = their calendars (linked, or named like them); no calendars at all → no module",
+  rem && rem.config.minutes === 15 && rem.config.chime === false && rem.config.banner === true && rem.config.allDay === true && rem.config.hour12 === false && JSON.stringify(rem.config.calendars) === '["Shared"]' &&
+  rem2.config.calendars === null && rem2.config.allDay === false && JSON.stringify(rem3.config.calendars.sort()) === '["Mom","Work"]' &&
+  !mod(build({ reminders: { minutes: 10 }, calendar: { sources: [] } }), "MMM-OpenSky-Reminders"), [rem && rem.config, rem3 && rem3.config]);
+
 delete global.window; delete global.document;
 
 

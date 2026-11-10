@@ -313,6 +313,15 @@ const units = locale.units === "metric" ? "metric" : "imperial";
 const header = s.header || {};
 const saver = s.screensaver || {};
 
+// Event reminders: opensky.json -> reminders { minutes (0/absent = off), chime, banner, allDay, people: [profile names] }.
+// "people" limits it to the calendars linked to those people (or named like them); empty = every calendar.
+const remSet = (s.reminders && typeof s.reminders === "object") ? s.reminders : {};
+const remMinutes = Number.isInteger(remSet.minutes) && remSet.minutes >= 1 && remSet.minutes <= 120 ? remSet.minutes : 0;
+const remPeople = linkedProfiles(remSet.people);
+const remCalendars = remPeople.length
+  ? calendarSources.filter((c) => c.profiles.some((n) => remPeople.includes(n)) || remPeople.some((n) => n.toLowerCase() === c.name.toLowerCase())).map((c) => c.name)
+  : null;
+
 
 // Modules shown on every page
 const fixed = [
@@ -330,6 +339,10 @@ const fixed = [
       hour12: locale.timeFormat !== 24, eventColors,
       photos: { ...photosConfig(20), intervalSeconds: Number.isFinite(saver.photoSeconds) && saver.photoSeconds >= 5 ? saver.photoSeconds : 20 }
     }
+  }] : []),
+  ...(remMinutes && calendarSources.length && (remSet.chime !== false || remSet.banner !== false) ? [{
+    module: "MMM-OpenSky-Reminders",
+    config: { minutes: remMinutes, chime: remSet.chime !== false, banner: remSet.banner !== false, allDay: remSet.allDay === true, calendars: remCalendars, hour12: locale.timeFormat !== 24 }
   }] : []),
   ...(calendarSources.length ? [{ module: "MMM-OpenSky-Calendars", config: { sources: calendarSources, mergeShared: !!cal.mergeShared, eventColors } }] : []),
   {

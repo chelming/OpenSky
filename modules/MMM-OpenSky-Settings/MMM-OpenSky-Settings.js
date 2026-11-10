@@ -389,6 +389,8 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-row"><span class="ost-label">Word game</span><span class="ost-seg" data-seg="wordgame"><button data-v="nyt" class="${P.prefs.wordgame === "nyt" ? "on" : ""}">NYT's daily word</button><button data-v="opensky" class="${P.prefs.wordgame === "opensky" ? "on" : ""}">OpenSky's words</button></span></div>
         <div class="ost-row">${this.toggle("photos", P.prefs.photos)}<span class="ost-label">Photo slideshow on Home</span></div>
         <div class="ost-row"><span class="ost-label">Trash day</span><select class="ost-select" data-pref="trashDay">${[["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]].map(([v, l]) => `<option value="${v}" ${v === P.prefs.trashDay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+        <div class="ost-row"><span class="ost-label">Event reminders</span><select class="ost-select" data-pref="reminders">${[[0, "Off"], [5, "5 minutes before"], [10, "10 minutes before"], [15, "15 minutes before"], [30, "30 minutes before"]].concat([0, 5, 10, 15, 30].includes(P.prefs.reminders) ? [] : [[P.prefs.reminders, `${P.prefs.reminders} minutes before`]]).map(([v, l]) => `<option value="${v}" ${v === P.prefs.reminders ? "selected" : ""}>${l}</option>`).join("")}</select>${P.prefs.reminders && !this.restartNeeded ? `<button class="ost-btn ost-test-rem">Test</button>` : ""}</div>
+        <div class="ost-note">A chime and a banner before an event starts. Which calendars, the chime and the banner: Set up from your phone.</div>
         <div class="ost-note">People, calendars, lists and passwords: Set up from your phone (below), which has the keyboard-friendly forms.</div>
       </section>
       <section class="ost-section">
@@ -477,6 +479,9 @@ Module.register("MMM-OpenSky-Settings", {
     });
     box.querySelectorAll('[data-seg="wordgame"] button').forEach((b) => { b.onclick = () => this.savePrefs({ wordgame: b.dataset.v }); });
     box.querySelector('.ost-toggle[data-id="photos"]').onclick = () => this.savePrefs({ photos: !P.prefs.photos });
+    box.querySelector('[data-pref="reminders"]').onchange = (e) => this.savePrefs({ reminders: Number(e.target.value) });
+    const remTest = box.querySelector(".ost-test-rem");
+    if (remTest) remTest.onclick = () => this.sendNotification("REMINDERS_TEST");
     box.querySelector('[data-pref="trashDay"]').onchange = (e) => this.savePrefs({ trashDay: e.target.value });
     box.querySelectorAll("[data-backup]").forEach((el) => { el.onchange = (e) => this.savePrefs({ backup: { [el.dataset.backup]: el.dataset.backup === "keep" ? Number(e.target.value) : e.target.value } }); });
     box.querySelector('.ost-toggle[data-id="secrets"]').onclick = () => this.savePrefs({ backup: { includeSecrets: !P.backup.includeSecrets } });
