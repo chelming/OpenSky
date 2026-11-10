@@ -171,7 +171,7 @@
       el("h1", {}, "Connect to your OpenSky"),
       el("p", { class: "lead" }, "Type the 6-digit code shown on the screen."),
       el("div", { class: "code-wrap" }, boxes, input),
-      el("label", { class: "remember", for: "remember-device" }, keep, " Remember this device for 30 days (only on your own phone or computer)"), msg, go,
+      el("label", { class: "remember", for: "remember-device" }, keep, " Remember this device (only on your own phone or computer)"), msg, go,
       el("p", { class: "fine" }, "Only phones that know the code can change your screen. The code changes every time setup opens.")));
     draw();
     setTimeout(() => input.focus(), 300);
@@ -1308,7 +1308,7 @@
       link,
       el("button", { type: "button", class: "btn block", onclick: () => file.click() }, "Restore from a backup"), file, auto,
       el("h4", { class: "sub-title" }, "Remembered devices"),
-      el("p", { class: "hint" }, "Phones and computers that ticked \"Remember this device\" skip the pairing code for 30 days."),
+      el("p", { class: "hint" }, "Phones and computers that ticked \"Remember this device\" skip the pairing code until you forget them."),
       el("button", { type: "button", class: "btn block", onclick: () => api("POST", "/api/devices/forget").then(() => { toast("Forgotten — every device needs the code again", "good"); load(); }, (x) => toast(x.message, "bad")) },
         info && info.remembered ? `Forget remembered devices (${info.remembered})` : "Forget remembered devices"));
   }

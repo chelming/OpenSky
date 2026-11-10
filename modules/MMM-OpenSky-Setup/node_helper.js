@@ -3,7 +3,7 @@
  * Runs a small web server on the Pi's network address (port 8090, opensky.json → setup.port) ONLY while setup is
  * open on the screen (or a paired phone is still busy with it); it stops by itself after 30 quiet minutes. The phone pairs with the 6-digit code shown on the
  * screen (good for 10 minutes; 5 wrong tries → a 1-minute pause) and gets a session cookie that dies with the server
- * (or, if it asks to be remembered, a 30-day device cookie that skips the code; see setup-devices.json).
+ * (or, if it asks to be remembered, a long-lived device cookie that skips the code; see setup-devices.json).
  *   - opensky.json is read and written whole (a copy of the previous one is kept as opensky.json.bak).
  *   - secrets.json is WRITE-ONLY from the phone: it learns which secrets are set, never their values.
  *   - "Done" restarts OpenSky (when it runs as the opensky service) so the screen shows the new settings.
@@ -49,7 +49,7 @@ const MM_CONFIG = path.join(global.root_path || process.cwd(), "config");
 const SETTINGS = process.env.OPENSKY_SETTINGS || path.join(MM_CONFIG, "opensky.json");
 const SECRETS = process.env.OPENSKY_SECRETS || path.join(path.dirname(SETTINGS), "secrets.json");
 const DEVICES = process.env.OPENSKY_SETUP_DEVICES || path.join(path.dirname(SETTINGS), "setup-devices.json");   // "remember this device": hashes only, chmod 600
-const REMEMBER_DAYS = 30;
+const REMEMBER_DAYS = 3650;   // "forever" (ten years); Forget in phone setup → Backup ends it
 const WELCOMED = process.env.OPENSKY_WELCOME_FILE || path.join(path.dirname(SETTINGS), ".welcomed");
 const EXAMPLE = path.join(__dirname, "..", "..", "config", "opensky.example.json");
 const PHONE = path.join(__dirname, "phone");
@@ -255,7 +255,7 @@ module.exports = NodeHelper.create({
     return [...ips, host.toLowerCase(), "localhost", "127.0.0.1", os.hostname().toLowerCase(), ...own].includes(h);
   },
 
-  // a remembered device (cookie os_device, 30 days) needs no code; only the sha256 of its token is kept on the Pi
+  // a remembered device (cookie os_device, kept ten years) needs no code; only the sha256 of its token is kept on the Pi
   remembered(req) {
     const m = String(req.headers.cookie || "").match(/(?:^|;\s*)os_device=([a-f0-9]{64})/);
     if (!m) return false;

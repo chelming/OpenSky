@@ -67,7 +67,7 @@ device ("TV") flow for calendar scopes and blocks sign-in in embedded browsers �
 ## Phone setup (MMM-OpenSky-Setup)
 The node helper runs a plain `http` server on 0.0.0.0:`setup.port` (8090) **only while the pairing card is open**
 (stops after 30 quiet minutes or Finish). Pairing: 6-digit code (crypto.randomInt, 10 min, timing-safe compare,
-5 wrong → 60 s pause, 15 → new code + pause; checked once the code has arrived; only a paired phone keeps setup open) → random 256-bit session cookie (HttpOnly, SameSite=Strict, in memory only). "Remember this device" (`remember: true` on `/api/pair`) also sets `os_device`, a 30-day token whose sha256 is kept in `setup-devices.json` beside `opensky.json` (chmod 600, `OPENSKY_SETUP_DEVICES`); it passes `authed()` without a code, and `POST /api/devices/forget` clears the list.
+5 wrong → 60 s pause, 15 → new code + pause; checked once the code has arrived; only a paired phone keeps setup open) → random 256-bit session cookie (HttpOnly, SameSite=Strict, in memory only). "Remember this device" (`remember: true` on `/api/pair`) also sets `os_device`, a ten-year token whose sha256 is kept in `setup-devices.json` beside `opensky.json` (chmod 600, `OPENSKY_SETUP_DEVICES`); it passes `authed()` without a code, and `POST /api/devices/forget` clears the list.
 Guards: Host header must name this Pi (DNS rebinding), POSTs need `X-OpenSky: 1` (CSRF), strict CSP (no inline
 script/style — the page sets styles through the DOM), no-store. `/api/state` returns opensky.json + the *paths* of
 set secrets; `/api/save` writes opensky.json (keeps `.bak`) and merges secrets under allowed roots (chmod 600).

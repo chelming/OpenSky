@@ -6,8 +6,8 @@ start offers it by itself). Scan the QR code with your phone's camera — or ope
 then tap **Save** and **Finish**; the screen restarts with your settings. Your phone must be on the same Wi-Fi.
 Passwords and links you type there go straight into `secrets.json`; the phone can replace them but never read them back.
 The setup page only exists while the code is on the screen (it closes by itself after 30 quiet minutes).
-On your own phone or computer you can tick **Remember this device for 30 days** when you enter the code; that device then
-opens setup without a code (the setup page still has to be open on the screen). **Backup → Forget remembered devices**
+On your own phone or computer you can tick **Remember this device** when you enter the code; that device then
+opens setup without a code, until you forget it (the setup page still has to be open on the screen). **Backup → Forget remembered devices**
 ends this for every device.
 
 Everything below can also be edited by hand — the phone page writes these same files.
