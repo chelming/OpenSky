@@ -184,12 +184,12 @@ Module.register("MMM-OpenSky-Settings", {
               <div class="ost-note">A touch wakes it; it goes back to sleep after ${this.config.resleepMinutes} quiet minutes. A running timer keeps it on.</div>
             </div>
           </section>
-          <section class="ost-section">
+          ${st.docker ? "" : `<section class="ost-section ost-sound">
             <h3>Sound</h3>
             ${st.audio ? `
               <div class="ost-row"><span class="ost-label">Volume</span>${this.slider("volume", st.audio.volume, 0, 100)}<button class="ost-btn ost-test">Test</button></div>
               <div class="ost-note"></div>` : `<div class="ost-note">No speaker found. Plug one in (USB, HDMI or the headphone socket) and restart OpenSky.</div>`}
-          </section>
+          </section>`}
           <div class="ost-prefs"></div>
           <section class="ost-section">
             <h3>System</h3>
@@ -206,7 +206,7 @@ Module.register("MMM-OpenSky-Settings", {
         </div>
       </div>`;
     const q = (sel) => this.panel.querySelector(sel);
-    if (st.audio) q(".ost-section:nth-of-type(3) .ost-note").textContent = st.audio.name;
+    if (st.audio) q(".ost-sound .ost-note").textContent = st.audio.name;
     q(".ost-x").onclick = () => this.close();
     this.bindSlider("brightness", (v) => this.change({ brightness: v }));
     this.bindSlider("dimLevel", (v) => this.change({ eveningDim: { level: v } }));
