@@ -576,8 +576,10 @@ on the Home screen. It is separate from phone setup, which stays closed except w
   restarts). The card then shows the page's address. Each family member opens it once, types the passcode and stays signed in for 90 days; they
   can add the page to their home screen. There is no secret link: without the passcode the page shows only a sign-in box.
 - What the page can do: add photos (JPEG, PNG, WebP; up to 40 MB each, 20 per 10 minutes), post a note (up to 280 characters, kept for a day, a week or until
-  removed, 20 at a time) and remove notes. It **cannot** see or change settings, passwords, calendars or backups. Notes also go away when someone taps the
-  **x** on the screen. They are kept in `notes.json` next to `opensky.json`.
+  removed, 20 at a time), add or remove **countdowns** (a name, a date, optionally every year; 12 at a time) and remove notes. It **cannot** see or change settings, passwords, calendars or backups. Notes also go away when someone taps the
+  **x** on the screen. They are kept in `notes.json` next to `opensky.json`; countdowns added from the share page are in
+  `family-countdowns.json` there (the share page never writes `opensky.json`). They appear on Home and the Countdowns page with the ones from phone setup, but have no photo and
+  are removed from the share page, not from phone setup.
 - The passcode is kept only as a salted scrypt hash in `secrets.json → share.hash`; signed-in phones carry a cookie signed with `share.secret`.
   **Changing the passcode** (same card) makes a new secret and signs every phone out. Five wrong passcodes from one phone pause that phone for a
   minute, and many wrong ones from anywhere pause everyone for a few minutes.

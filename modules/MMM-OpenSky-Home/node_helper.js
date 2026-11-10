@@ -9,6 +9,7 @@ const lib = (f) => require(path.join(global.root_path, "modules", "opensky-lib",
 const { createPhotoSource } = lib("photos.js");
 const { secret } = lib("secrets.js");
 const notes = lib("notes.js");
+const familyCountdowns = lib("family-countdowns.js");
 const countdownPhotos = lib("countdowns.js");
 
 module.exports = NodeHelper.create({
@@ -38,10 +39,10 @@ module.exports = NodeHelper.create({
 
   async socketNotificationReceived(n, p) {
     if (n === "NOTES_GET") {
-      this.sendSocketNotification("NOTES", { notes: notes.list() });
+      this.sendSocketNotification("NOTES", { notes: notes.list(), countdowns: familyCountdowns.list() });
     } else if (n === "NOTES_DISMISS") {
       try { notes.remove(String((p && p.id) || "")); } catch (e) { /* already gone */ }
-      this.sendSocketNotification("NOTES", { notes: notes.list() });
+      this.sendSocketNotification("NOTES", { notes: notes.list(), countdowns: familyCountdowns.list() });
     } else if (n === "PHOTO_INIT") {
       this.settings = p || {};
       this.source = createPhotoSource(this.settings, secret);

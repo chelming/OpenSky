@@ -29,6 +29,8 @@ const WELCOME = path.join(OUT, "welcomed.test");
 fs.writeFileSync(WELCOME, "test\n");
 // word game board + stats, fresh each run
 const NOTES = path.join(OUT, "notes.test.json");
+const FAMILY_CD = path.join(OUT, "family-countdowns.test.json");
+fs.rmSync(FAMILY_CD, { force: true });
 fs.rmSync(NOTES, { force: true });
 const WORDGAME = path.join(OUT, "wordgame.test.json");
 fs.rmSync(WORDGAME, { force: true });
@@ -88,6 +90,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       OPENSKY_DEVICE_SETTINGS: DEVICE,
       OPENSKY_WORDGAME: WORDGAME,
       OPENSKY_NOTES: NOTES,
+      OPENSKY_FAMILY_COUNTDOWNS: FAMILY_CD,
       OPENSKY_SETUP_PORT: "8091",
       OPENSKY_WELCOME_FILE: WELCOME,
       OPENSKY_NYT_URL: "http://127.0.0.1:9/nyt",   // never the real NYT from tests: unreachable → OpenSky's own word

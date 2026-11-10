@@ -6,6 +6,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "os-share-"));
 process.env.OPENSKY_SETTINGS = path.join(tmp, "opensky.json");
 process.env.OPENSKY_SECRETS = path.join(tmp, "secrets.json");
 process.env.OPENSKY_NOTES = path.join(tmp, "notes.json");
+process.env.OPENSKY_FAMILY_COUNTDOWNS = path.join(tmp, "family-countdowns.json");
 const notes = require("../lib/notes.js"), share = require("../lib/share.js");
 let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; console.log(`${v ? "PASS" : "FAIL"}  ${k} ${i}`); };
 
@@ -85,6 +86,14 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   r = await call("POST", "/api/photos?name=x.jpg", undefined, as, Buffer.from("just some text, not a picture"));
   ok("19 something that isn't a photo is refused", r.status === 400 && /JPEG, PNG and WebP/.test(r.body.error), r.body);
   ok("20 no cookie → no photo", (await call("POST", "/api/photos?name=y.jpg", undefined, {}, jpeg)).status === 401 && fs.readdirSync(pics).length === 1);
+  r = await call("POST", "/api/countdowns", { title: "  Beach   trip ", date: "2031-07-04", yearly: false, from: "Mom" }, as);
+  ok("20b a phone adds a countdown (kept in its own file, not in settings)", r.status === 200 && r.body.countdowns[0].title === "Beach trip" && r.body.countdowns[0].date === "2031-07-04" && fs.existsSync(process.env.OPENSKY_FAMILY_COUNTDOWNS), r.body);
+  ok("20c ...a missing name or a bad date is refused", (await call("POST", "/api/countdowns", { title: " ", date: "2031-07-04" }, as)).status === 400 && (await call("POST", "/api/countdowns", { title: "x", date: "2031-02-31" }, as)).status === 400);
+  ok("20d ...no cookie, no countdown", (await call("POST", "/api/countdowns", { title: "x", date: "2031-07-04" }, {})).status === 401);
+  r = await call("GET", "/api/state", undefined, as);
+  ok("20e the state lists the countdowns", r.body.countdowns.length === 1, r.body);
+  r = await call("POST", "/api/countdowns/delete", { id: r.body.countdowns[0].id }, as);
+  ok("20f ...and one can be removed (twice → 404)", r.status === 200 && r.body.countdowns.length === 0 && (await call("POST", "/api/countdowns/delete", { id: "nope" }, as)).status === 404);
   // everything setup can do is out of reach
   const reach = [["GET", "/api/backup"], ["POST", "/api/save"], ["POST", "/api/restore"], ["POST", "/api/done"], ["GET", "/api/share"], ["POST", "/api/share/passcode"],["GET", "/api/google"], ["GET", "/api/photos"]];
   const codes = [];
