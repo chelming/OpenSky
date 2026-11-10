@@ -63,6 +63,9 @@ Module.register("MMM-OpenSky-Sidebar", {
     root.dataset.layout = portrait ? "portrait" : (W / z < 1600 || H / z < 880) ? "compact" : "full";
     root.dataset.orient = portrait ? "portrait" : "landscape";
     this.applySizes(root.dataset.layout, H / z, W / z);
+    const key = `${z.toFixed(3)} ${root.dataset.layout}`;
+    if (this.layoutKey && key !== this.layoutKey) this.sendNotification("OPENSKY_LAYOUT_CHANGED");   // Home re-fits its day tiles
+    this.layoutKey = key;
   },
 
   // The sidebar's sizes (and with them where the pages start) for the current layout; see ui in the defaults

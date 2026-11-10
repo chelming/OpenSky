@@ -110,8 +110,11 @@ Module.register("MMM-OpenSky-Home", {
       this.sendNotification("OPENSKY_LISTS_REFRESH");
     } else if (n === "OPENSKY_IDLE_RESET") {
       if (this.weekOffset !== 0 || this.doneOpen) { this.weekOffset = 0; this.doneOpen = false; this.renderCalendar(); }
+    } else if (n === "OPENSKY_LAYOUT_CHANGED") {   // the screen size, text size or orientation changed (Sidebar)
+      clearTimeout(this._layoutTimer);
+      this._layoutTimer = setTimeout(() => this.renderCalendar(), 200);
     } else if (n === "PAGE_CHANGED") {
-      setTimeout(() => { this.fitToday(); this.fitTitles(); }, 150);   // sizes are only measurable while the page is visible
+      setTimeout(() => { this.fitDays(); this.fitToday(); this.fitTitles(); }, 150);   // sizes are only measurable while the page is visible
     }
   },
 
@@ -340,6 +343,7 @@ Module.register("MMM-OpenSky-Home", {
     const nwStart = new Date(first); nwStart.setDate(first.getDate() + 7);
     const nwEnd = new Date(nwStart); nwEnd.setDate(nwStart.getDate() + 7);
     (portrait ? nwSlot : week).appendChild(this.nextWeekTile(nwStart, nwEnd, this.eventsBetween(events, nwStart, nwEnd)));
+    this.fitDays();
     this.fitToday();
     this.fitTitles();
   },
@@ -358,17 +362,36 @@ Module.register("MMM-OpenSky-Home", {
       <div class="hd-day-events"></div>`;
     tile.onclick = (e) => { if (!e.target.closest(".hd-event, .hd-done-chip")) this.sendNotification("CALENDAR_DAY_CLICKED", { date: day.getTime(), events }); };
     if (isToday && this.weekOffset === 0 && window.OpenSkyDayAgenda) return this.todayBody(tile, events, day);
-    const list = tile.querySelector(".hd-day-events");
+    tile._events = events; tile._day = day;
     const max = this.maxEvents();
-    const shown = this.portrait() ? events.slice(0, max) : events.length > max ? events.slice(0, max - 1) : events;
-    shown.forEach((ev) => list.appendChild(this.eventPill(ev, day, undefined, this.portrait())));
-    if (events.length > shown.length) {
+    this.drawDay(tile, this.portrait() ? Math.min(max, events.length) : events.length > max ? max - 1 : events.length);
+    return tile;
+  },
+
+  // draw the first <k> events of a day tile, then "+N more" for the rest (a tap on it opens the day, like the tile)
+  drawDay(tile, k) {
+    const list = tile.querySelector(".hd-day-events"), events = tile._events;
+    list.innerHTML = "";
+    events.slice(0, k).forEach((ev) => list.appendChild(this.eventPill(ev, tile._day, undefined, this.portrait())));
+    if (events.length > k) {
       const more = document.createElement("button");
       more.className = "hd-more";
-      more.textContent = `+${events.length - shown.length} more`;
+      more.textContent = `+${events.length - k} more`;
       list.appendChild(more);
     }
-    return tile;
+  },
+
+  // A busy day on a small screen / with big text: show as many events as fit, then "+N more" (never clipped silently)
+  fitDays() {
+    if (!this.root) return;
+    this.root.querySelectorAll(".hd-day").forEach((tile) => {
+      if (!tile._events || !tile._events.length || tile.getBoundingClientRect().height === 0) return;
+      const list = tile.querySelector(".hd-day-events");
+      const inner = () => tile.getBoundingClientRect().bottom - parseFloat(getComputedStyle(tile).paddingBottom);
+      const fits = () => { const last = list.lastElementChild; return !last || last.getBoundingClientRect().bottom <= inner() + 0.5; };
+      let k = list.querySelectorAll(":scope > .hd-event").length;
+      while (!fits() && k > 0) this.drawDay(tile, --k);
+    });
   },
 
   /* ---------- today's tile: "what's left" (lib/client/day-agenda.js ranks, this draws) ---------- */

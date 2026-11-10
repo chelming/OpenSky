@@ -527,3 +527,17 @@ html[data-layout="portrait"] .hd-calendar { container-type: inline-size; }
 .hd-live-row { flex: 0 1 auto; min-width: 0; }
 .hd-event.live { margin: 2px 0; }   /* its dark ring sits outside the box: keep it off the date above */
 .hd-live-row { gap: 4px 8px; }
+
+/* portrait, a short page (big text): the photo strip, then Next Week, make room for the week rows */
+html[data-layout="portrait"] .hd-root { container-type: size; container-name: hdroot; }
+@container hdroot (max-height: 1250px) { .hd-photo { display: none; } }
+@container hdroot (max-height: 1000px) { .hd-nw-slot { display: none; } .hd-lists { grid-column: 1 / -1; } }
+html[data-layout="portrait"] .hd-event .hd-event-title { max-width: 240px; }
+/* portrait week rows that get very short (big text): the date alone, no weather / count lines */
+html[data-layout="portrait"] .hd-week > .hd-day { container-type: size; }
+@container (max-height: 84px) {
+  .hd-week > .hd-day .hd-day-wx, .hd-week > .hd-day .hd-day-count { display: none; }
+  .hd-week > .hd-day .hd-day-head { grid-row: 1 / span 2; align-self: center; }
+}
+html[data-layout="portrait"] .hd-week > .hd-day { padding-top: 3px; padding-bottom: 3px; }
+html[data-layout="portrait"] .hd-week > .hd-day .hd-more { min-height: 40px; padding: 4px 16px; }   /* (the whole row is a tap target too) */
