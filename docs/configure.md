@@ -60,7 +60,7 @@ text size below. The compact layout also switches on by itself when big text lea
 along the bottom, and Home becomes one column: the clock and weather at the top, the next holiday or birthday as a banner,
 a Today card (what's left today, with "in 30 min" on the next event and "N done" for the rest), one row per other day of the
 week (up to three events, then "+N more"), Lists beside Next Week, and a strip of two photos. Nothing to set: turn the
-screen (the Pi's display settings) and restart OpenSky.
+screen (the Pi's display settings) and restart OpenSky. With **Extra large** text on a portrait screen there is less room, so Today shows two events (instead of three) and the photo strip is shorter, which lets the week rows show their events instead of only "+N more".
 
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
@@ -87,9 +87,10 @@ never used in Docker (time and sun only).
 
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
-default peach. Pick it on the screen (Settings → Look & extras: a chip, or type a code under "Or a color code") or on
-the phone (Extras: a chip, the color picker, or a code). A very light color gets a warning: the text on buttons is
-white.
+default peach. This setting is the **default for every screen** (set it on the phone: Extras: a chip, the color picker, or
+a code). Each screen can pick its **own** in Settings → Look & extras (a chip, or type a code under "Or a color code";
+"Default" follows the setting above). That choice is remembered by that screen's browser only and isn't saved in
+`opensky.json`. A very light color gets a warning: the text on buttons is white.
 
 ## Pages
 ```json
@@ -126,6 +127,28 @@ all four in this order, so nothing changes until you choose. Set it from the pho
 off, drag it by the grip or use the arrows) or from the screen's Settings panel (**Home cards**); a restart applies it.
 Works in the landscape, compact and portrait layouts. Photos also need `photos.enabled` (turning the card on from the
 phone or Settings switches that on too).
+## Several screens (screen profiles)
+A kitchen display, a tablet in a kid's room, a few browsers in Docker: the settings in this file are the same for all of them, but
+each screen can have its own look. **Per screen** (remembered by that screen's browser, never in `opensky.json`): text size,
+accent color, pages hidden with **Hide here** (Settings on the screen) and, in Docker, brightness and the sleep schedule.
+
+A **screen profile** is a named set of these, so you don't repeat the choices on every screen:
+```json
+"screens": [
+  { "name": "Kitchen", "pages": ["home", "calendar", "lists", "timer"], "person": "Mom", "textSize": "large", "accent": "teal" },
+  { "name": "Kids' room", "pages": ["home", "chores"], "person": "Zoe" }
+]
+```
+- `name`: shown in Settings on the screen. Up to 12 profiles.
+- `pages` (optional): the pages this screen shows; the rest are hidden **on that screen**. Left out = all pages. The page list
+  (`pages` above) stays the same for everyone; this only hides buttons. The first shown page is where the screen starts and returns to when idle.
+- `person` (optional): a person from `profiles`; their circle is on when the screen starts, so it shows only their calendars and lists (tap it to change).
+- `textSize`, `accent` (optional): as under Accent color and size.
+
+Make them on the phone: Set up from your phone, **Screens**. Then on each screen: Settings, Look & extras, **Screen profile**,
+and pick one (it is remembered by that screen only). Order of precedence for every setting: what you pick on that screen
+(Text size, Accent color, Hide here) beats its screen profile, which beats the default for every screen. Choosing a screen
+profile drops that screen's own page, text size and color choices so the profile applies as it is; **None** goes back to the defaults.
 
 ## Web pages on the screen (Smart Home, cameras…)
 Any web page can be a page of its own — a Home Assistant dashboard, a camera, a school portal, a recipe site.
@@ -501,7 +524,7 @@ Works the same in Docker with the screen shown in a browser (it only needs page 
 "keyboard": { "enabled": true }
 ```
 A keyboard slides up whenever you tap a text box (adding a list item, naming an event). Turn it off with `false`
-if you use a real keyboard. Dates and times use pickers instead.
+if you use a real keyboard. Dates and times use pickers instead. The keyboard takes 40 % of the screen height, but never more than 440 px (design size), so on a portrait screen its keys stay normal-sized instead of stretching.
 
 ## The Settings panel (on the screen)
 | Setting | What it does |
@@ -513,7 +536,7 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone) for every screen. **Hide here** hides a page's button on the screen you're holding only (kept in that browser, like the text size) — handy when a tablet and a wall display should show different pages. |
 | Home cards | Show or hide the cards on the right of Home and change their order (grip or arrows); applies after a restart. |
-| Look & extras | Accent color, text size, dark mode (Default / Light / Dark / Auto, this screen only), word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Look & extras | **Screen profile** (a saved set of pages, person, text size and color, see [Several screens](#several-screens-screen-profiles)), accent color, text size (both for this screen only), word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 

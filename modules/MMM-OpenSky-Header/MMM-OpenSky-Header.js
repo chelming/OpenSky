@@ -113,6 +113,15 @@ Module.register("MMM-OpenSky-Header", {
   // One circle per profile (initial on its color). Tap = show only that person's calendars and lists (one person at a
   // time: tapping another switches to them); tap the picked person again = everyone is back on. Calendars and lists
   // listen for OPENSKY_PROFILE_FILTER { selected: [name] | [] }.
+  // Pick (or clear, with []) the person whose circle is on, as a tap would: used by the screen profile (Sidebar)
+  pickPerson(names) {
+    const known = names.filter((n) => this.config.profiles.some((p) => p.name === n));
+    if (JSON.stringify(known) === JSON.stringify(this.picked)) return;
+    this.picked = known;
+    this.sendNotification("OPENSKY_PROFILE_FILTER", { selected: [...this.picked] });
+    this.updateDom(0);
+  },
+
   _profileCircles() {
     const box = document.createElement("div");
     box.className = "hb-profiles";

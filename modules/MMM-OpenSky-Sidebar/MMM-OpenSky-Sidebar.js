@@ -21,6 +21,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     showSettings: false,         // true once a settings page/module is installed
     accent: null,                // opensky.json → look.accent: a palette color name ("teal") or "#rrggbb"; null = peach
     scale: "auto",               // opensky.json → look.scale: "auto" fits the 1920×1080 design to the screen; or a number (e.g. 1.2)
+    screens: [],                 // opensky.json → screens: [{ name, pages?, person?, textSize?, accent? }] — "screen profiles" a screen can pick (Settings)
     textSize: "normal",          // opensky.json → look.textSize: the default for every screen; a screen can pick its own (deviceTextSize)
     theme: "light",              // opensky.json → look.theme: "light" | "dark" | "auto" (by sun): the default for every screen; a screen can pick its own (deviceTheme)
     lightSensor: false,          // look.lightSensor: let an ambient light sensor, if the screen has one, overrule the sun in Auto
@@ -38,7 +39,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const touch = () => { this.lastActivity = Date.now(); this.idleHandled = false; };
     ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, touch, { capture: true, passive: true }));
     if (this.config.idleReturnMinutes > 0) setInterval(() => this.checkIdle(), 10 * 1000);
-    this.applyAccent(this.config.accent);
+    this.applyAccent(this.effectiveAccent());
     this.applyTheme();
     this.applyScale();
     window.addEventListener("resize", () => this.applyScale());
@@ -59,13 +60,14 @@ Module.register("MMM-OpenSky-Sidebar", {
     const full = Math.min(W / 1920, H / 1080);
     const [dw, dh] = portrait ? [1080, 1920] : full < 0.8 ? [1280, 720] : [1920, 1080];
     const fit = fixed > 0 ? fixed : Math.max(0.5, Math.min(2.5, Math.min(W / dw, H / dh)));
-    const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.deviceTextSize() || this.config.textSize) : 1;
+    const text = (window.OpenSkyTextSize || {}).factor ? window.OpenSkyTextSize.factor(this.effectiveTextSize()) : 1;
     const z = fit * text;
     const root = document.documentElement;
     document.body.style.zoom = Math.abs(z - 1) < 0.01 ? "" : String(z);
     root.style.setProperty("--os-zoom", String(z));
     root.dataset.layout = portrait ? "portrait" : (W / z < 1600 || H / z < 880) ? "compact" : "full";
     root.dataset.orient = portrait ? "portrait" : "landscape";
+    root.dataset.text = window.OpenSkyTextSize ? (window.OpenSkyTextSize.normalize(this.effectiveTextSize()) || "normal") : "normal";   // the text size in effect (css/modules can make room for "xlarge")
     this.applySizes(root.dataset.layout, H / z, W / z);
     const key = `${z.toFixed(3)} ${root.dataset.layout}`;
     if (this.layoutKey && key !== this.layoutKey) this.sendNotification("OPENSKY_LAYOUT_CHANGED");   // Home re-fits its day tiles
@@ -108,8 +110,14 @@ Module.register("MMM-OpenSky-Sidebar", {
   deviceHiddenPages() {
     try { const v = JSON.parse(localStorage.getItem("opensky.hiddenPages") || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch (e) { return this._hiddenFallback || []; }
   },
+  // What is hidden on this screen: its own list if it has one, else everything the screen profile doesn't list
+  effectiveHiddenPages() {
+    const own = this.deviceHiddenPages(), pr = this.screenPreset();
+    if (own.length || !pr || !pr.pages.length) return own;
+    return this.config.pages.map((p) => p.key).filter((k) => !pr.pages.includes(k));
+  },
   visiblePages() {
-    const hidden = this.deviceHiddenPages(), shown = this.config.pages.filter((p) => !hidden.includes(p.key));
+    const hidden = this.effectiveHiddenPages(), shown = this.config.pages.filter((p) => !hidden.includes(p.key));
     return shown.length ? shown : this.config.pages;
   },
   setHiddenPages(keys) {
@@ -119,6 +127,40 @@ Module.register("MMM-OpenSky-Sidebar", {
     if (cur && !this.visiblePages().includes(cur)) this.goPage(this.visiblePages()[0].index);   // standing on a page that's now hidden here
     this.updateDom(0);
     this.applyScale();
+  },
+
+  /* ---------- screen profiles ----------
+   * opensky.json → screens: named presets (which pages, which person's calendars, text size, accent) managed from phone setup. A screen
+   * picks one in Settings; the choice is this browser's localStorage["opensky.screenProfile"] only. Order of precedence per setting:
+   * this screen's own choice (Settings) > its screen profile > the default from opensky.json. */
+  screenPreset() {
+    let name = null;
+    try { name = localStorage.getItem("opensky.screenProfile"); } catch (e) { name = this._profileFallback || null; }
+    return (this.config.screens || []).find((x) => x.name === name) || null;
+  },
+  // Pick a screen profile ("" / null = none). Picking one applies it as it is: this screen's own page, text size and accent choices are dropped.
+  setScreenProfile(name) {
+    const v = (this.config.screens || []).some((x) => x.name === name) ? name : null;
+    try {
+      if (v) localStorage.setItem("opensky.screenProfile", v); else localStorage.removeItem("opensky.screenProfile");
+      ["opensky.hiddenPages", "opensky.textSize", "opensky.accent"].forEach((k) => localStorage.removeItem(k));
+    } catch (e) { this._profileFallback = v; this._hiddenFallback = []; this._textSizeFallback = null; this._accentFallback = null; }
+    this.applyAccent(this.effectiveAccent());
+    this.setHiddenPages([]);   // redraws the buttons, moves off a page that is hidden now, re-fits
+    this.applyPresetPerson();
+  },
+  effectiveTextSize() { const pr = this.screenPreset(); return this.deviceTextSize() || (pr && pr.textSize) || this.config.textSize; },
+  effectiveAccent() { const pr = this.screenPreset(); return this.deviceAccent() || (pr && pr.accent) || this.config.accent || "peach"; },
+  // the profile's person → the top bar's circle (calendars and lists follow)
+  applyPresetPerson() {
+    const pr = this.screenPreset(), hd = MM.getModules().withClass("MMM-OpenSky-Header")[0];
+    if (hd && hd.pickPerson) hd.pickPerson(pr && pr.person ? [pr.person] : []);
+  },
+  // standing on a page this screen doesn't show (a screen profile that leaves out the first page): go to the first one it does
+  ensureVisiblePage() {
+    const cur = this.config.pages.find((p) => p.index === this.activeIndex);
+    const first = this.visiblePages()[0];
+    if (cur && first && !this.visiblePages().includes(cur)) this.goPage(first.index);
   },
 
   // Settings → Text size: apply at once (the choice is saved separately)
@@ -167,6 +209,18 @@ Module.register("MMM-OpenSky-Sidebar", {
       s.start();
     } catch (e) { /* no sensor, no permission: sun only */ }
   },
+  // The accent is per screen too: this browser remembers its own pick (localStorage["opensky.accent"], never sent anywhere); a screen
+  // that hasn't chosen follows look.accent from opensky.json (the phone setting).
+  deviceAccent() {
+    try { return window.OpenSkyAccent.normalize(localStorage.getItem("opensky.accent")); } catch (e) { return this._accentFallback || null; }
+  },
+  // Settings → Accent color on this screen: a palette name / "#rrggbb", or null = follow the default
+  setAccent(accent) {
+    const v = window.OpenSkyAccent.normalize(accent);
+    try { if (v) localStorage.setItem("opensky.accent", v); else localStorage.removeItem("opensky.accent"); } catch (e) { this._accentFallback = v; /* private window: this visit only */ }
+    this.applyAccent(this.effectiveAccent());
+  },
+  setDefaultAccent(accent) { this.config.accent = accent; this.applyAccent(this.effectiveAccent()); },
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {
@@ -184,7 +238,9 @@ Module.register("MMM-OpenSky-Sidebar", {
   },
 
   notificationReceived(n, payload) {
-    if (n === "PAGE_CHANGED" && Number.isInteger(payload)) {
+    if (n === "ALL_MODULES_STARTED") {   // a screen profile: start on a page this screen shows, with its person's calendars
+      setTimeout(() => { this.ensureVisiblePage(); this.applyPresetPerson(); }, 800);
+    } else if (n === "PAGE_CHANGED" && Number.isInteger(payload)) {
       this.activeIndex = payload;
       this.syncActive();
     } else if (n === "OPENSKY_WAKE") {
@@ -222,7 +278,8 @@ Module.register("MMM-OpenSky-Sidebar", {
     Log.info(`${this.name}: idle, returning to the first page`);
     this.sendNotification("OPENSKY_IDLE_RESET");
     this.sendNotification("HIDE_KEYBOARD");
-    if (this.activeIndex !== 0) this.goPage(0);
+    const first = this.visiblePages()[0].index;
+    if (this.activeIndex !== first) this.goPage(first);
   },
 
   /* ---------------- DOM ---------------- */

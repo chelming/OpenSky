@@ -230,6 +230,14 @@ ok("25 reminders: choices reach the module; no people = every calendar; people =
   rem2.config.calendars === null && rem2.config.allDay === false && JSON.stringify(rem3.config.calendars.sort()) === '["Mom","Work"]' &&
   !mod(build({ reminders: { minutes: 10 }, calendar: { sources: [] } }), "MMM-OpenSky-Reminders"), [rem && rem.config, rem3 && rem3.config]);
 
+// screen profiles: named presets; unknown pages / people / colors are dropped, repeats and a missing name ignored
+const scr = (v) => mod(build({ profiles: [{ name: "Mom" }, { name: "Kid" }], pages: ["home", "calendar", "lists", "timer"], ...(v === undefined ? {} : { screens: v }) }), "MMM-OpenSky-Sidebar").config.screens;
+const sc = scr([{ name: " Kitchen ", pages: ["home", "lists", "lists", "nope"], person: "mom", textSize: "Extra large", accent: "Teal" },
+  { name: "Kids room", pages: ["timer"], person: "Nobody", textSize: "huge", accent: "#3B82F6" }, { name: "kitchen" }, { name: "" }, null, { pages: ["home"] }]);
+ok("29 screen profiles: none by default; names trimmed, pages/person/size/accent checked, repeats and nameless dropped",
+  Array.isArray(scr()) && scr().length === 0 && sc.length === 2 && sc[0].name === "Kitchen" && sc[0].pages.join() === "home,lists" && sc[0].person === "Mom" && sc[0].textSize === "xlarge" && sc[0].accent === "teal" &&
+  sc[1].person === null && sc[1].textSize === null && sc[1].accent === "#3b82f6", sc);
+
 delete global.window; delete global.document;
 
 

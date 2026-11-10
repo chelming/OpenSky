@@ -101,6 +101,8 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
 - The **text size is per device**: the default is `look.textSize` (opensky.json, shown as `config.textSize`, refreshed from the file
   at start-up through `OS_LOOK`), and a screen's own pick lives in that browser's `localStorage["opensky.textSize"]`
   (`Sidebar.deviceTextSize()` / `setTextSize()`); never written to the Pi. The harness starts Electron with a fresh profile each run.
+  The **accent** works the same way: `look.accent` is the default, `localStorage["opensky.accent"]` is the screen's own
+  (`Sidebar.deviceAccent()` / `setAccent()` / `setDefaultAccent()`).
 - **Dark mode** (`look.theme`: light | dark | auto, `look.lightSensor`) is per device like the text size: default in `config.theme`
   (refreshed through `OS_LOOK`), a screen's own pick in `localStorage["opensky.theme"]` (`Sidebar.deviceTheme()` / `setTheme()`).
   `Sidebar.applyTheme()` (every minute, plus on each sensor reading) sets `<html data-os-theme="dark">`; the rule lives in
@@ -110,6 +112,13 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   and the whole screensaver inverted back, and `.ost-dim` (the black dim layer) made white so it inverts to black. A new module that
   paints a photo, or anything meant to keep its own colors, with a CSS `background-image` must be added to that exception list.
   The light sensor is Chromium's `AmbientLightSensor` where present (hysteresis 5 / 30 lux), never started in Docker.
+- **Screen profiles** (several screens on one install, no server-side device registry): `screens` in opensky.json (validated in
+  `config/config.js`, handed to the Sidebar as `config.screens`) are presets of `{ name, pages, person, textSize, accent }`. A screen
+  picks one in Settings; `localStorage["opensky.screenProfile"]` holds the name. Precedence for each setting: the screen's own
+  localStorage value > the profile > the default (`Sidebar.effectiveTextSize()/effectiveAccent()/effectiveHiddenPages()`). The person is
+  applied through `Header.pickPerson()` (same notification as tapping a circle) once `ALL_MODULES_STARTED`; the page list in
+  opensky.json is never changed, pages left out by a profile are just hidden on that screen (`Sidebar.visiblePages()`). The phone
+  card is `screensCard()` in `phone/app.js`; tests: `tools/scenarios/screen-profiles.js`, `tools/test-config.js` (23).
 - Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
 - **Things drop out instead of overflowing** (big text, small screens): Home uses container queries (they see the card, not

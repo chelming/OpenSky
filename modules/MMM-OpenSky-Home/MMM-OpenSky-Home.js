@@ -56,7 +56,8 @@ Module.register("MMM-OpenSky-Home", {
   // Portrait screens (<html data-layout="portrait", see the Sidebar): Today gets its own card, the other days are rows of
   // chips (at most 3, then "+N more"), Next Week sits beside the lists (all in css; the two tiles are moved out of the grid here)
   portrait() { return document.documentElement.dataset.layout === "portrait"; },
-  maxEvents() { return this.portrait() ? 3 : this.config.maxEventsPerDay; },
+  // (portrait + Extra large text: the page is only ~830 x 1480 design px, so Today keeps two rows and the week rows get the room)
+  maxEvents() { return this.portrait() ? (document.documentElement.dataset.text === "xlarge" ? 2 : 3) : this.config.maxEventsPerDay; },
 
   // The one clock for "what's left today" (scenarios pin it: home.nowMs = () => …)
   nowMs() { return Date.now(); },

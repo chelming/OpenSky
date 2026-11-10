@@ -53,18 +53,18 @@ const notice = () => (sent.filter(([n]) => n === "OS_SET_NOTICE").pop() || [])[1
   // 5-6 a damaged opensky.json is never replaced by just the one setting changed on the screen
   const damagedSettings = '{ "family": { "name": "The Testers" }, "pages": ["home", "cameras", "timer"], "look": { "accent": "teal" }, }';
   fs.writeFileSync(process.env.OPENSKY_SETTINGS, damagedSettings);
-  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { accent: "green" } });
-  ok("5 change the accent with a damaged opensky.json → refused, the file is untouched",
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { trashDay: "friday" } });
+  ok("5 change a setting with a damaged opensky.json → refused, the file is untouched",
     read(process.env.OPENSKY_SETTINGS) === damagedSettings && /mistake/.test((notice() || {}).message || ""), notice());
   fs.writeFileSync(process.env.OPENSKY_SETTINGS, damagedSettings.replace(", }", " }"));
-  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { accent: "green" } });
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { trashDay: "friday" } });
   const now = JSON.parse(read(process.env.OPENSKY_SETTINGS));
-  ok("6 fixed → the change is saved and everything else kept", now.look.accent === "green" && now.family.name === "The Testers" && now.pages.length === 3);
+  ok("6 fixed → the change is saved and everything else kept", now.pickup.trashDay === "friday" && now.family.name === "The Testers" && now.pages.length === 3);
 
   // 7 the text size is per screen (kept in that browser, see Sidebar): a save request for it never changes the Pi's settings
   const before = read(process.env.OPENSKY_SETTINGS);
-  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { textSize: "xlarge" } });
-  ok("7 text size isn't saved on the Pi from a screen's Settings (each screen keeps its own)", read(process.env.OPENSKY_SETTINGS) === before);
+  await h.socketNotificationReceived("OS_SET_PREFS_SAVE", { patch: { textSize: "xlarge", accent: "green" } });
+  ok("7 text size and accent aren't saved on the Pi from a screen's Settings (each screen keeps its own)", read(process.env.OPENSKY_SETTINGS) === before);
 
   // 8 a page refresh: the screen asks again at start-up (OS_SET_INIT) and is told the look that is saved NOW, not the one from the last restart
   fs.writeFileSync(process.env.OPENSKY_SETTINGS, JSON.stringify({ family: { name: "The Testers" }, pages: ["home"], look: { textSize: "xlarge", accent: "teal" } }));

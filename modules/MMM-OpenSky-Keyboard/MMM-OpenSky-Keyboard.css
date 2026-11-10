@@ -1,7 +1,9 @@
 /* MMM-OpenSky-Keyboard — phone-style on-screen keyboard (on <body>) */
 
+/* 40 % of the screen's height, but never more than 440 px (design pixels): on a portrait screen (1920 px tall) 40 % would be a
+   768 px keyboard with very tall keys; capped, the keys keep the shape they have on a landscape screen. */
+:root { --okb-height: min(calc(40 * var(--vh)), 440px); }
 .okb {
-  --okb-height: calc(40 * var(--vh));
   position: fixed;
   left: 0;
   right: 0;
@@ -53,8 +55,8 @@ body.kb-open .ost-overlay,
 body.kb-open .calendar-editor-overlay {
   align-items: flex-start;
   padding-top: calc(3 * var(--vh));
-  padding-bottom: calc(calc(40 * var(--vh)) + calc(2 * var(--vh)));
+  padding-bottom: calc(var(--okb-height) + calc(2 * var(--vh)));
   box-sizing: border-box;
 }
-body.kb-open .ost-panel { max-height: calc(54 * var(--vh)); }
-body.kb-open .calendar-editor-modal { max-height: calc(calc(100 * var(--vh)) - calc(40 * var(--vh)) - calc(6 * var(--vh))); }
+body.kb-open .ost-panel { max-height: calc(calc(100 * var(--vh)) - var(--okb-height) - calc(6 * var(--vh))); }
+body.kb-open .calendar-editor-modal { max-height: calc(calc(100 * var(--vh)) - var(--okb-height) - calc(6 * var(--vh))); }

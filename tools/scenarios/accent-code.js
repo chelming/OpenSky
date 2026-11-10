@@ -7,6 +7,7 @@ module.exports = async (page, h) => {
   const R = {}; const ok = (k, v, i) => { R[k] = v; h.log(`${v ? "PASS" : "FAIL"}  ${k}${i !== undefined ? "  — " + JSON.stringify(i) : ""}`); };
   const until = async (fn, n = 25) => { for (let i = 0; i < n && !(await fn()); i++) await h.sleep(200); return fn(); };
   const S = () => JSON.parse(fs.readFileSync(path.join(OUT, "opensky.test.json"), "utf8"));
+  const mine = () => page.evaluate(() => localStorage.getItem("opensky.accent"));   // this screen's own accent (never written to the Pi)
   const centre = (sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, sel);
   const tap = async (sel, hold = 60) => { const c = await centre(sel); if (!c) throw new Error(`nothing at ${sel}`); await page.mouse.move(c[0], c[1]); await page.mouse.down(); await h.sleep(hold); await page.mouse.up(); await h.sleep(120); };
   const key = (k) => tap(`.okb-key[data-key="${k}"]`);
@@ -30,10 +31,10 @@ module.exports = async (page, h) => {
   const sw = await page.evaluate(() => getComputedStyle(document.querySelector(".ost-swatch")).getPropertyValue("--c").trim());
   ok("the swatch shows the color while typing", sw === "#3b82f6", sw);
   await tap(".ost-hex-use", 250);   // a finger
-  await until(() => S().look && S().look.accent === "#3b82f6");
+  await until(async () => (await mine()) === "#3b82f6");
   const acc = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim());
-  ok("Use (a finger, keyboard open): saved as #3b82f6, the screen's accent changes, the keyboard closes",
-    (S().look || {}).accent === "#3b82f6" && acc === "#3b82f6" && !(await page.evaluate(() => document.body.classList.contains("kb-open"))), { saved: (S().look || {}).accent, acc });
+  ok("Use (a finger, keyboard open): this screen remembers #3b82f6 (not the Pi's settings), its accent changes, the keyboard closes",
+    (await mine()) === "#3b82f6" && !(S().look || {}).accent && acc === "#3b82f6" && !(await page.evaluate(() => document.body.classList.contains("kb-open"))), { mine: await mine(), saved: (S().look || {}).accent, acc });
   ok("the custom color gets its own chip, selected", await page.evaluate(() => !!document.querySelector('.ost-chip.on[data-accent="#3b82f6"]')));
 
   // a very light color warns (white button text); a code that isn't one is refused and nothing changes
@@ -41,18 +42,26 @@ module.exports = async (page, h) => {
   ok("a very light color warns about white button text", await page.evaluate(() => /very light/.test(document.querySelector(".ost-hex-note").textContent)));
   await page.evaluate(() => { const i = document.querySelector(".ost-hex"); i.value = "#12zz45"; i.dispatchEvent(new Event("input")); document.querySelector(".ost-hex-use").click(); });
   await h.sleep(600);
-  ok("a bad code is refused (a message), the saved color stays", (S().look || {}).accent === "#3b82f6" && await page.evaluate(() => /color code/i.test(document.querySelector(".os-toast")?.textContent || "")));
+  ok("a bad code is refused (a message), the color stays", (await mine()) === "#3b82f6" && await page.evaluate(() => /color code/i.test(document.querySelector(".os-toast")?.textContent || "")));
 
   // back to a palette chip
   await tap('.ost-chip[data-accent="teal"]');
-  await until(() => S().look && S().look.accent === "teal");
-  ok("a palette chip after a code: saved by name, accent follows", (S().look || {}).accent === "teal" && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim())) === "#11998e");
+  await until(async () => (await mine()) === "teal");
+  ok("a palette chip after a code: remembered by name, accent follows", (await mine()) === "teal" && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim())) === "#11998e");
+  // Default: follows the phone setting again (peach here), and survives nothing on the screen
+  await tap(".ost-accent-default");
+  ok("Default: this screen's own pick is forgotten, the accent is the default (peach)", (await mine()) === null && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim())) !== "#11998e");
+  // a screen that never chose follows look.accent from the Pi's settings; its own pick survives a refresh
+  await tap('.ost-chip[data-accent="purple"]');
+  await page.reload(); await page.waitForFunction(() => window.MM && MM.getModules && MM.getModules().length > 5, null, { timeout: 30000 }); await h.sleep(3500);
+  ok("the screen's own accent survives a refresh", (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim())) === (await page.evaluate(() => window.OpenSkyAccent.hex("purple"))));
+  await page.evaluate(() => localStorage.clear());
   await page.evaluate(() => document.querySelector(".ost-x")?.click()); await h.sleep(300);
 
   // a settings file with something that isn't a color: no markup reaches the panel
   const s = S(); s.look = { accent: '#"><img src=x onerror="window.__pwned=1">' }; fs.writeFileSync(path.join(OUT, "opensky.test.json"), JSON.stringify(s));
   await open(); await h.sleep(500);
-  ok("a non-color accent in the settings file can't put markup into Settings (shown as the default)", await page.evaluate(() => !window.__pwned && !document.querySelector(".ost-root img, .ost-overlay img") && !!document.querySelector('.ost-chip.on[data-accent="peach"]')));
+  ok("a non-color accent in the settings file can't put markup into Settings (shown as the default)", await page.evaluate(() => !window.__pwned && !document.querySelector(".ost-root img, .ost-overlay img") && !!document.querySelector('.ost-accent-default.on') && !document.querySelector('.ost-chip.on')));
 
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);

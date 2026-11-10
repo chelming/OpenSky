@@ -388,13 +388,7 @@ module.exports = NodeHelper.create({
       if (s.home.cards.includes("photos") && s.photos && s.photos.enabled === false) s.photos.enabled = true;
       restartNeeded = true;
     }
-    if ("accent" in patch) {
-      // a palette color or a color code (#rgb / #rrggbb, stored as #rrggbb); peach is the default, so it's left out
-      const a = accent.normalize(patch.accent);
-      if (!a) return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: "That isn't a color — type a code like #3b82f6" });
-      s.look = s.look || {};
-      if (a === "peach") delete s.look.accent; else s.look.accent = a;
-    }
+    // (the accent and text size are per screen: each browser keeps its own, see Sidebar; look.accent is only the default)
     if ("wordgame" in patch) { s.wordgame = s.wordgame || {}; s.wordgame.source = patch.wordgame === "opensky" ? "opensky" : "nyt"; restartNeeded = true; }
     if ("photos" in patch) { s.photos = s.photos || {}; s.photos.enabled = !!patch.photos; restartNeeded = true; }
     if ("trashDay" in patch) { s.pickup = s.pickup || {}; s.pickup.trashDay = String(patch.trashDay || ""); restartNeeded = true; }
