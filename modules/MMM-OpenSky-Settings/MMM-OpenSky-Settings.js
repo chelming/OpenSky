@@ -5,6 +5,10 @@
  *
  * Sleep schedule: at the "off" time the screen sleeps (unless a timer is running). A touch wakes it; after a few
  * idle minutes in the night it sleeps again. At the "on" time it wakes. While asleep the hardware brightness goes to 0.
+ *
+ * In Docker there is no screen hardware: every browser showing the dashboard is "a screen", so brightness, evening dim and the
+ * sleep schedule are kept per browser (localStorage "opensky.screen"), like the text size, and applied by the page itself.
+ * On a Pi they stay in device.json (the hardware is one thing).
  */
 Module.register("MMM-OpenSky-Settings", {
   defaults: {
@@ -27,7 +31,10 @@ Module.register("MMM-OpenSky-Settings", {
   notificationReceived(n, p) {
     if (n === "OPENSKY_SETTINGS_OPEN") this.open();
     else if ((n === "OPENSKY_IDLE_RESET" || n === "PAGE_CHANGED") && this.isOpen()) this.close();
-    else if (n === "OPENSKY_SCREEN_SLEEP") this.sendSocketNotification("OS_SET_ASLEEP", !!p);
+    else if (n === "OPENSKY_SCREEN_SLEEP") {
+      this.sendSocketNotification("OS_SET_ASLEEP", !!p);
+      if (this.state && this.state.docker) this.applyLocalDim(!!p);   // this browser's own cover
+    }
     // another page's volume slider (Music): the volume lives here, so both always agree
     else if (n === "OPENSKY_VOLUME_GET" && this.state) this.sendNotification("OPENSKY_VOLUME", this.state.audio ? { volume: this.state.audio.volume, name: this.state.audio.name } : null);
     else if (n === "OPENSKY_VOLUME_SET" && typeof p === "number" && this.state && this.state.audio) {
@@ -38,7 +45,9 @@ Module.register("MMM-OpenSky-Settings", {
 
   socketNotificationReceived(n, p) {
     if (n === "OS_SET_STATE") {
+      if (p.docker) { p.settings = this.localSettings(p.settings); p.audio = null; }   // per browser, not the one shared device.json
       this.state = p;
+      if (p.docker) this.applyLocalDim();
       this.sendNotification("OPENSKY_VOLUME", p.audio ? { volume: p.audio.volume, name: p.audio.name } : null);
       // Every change gets one reply. While some are still on their way, the controls already show what was picked;
       // once all are back the state includes every tap: redraw if the layout changed (a switch), else sync values.
@@ -69,10 +78,49 @@ Module.register("MMM-OpenSky-Settings", {
     } else if (n === "OS_SET_NOTICE" && p) {
       window.OpenSkyToast(p.message, p.type || "info");
     } else if (n === "OS_SET_SOFT_DIM") {
-      this.softDim(p);
+      if (!(this.state && this.state.docker)) this.softDim(p);
     } else if (n === "OS_SET_SYSTEM_RESULT" && p) {
       window.OpenSkyToast(p.message, p.ok ? "success" : "error");
     }
+  },
+
+  /* ---------------- per-browser screen settings (Docker) ---------------- */
+  localSettings(base) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("opensky.screen") || "{}") || {}; } catch (e) { saved = this._localFallback || {}; }
+    const time = (t, d) => (typeof t === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : d);
+    const num = (v, d) => (Number.isFinite(Number(v)) ? Math.min(100, Math.max(10, Math.round(Number(v)))) : d);
+    const e = saved.eveningDim || {}, z = saved.sleep || {};
+    return {
+      ...base,
+      brightness: num(saved.brightness, 100),
+      eveningDim: { enabled: !!e.enabled, from: time(e.from, "19:00"), level: num(e.level, 50) },
+      sleep: { enabled: !!z.enabled, off: time(z.off, "22:00"), on: time(z.on, "06:30") }
+    };
+  },
+  // a change from the panel, in Docker: kept in this browser only
+  changeLocal(c) {
+    const cur = this.state.settings, next = { ...cur };
+    if ("brightness" in c) next.brightness = c.brightness;
+    if (c.eveningDim) next.eveningDim = { ...cur.eveningDim, ...c.eveningDim };
+    if (c.sleep) next.sleep = { ...cur.sleep, ...c.sleep };
+    const keep = { brightness: next.brightness, eveningDim: next.eveningDim, sleep: next.sleep };
+    try { localStorage.setItem("opensky.screen", JSON.stringify(keep)); } catch (e) { this._localFallback = keep; /* private window: this visit only */ }
+    this.state = { ...this.state, settings: this.localSettings(next) };
+    this.applyLocalDim();
+    this.checkSchedule();
+    if (this.isOpen()) { if (this.shape(this.state) !== this.drawnShape) this.render(); else this.syncControls(); }
+  },
+  // the page dims itself (there is no backlight to turn down): the same rule the node helper uses on a Pi
+  applyLocalDim(asleep) {
+    const { brightness, eveningDim, sleep } = this.state.settings, sb = this.sidebar();
+    let level = brightness;
+    if (eveningDim.enabled) {
+      const m = (t) => { const [h, mm] = t.split(":").map(Number); return h * 60 + mm; };
+      const now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), from = m(eveningDim.from), until = m(sleep.enabled ? sleep.on : "06:00");
+      if (from > until ? mins >= from || mins < until : mins >= from && mins < until) level = Math.min(brightness, eveningDim.level);
+    }
+    this.softDim((asleep === undefined ? sb && sb.isAsleep() : asleep) ? 100 : level);
   },
 
   /* ---------------- sleep schedule ---------------- */
@@ -89,6 +137,7 @@ Module.register("MMM-OpenSky-Settings", {
   checkSchedule(now = new Date()) {
     const night = this.nightNow(now), sb = this.sidebar();
     if (!sb || !this.state) return;
+    if (this.state.docker) this.applyLocalDim();
     const wasNight = this.wasNight;
     this.wasNight = night;
     if (wasNight === undefined) return;   // first check after start: just learn where we are
@@ -136,7 +185,10 @@ Module.register("MMM-OpenSky-Settings", {
 
   close() { if (this.panel) this.panel.hidden = true; this.confirming = null; },
 
-  change(c) { this.inflight = (this.inflight || 0) + 1; this.sendSocketNotification("OS_SET_CHANGE", c); },
+  change(c) {
+    if (this.state && this.state.docker) return this.changeLocal(c);
+    this.inflight = (this.inflight || 0) + 1; this.sendSocketNotification("OS_SET_CHANGE", c);
+  },
 
   // Put the saved values into the controls without rebuilding them
   syncControls() {
@@ -159,6 +211,8 @@ Module.register("MMM-OpenSky-Settings", {
     const s = st.settings;
     this.drawnShape = this.shape(st);
     const methodNote = { backlight: "The display's own backlight", ddc: "The monitor's brightness (over HDMI)", software: "Dims the picture (this screen doesn't take brightness commands)" }[st.brightness.method] || "";
+    const docker = !!st.docker;   // a browser, not a Pi: brightness, dimming and sleep are this browser's own
+    const methodText = docker ? "Dims the picture on this screen only; other screens keep their own." : methodNote;
     this.panel.innerHTML = `
       <div class="ost-panel" role="dialog" aria-label="Settings">
         <div class="ost-head"><span class="ost-title">Settings</span><button class="ost-x" aria-label="Close">×</button></div>
@@ -166,9 +220,9 @@ Module.register("MMM-OpenSky-Settings", {
           <section class="ost-section">
             <h3>Screen</h3>
             <div class="ost-row"><span class="ost-label">Brightness</span>${this.slider("brightness", s.brightness, 10, 100)}</div>
-            <div class="ost-note">${methodNote}</div>
-            <div class="ost-row"><span class="ost-label">Sleep turns off by</span><select class="ost-select ost-wide" data-screenoff>${Object.entries(st.screen.labels).map(([m, l]) => `<option value="${m}" ${m === st.screen.method ? "selected" : ""} ${st.screen.available[m] ? "" : "disabled"}>${l}${st.screen.available[m] ? "" : " — not found on this Pi"}</option>`).join("")}</select><button class="ost-btn ost-test-screen">Test</button></div>
-            <div class="ost-note">Every screen is different: try the options with Test (it comes back after 10 seconds, or at a touch). If one doesn't suit your screen, use Black screen + dim.${st.screen.method === "auto" ? ` Now: ${st.screen.labels[st.screen.resolved].replace(/ \(.*/, "")}.` : ""}</div>
+            <div class="ost-note">${methodText}</div>
+            ${docker ? "" : `<div class="ost-row"><span class="ost-label">Sleep turns off by</span><select class="ost-select ost-wide" data-screenoff>\${Object.entries(st.screen.labels).map(([m, l]) => \`<option value="\${m}" \${m === st.screen.method ? "selected" : ""} \${st.screen.available[m] ? "" : "disabled"}>\${l}\${st.screen.available[m] ? "" : " — not found on this Pi"}</option>\`).join("")}</select><button class="ost-btn ost-test-screen">Test</button></div>
+            <div class="ost-note">Every screen is different: try the options with Test (it comes back after 10 seconds, or at a touch). If one doesn't suit your screen, use Black screen + dim.\${st.screen.method === "auto" ? \` Now: \${st.screen.labels[st.screen.resolved].replace(/ \(.*/, "")}.\` : ""}</div>`}
             <div class="ost-row">${this.toggle("dim", s.eveningDim.enabled)}<span class="ost-label">Dim in the evening</span></div>
             <div class="ost-sub" ${s.eveningDim.enabled ? "" : "hidden"}>
               <div class="ost-row"><span class="ost-label">From</span>${this.stepper("dimFrom", s.eveningDim.from)}</div>
@@ -217,8 +271,10 @@ Module.register("MMM-OpenSky-Settings", {
     this.bindStepper("sleepOff", (t) => this.change({ sleep: { off: t } }));
     this.bindStepper("sleepOn", (t) => this.change({ sleep: { on: t } }));
     const sel = q("[data-screenoff]");
-    sel.onchange = () => this.change({ screenOff: sel.value });
-    q(".ost-test-screen").onclick = () => this.sendSocketNotification("OS_SET_SCREEN_TEST", { method: sel.value });
+    if (sel) {
+      sel.onchange = () => this.change({ screenOff: sel.value });
+      q(".ost-test-screen").onclick = () => this.sendSocketNotification("OS_SET_SCREEN_TEST", { method: sel.value });
+    }
     const test = q(".ost-test");
     if (test) test.onclick = () => this.sendNotification("TIMER_TEST_CHIME");
     this.panel.querySelectorAll("[data-act]").forEach((b) => { b.onclick = () => this.system(b); });
@@ -283,7 +339,7 @@ Module.register("MMM-OpenSky-Settings", {
           <span class="ost-label ost-gap">Keep</span><select class="ost-select" data-backup="keep">${[7, 14, 30, 90].map((n) => `<option value="${n}" ${n === P.backup.keep ? "selected" : ""}>${n}</option>`).join("")}</select></div>
         <div class="ost-row">${this.toggle("secrets", P.backup.includeSecrets)}<span class="ost-label">Include passwords &amp; keys</span></div>
         <div class="ost-note${st.ok === false ? " ost-bad" : ""}">${last}</div>
-        <div class="ost-note">Plug in a USB stick, or open a network folder on the Pi, and it shows up in the list.</div>
+        <div class="ost-note">${this.state && this.state.docker ? "Mount a folder into the container (e.g. <code>/backups</code> in the compose file) and it shows up in the list." : "Plug in a USB stick, or open a network folder on the Pi, and it shows up in the list."}</div>
         <div class="ost-buttons"><button class="ost-btn ost-backup-now">Back up now</button></div>
       </section>`;
     // pages

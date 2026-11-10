@@ -197,7 +197,8 @@ module.exports = NodeHelper.create({
     if (level === this.applied) return;
     this.applied = level;
     // the page dims itself only in software mode (a sleeping screen is black anyway)
-    this.sendSocketNotification("OS_SET_SOFT_DIM", this.method === "software" && !this.asleep ? level : 100);
+    // (not in Docker: each browser dims itself, from its own settings)
+    if (!DOCKER) this.sendSocketNotification("OS_SET_SOFT_DIM", this.method === "software" && !this.asleep ? level : 100);
     if (this.method === "software") return;
     this.pending = level;
     this.queue = this.queue.then(async () => {   // one change at a time; the newest wins
