@@ -193,6 +193,7 @@ ol.steps li { margin: 4px 0; }
 .photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .photo-prev { width: 56px; height: 56px; border-radius: 50%; background: #ddd center/cover no-repeat; flex: none; }
 .photo-row [hidden] { display: none; }
+.cd-prev { width: 84px; height: 56px; border-radius: 12px; background: #ddd center/cover no-repeat; flex: none; }
 
 /* photos: upload / delete */
 .pm { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }

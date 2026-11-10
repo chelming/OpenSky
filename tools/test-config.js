@@ -107,6 +107,20 @@ ok("21 Meals on this screen: the page is editable, the data module is local with
   mod(ml, "MMM-OpenSky-MealsPage").config.editable === true && mod(ml, "MMM-OpenSky-Meals").config.local === true && mod(ml, "MMM-OpenSky-Meals").config.addToList === null &&
   mlcal.length === 1 && mlcal[0].type === "localmeals" && mod(ml, "MMM-OpenSky-Home").config.tonight === true, [mod(ml, "MMM-OpenSky-Meals").config, mlcal]);
 ok("22 Meals on Mealie stays read-only", mod(mc, "MMM-OpenSky-MealsPage").config.editable === false && mod(mc, "MMM-OpenSky-Meals").config.local === false);
+// Countdowns: cleaned items reach Home (only the ones shown on Home) and the Countdowns page; odd entries dropped; the page needs the "countdowns" page
+const cdc = build({ pages: ["home", "countdowns", "timer"], countdowns: { keepDays: 3.4, items: [
+  { id: "cbeach01", title: "  Beach trip  ", date: "2031-07-04", photo: true, color: "blue" },
+  { id: "czoe0001", title: "Zoe", date: "2019-11-11", yearly: true, home: false, color: "url(x)" },
+  { id: "Bad Id", title: "No", date: "2031-07-04" }, { id: "cnotitle", title: "  ", date: "2031-07-04" }, { id: "cbaddate", title: "Bad", date: "2031-02-31x" },
+  { id: "cbeach01", title: "Repeated id", date: "2031-07-04" }, null, 7] } });
+const cdp = mod(cdc, "MMM-OpenSky-CountdownsPage").config;
+ok("23 Countdowns: bad ids, empty titles, bad dates and repeats are dropped; the title is trimmed; a bad color → orange; photo/yearly only when true",
+  JSON.stringify(cdp.items.map((x) => [x.id, x.title, x.photo, x.yearly, x.color, x.home])) === '[["cbeach01","Beach trip",true,false,"blue",true],["czoe0001","Zoe",false,true,"orange",false]]', cdp.items);
+ok("24 Countdowns: Home gets only the ones set to show on Home, the keep-days (whole, 0-365) and the page index",
+  JSON.stringify(mod(cdc, "MMM-OpenSky-Home").config.countdowns) === '{"items":[{"id":"cbeach01","title":"Beach trip","date":"2031-07-04","yearly":false,"photo":true,"color":"blue","home":true}],"keepDays":3,"page":1}' && cdp.keepDays === 3, mod(cdc, "MMM-OpenSky-Home").config.countdowns);
+const cd0 = build({ pages: ["home"], countdowns: { keepDays: -5, items: "nope" } });
+ok("25 Countdowns: no page in 'pages' → Home has no 'See all' (page null); nonsense settings → nothing, keep 0, no crash",
+  mod(cd0, "MMM-OpenSky-Home").config.countdowns.page === null && mod(cd0, "MMM-OpenSky-Home").config.countdowns.keepDays === 0 && mod(cd0, "MMM-OpenSky-Home").config.countdowns.items.length === 0 && !mod(cd0, "MMM-OpenSky-CountdownsPage"));
 const d = build({});
 ok("13 empty settings → a working default (home + timer, no crash)", JSON.stringify(mod(d, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-Timer"]]));
 

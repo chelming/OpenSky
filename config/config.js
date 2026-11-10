@@ -53,6 +53,7 @@ const PAGE_INFO = {
   calendar: { label: "Calendar" },
   lists: { label: "Lists" },
   meals: { label: "Meals", icon: "food" },
+  countdowns: { label: "Countdowns", icon: "countdowns" },
   smarthome: { label: "Smart Home" },
   chores: { label: "Chores" },
   wordgame: { label: "Word Game" },
@@ -102,6 +103,19 @@ const mealTypes = (() => {
 })();
 const mealList = !mealsLocal && mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
   ? { id: String(mealSettings.addToList.id), name: String(mealSettings.addToList.name || "the shopping list").slice(0, 40) } : null;
+
+// Countdowns: a vacation, birthday or other big day with a days-to-go counter, a title and a photo. opensky.json → countdowns:
+// { items: [{ id, title, date: "YYYY-MM-DD", yearly?, photo?, color?, home? }], keepDays }. They show as a card on Home
+// (home !== false) and on the Countdowns page (a "countdowns" entry in pages). Once the date has passed they stay `keepDays`
+// days (default 0 = through the day itself), then hide. `yearly` ones (birthdays) count to their next day instead. The
+// photo (photo: true) is a file in countdown-photos/ beside opensky.json, shown through /opensky-countdown/<id>.
+const countdownSettings = (s.countdowns && typeof s.countdowns === "object" && !Array.isArray(s.countdowns)) ? s.countdowns : {};
+const countdownItems = (Array.isArray(countdownSettings.items) ? countdownSettings.items : [])
+  .filter((c) => c && /^[a-z0-9]{4,24}$/.test(String(c.id)) && String(c.title == null ? "" : c.title).trim() && /^\d{4}-\d{2}-\d{2}$/.test(String(c.date)) && !isNaN(new Date(`${c.date}T12:00:00`)))
+  .filter((c, i, all) => all.findIndex((q) => q.id === c.id) === i).slice(0, 24)
+  .map((c) => ({ id: String(c.id), title: String(c.title).trim().slice(0, 60), date: String(c.date), yearly: c.yearly === true, photo: c.photo === true,
+    color: /^[a-z]+$|^#[0-9a-f]{6}$/i.test(String(c.color || "")) ? String(c.color) : "orange", home: c.home !== false }));
+const countdownKeepDays = Number.isFinite(Number(countdownSettings.keepDays)) ? Math.min(365, Math.max(0, Math.round(Number(countdownSettings.keepDays)))) : 0;
 
 // Chores (Greenlight): the children shown on the Chores page. A linked profile gives the color, else the child's own.
 const choreKids = (Array.isArray(s.chores && s.chores.kids) ? s.chores.kids : []).filter((k) => k && /^\d+$/.test(String(k.id))).slice(0, 8)
@@ -216,6 +230,7 @@ const PAGES = {
     config: {
       listsPage: pages.indexOf("lists") >= 0 ? pages.indexOf("lists") : null,
       mealsPage: pages.indexOf("meals") >= 0 ? pages.indexOf("meals") : null,
+      countdowns: { items: countdownItems.filter((c) => c.home), keepDays: countdownKeepDays, page: pages.indexOf("countdowns") >= 0 ? pages.indexOf("countdowns") : null },
       tonight: mealsOn && mealSettings.home !== false && mealTypes.includes("dinner"),
       canAddEvents,
       maxEventsPerDay: 4,
@@ -234,6 +249,11 @@ const PAGES = {
     module: "MMM-OpenSky-MealsPage",
     position: "fullscreen_above",
     config: { firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0, types: mealTypes, editable: mealsLocal }
+  }],
+  countdowns: () => [{
+    module: "MMM-OpenSky-CountdownsPage",
+    position: "fullscreen_above",
+    config: { items: countdownItems, keepDays: countdownKeepDays }
   }],
   // the kids' chores from Greenlight (unofficial): opensky.json → chores.kids [{ id, name, profile?, color? }]; the login is secrets.json → greenlight
   chores: () => [{

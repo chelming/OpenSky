@@ -36,6 +36,9 @@ fs.rmSync(WORDGAME, { force: true });
 const LOCAL_LISTS = path.join(OUT, "lists.test.json");
 const LOCAL_MEALS = path.join(OUT, "meals.test.json");
 fs.writeFileSync(LOCAL_MEALS, JSON.stringify({ version: 1, entries: [] }));
+// countdown photos, fresh each run
+const COUNTDOWN_PHOTOS = path.join(OUT, "countdown-photos.test");
+fs.rmSync(COUNTDOWN_PHOTOS, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(LOCAL_LISTS, JSON.stringify({ version: 1, lists: { Groceries: [{ id: "g1", text: "Milk" }, { id: "g2", text: "Apples" }] } }));
 // tools/opensky-start sets LANGUAGE from opensky.json → locale.locale; the harness does the same
@@ -81,6 +84,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       OPENSKY_LOCAL_CALENDAR: LOCAL_CAL,
       OPENSKY_LOCAL_LISTS: LOCAL_LISTS,
       OPENSKY_LOCAL_MEALS: LOCAL_MEALS,
+      OPENSKY_COUNTDOWN_PHOTOS: COUNTDOWN_PHOTOS,
       OPENSKY_DEVICE_SETTINGS: DEVICE,
       OPENSKY_WORDGAME: WORDGAME,
       OPENSKY_NOTES: NOTES,

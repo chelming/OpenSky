@@ -51,6 +51,7 @@
     extras: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></svg>`,
     plus: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`,
     meals: `<svg viewBox="0 0 24 24"><path d="M5 3v7a2 2 0 0 0 2 2h1v9M10 3v7M7.5 3v6"/><path d="M18 21V3c-2.2 0-4 2.2-4 6v4h4"/></svg>`,
+    countdowns: `<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>`,
     chores: `<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 12.5l2.2 2.2 4-4.4"/></svg>`,
     grip: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg>`,
     up: `<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>`,
@@ -191,8 +192,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["countdowns", "Countdowns"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), mealsCard(), countdownsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -514,6 +515,105 @@
     }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (c.type === "mealie" && Object.values(meals).some(Boolean)) c.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => meals[m]); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; change(); render(); }]]);
   }
 
+  // Countdowns: a trip, a birthday or a big day with days to go, a title and a photo. Home shows them as a card (a banner on a
+  // portrait screen); a Countdowns page shows them large. After the date they hide by themselves (a yearly one counts to its next day).
+  // The photo is kept on the Pi (countdown-photos/): uploaded from this phone (shrunk first) or taken from the photo library.
+  const newId = () => "c" + Math.random().toString(36).slice(2, 10).padEnd(7, "0");
+  const prettyDate = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : ""; };
+  const KEEP = [[0, "The day after"], [1, "2 days after"], [3, "4 days after"], [7, "A week after"], [30, "A month after"]];
+  function countdownsCard() {
+    if (!S.countdowns || typeof S.countdowns !== "object" || Array.isArray(S.countdowns)) S.countdowns = {};
+    const CD = S.countdowns;
+    if (!Array.isArray(CD.items)) CD.items = [];
+    const hasPage = S.pages.includes("countdowns");
+    const line = (title, sub, flag, onflip) => el("div", { class: "line" }, el("span", {}, el("b", {}, title), sub ? el("small", {}, sub) : null), toggle(flag, onflip, title));
+    const body = [];
+    CD.items.forEach((c, i) => body.push(row(hex(c.color || "orange"), c.title || "Countdown",
+      `${prettyDate(c.date)}${c.yearly ? " · every year" : ""}${c.home === false ? " · not on Home" : ""}${c.photo ? " · photo" : ""}`, () => editCountdown(i))));
+    if (!CD.items.length) body.push(el("p", { class: "hint" }, "Nothing yet. Add a trip, a birthday or a big day and the screen counts the days down."));
+    body.push(el("button", { type: "button", class: "btn block", onclick: () => editCountdown(-1) }, icon("plus"), " Add a countdown"));
+    if (CD.items.length || hasPage) {
+      body.push(
+        line("Countdowns page", "A page with every countdown, large", hasPage, (v) => {
+          if (v && !S.pages.includes("countdowns")) { const at = S.pages.indexOf("home"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "countdowns"); }
+          else if (!v && S.pages.length > 1) S.pages.splice(S.pages.indexOf("countdowns"), 1);
+          change(); render();
+        }),
+        field("After the date has passed, hide it", select(KEEP, Number(CD.keepDays) || 0, (v) => { CD.keepDays = Number(v); change(); }), "Birthdays and other yearly ones never hide; they count to the next one."));
+    }
+    return section("countdowns", "countdowns", "Countdowns", "Days to go until a trip, a birthday or a big day", ...body);
+  }
+
+  function editCountdown(i) {
+    const CD = S.countdowns, isNew = i < 0;
+    const c = isNew ? { id: newId(), title: "", date: "", yearly: false, color: "orange", home: true } : { ...CD.items[i] };
+    let photo = c.photo ? "keep" : "none";           // "keep" = the one on the Pi · "none" · { blob, url } = a new upload · { from } = a library photo
+    let prevUrl = c.photo ? `/api/countdowns/photo/${c.id}?v=${Date.now()}` : "";
+    const err = el("p", { class: "err" }), msg = el("span", { class: "hint" });
+    const prev = el("span", { class: "cd-prev" });
+    const paint = () => { prev.style.backgroundImage = prevUrl ? `url("${prevUrl}")` : ""; rm.hidden = !prevUrl; };
+    const upload = el("input", { type: "file", accept: "image/*", class: "hidden-file", onchange: async (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      try {
+        const bmp = await createImageBitmap(f), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), cv = document.createElement("canvas");
+        cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+        cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+        const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.85));
+        if (!blob) throw new Error("no image");
+        photo = { blob }; prevUrl = cv.toDataURL("image/jpeg", 0.4); msg.textContent = ""; paint();
+      } catch (x) { msg.textContent = "That file isn't a picture this phone can read."; }
+    } });
+    const rm = el("button", { type: "button", class: "btn", onclick: () => { photo = "none"; prevUrl = ""; paint(); } }, "Remove photo");
+    const library = el("div", { class: "pm-grid" });
+    const pick = async () => {
+      library.replaceChildren(el("p", { class: "hint" }, "Looking…"));
+      try {
+        const d = await api("GET", "/api/photos");
+        if (!d.photos.length) return library.replaceChildren(el("p", { class: "hint" }, "No photos in the photo library yet (see Photos below)."));
+        library.replaceChildren(...d.photos.slice(0, 60).map((p) => el("button", { type: "button", class: "pm-item", "aria-label": `Use ${p.name}`, onclick: () => {
+          photo = { from: p.id }; prevUrl = `/api/photos/${p.id}`; library.replaceChildren(); msg.textContent = ""; paint();
+        } }, el("img", { src: `/api/photos/${p.id}`, loading: "lazy", alt: "" }))));
+      } catch (x) { library.replaceChildren(el("p", { class: "hint bad" }, x.message)); }
+    };
+    paint();
+    let close;
+    const send = async () => {   // the photo goes to the Pi first; the countdown itself is saved with the rest on Finish
+      if (photo === "none") { if (c.photo) await api("POST", "/api/countdowns/photo/delete", { id: c.id }); c.photo = false; return; }
+      if (photo === "keep") return;
+      let r;
+      try {
+        r = photo.from ? await fetch(`/api/countdowns/photo?id=${c.id}&from=${photo.from}`, { method: "POST", credentials: "same-origin", headers: { "X-OpenSky": "1" } })
+          : await fetch(`/api/countdowns/photo?id=${c.id}`, { method: "POST", credentials: "same-origin", headers: { "X-OpenSky": "1", "Content-Type": "application/octet-stream" }, body: photo.blob });
+      } catch (x) { throw new Error(OFFLINE); }
+      if (!r.ok) throw new Error(((await r.json().catch(() => ({}))).error) || `Error ${r.status}`);
+      c.photo = true;
+    };
+    const done = async () => {
+      if (!c.title.trim()) { err.textContent = "Give it a name, like “Beach trip”."; return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(c.date)) { err.textContent = "Pick the date."; return; }
+      err.textContent = "";
+      try { await send(); } catch (x) { err.textContent = x.message; return; }
+      const item = { id: c.id, title: c.title.trim(), date: c.date, color: c.color, ...(c.yearly ? { yearly: true } : {}), ...(c.photo ? { photo: true } : {}), ...(c.home === false ? { home: false } : {}) };
+      if (isNew) CD.items.push(item); else CD.items[i] = item;
+      change(); render(); close();
+    };
+    close = sheet(isNew ? "Add a countdown" : c.title || "Countdown", (b) => b.append(
+      field("Name", text(c.title, (v) => { c.title = v; }, { placeholder: "e.g. Beach trip, Zoe's birthday", maxlength: "60" })),
+      field("Date", el("input", { type: "date", class: "input", value: c.date, oninput: (e) => { c.date = e.target.value; }, onchange: (e) => { c.date = e.target.value; } })),
+      el("div", { class: "line" }, el("span", {}, el("b", {}, "Every year"), el("small", {}, "A birthday or anniversary: counts to the next one")), toggle(!!c.yearly, (v) => { c.yearly = v; }, "Every year")),
+      el("div", { class: "line" }, el("span", {}, el("b", {}, "Show on Home"), el("small", {}, "Off: only on the Countdowns page")), toggle(c.home !== false, (v) => { c.home = v; }, "Show on Home")),
+      colorField(c.color, (v) => { c.color = v; }),
+      el("div", { class: "field" }, el("span", { class: "label" }, "Photo"),
+        el("div", { class: "photo-row" }, prev, el("button", { type: "button", class: "btn", onclick: () => upload.click() }, "From this phone"), el("button", { type: "button", class: "btn", onclick: pick }, "From the photo library"), rm, upload), msg, library),
+      err),
+      [isNew ? ["Cancel", "", () => {}] : ["Remove", "danger", () => {
+        api("POST", "/api/countdowns/photo/delete", { id: c.id }).catch(() => {});
+        CD.items.splice(i, 1); change(); render();
+      }], ["Done", "primary", () => { done(); return false; }]]);
+  }
+
   // Meals: kept on this screen (added on the Meals page, no account) or from Mealie. The meal plan on a Meals page, "Dinner tonight" on Home, on the calendar, and a recipe's ingredients
   // sent to a shopping list. (The connection is the same box as for a Mealie shopping list.)
   const mealUi = {};   // the Mealie connection, kept while the page redraws
@@ -778,7 +878,7 @@
   }
 
   function pagesCard() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), countdowns: "Countdowns", wordgame: "Word Game", timer: "Timer", music: "Music" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });

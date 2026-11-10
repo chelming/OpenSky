@@ -9,10 +9,19 @@ const lib = (f) => require(path.join(global.root_path, "modules", "opensky-lib",
 const { createPhotoSource } = lib("photos.js");
 const { secret } = lib("secrets.js");
 const notes = lib("notes.js");
+const countdownPhotos = lib("countdowns.js");
 
 module.exports = NodeHelper.create({
   start() {
     this.source = null;
+    // a countdown's picture (Home's card and the Countdowns page): GET /opensky-countdown/<id>
+    this.expressApp.get("/opensky-countdown/:id", (req, res) => {
+      const img = countdownPhotos.read(req.params.id);
+      if (!img) return res.sendStatus(404);
+      res.set("Content-Type", img.type);
+      res.set("Cache-Control", "max-age=300");
+      res.send(img.body);
+    });
     this.expressApp.get("/opensky-photo/:id", async (req, res) => {
       if (!this.source || !/^[A-Za-z0-9-]{8,64}$/.test(req.params.id)) return res.sendStatus(404);
       try {

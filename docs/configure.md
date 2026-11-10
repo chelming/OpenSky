@@ -86,6 +86,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
 | `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
+| `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |
 | `wordgame` | a daily five-letter word puzzle for the whole family (one shared board a day, family stats) |
 | `timer` | kitchen timers with a chime |
 | `music` | **add-on**: what's playing on the screen's speakers, with play / pause / skip and the volume — see [Music add-on](music.md) |
@@ -348,6 +349,22 @@ Notes:
   `"meals"` in `pages`, and for a shopping list `{ "name": "Food", "provider": "mealie", "shoppingList": "Weekly Shop", "shoppingListId": "…" }`.
   The address and token live in `secrets.json → mealie.url / .token`. (A calendar source `{ "type": "mealie", "meals": ["dinner"] }`
   also works if you want to name the meal calendar yourself.)
+
+## Countdowns (a trip, a birthday, a big day)
+Phone setup → **Countdowns** → *Add a countdown*: a name, the date, a color and (if you like) a photo. The screen counts the
+days down: a card on Home (the nearest two; on a portrait screen a banner under the top bar with the nearest three), and,
+if you switch on **Countdowns page**, a page with every countdown as a large card.
+- **Photo:** *From this phone* (it is shrunk on the phone first) or *From the photo library* (a photo already in your
+  photo folder; not available with Immich). The picture is kept on the Pi in `countdown-photos/` next to `opensky.json`
+  (it is not part of the automatic backup, the settings are).
+- **Every year:** for a birthday or anniversary. It always counts to the next one and never hides.
+- **Show on Home:** switch it off to show a countdown only on the Countdowns page.
+- **After the date has passed, hide it:** a countdown says "Today" on its day and then disappears the day after (or after 2 days,
+  4 days, a week, a month, as you choose). It stays in the settings; change its date to use it again.
+- In `opensky.json` (if you ever look; phone setup writes it for you):
+  `"countdowns": { "keepDays": 0, "items": [ { "id": "c1a2b3c4", "title": "Beach trip", "date": "2026-12-20", "color": "blue", "photo": true, "yearly": false, "home": true } ] }`
+  and `"countdowns"` in `pages` for the page. `id` is letters and digits (4 to 24); `keepDays` runs 0 to 365; `color` is a palette name or a `#rrggbb` code.
+- This is separate from the top bar's holiday and birthday pill (see [Header](#header-top-bar)), which follows the holidays and your calendar.
 
 ## Photos
 ```json

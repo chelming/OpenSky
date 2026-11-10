@@ -37,6 +37,7 @@ const photos = require(path.join(global.root_path || process.cwd(), "modules", "
 const mealie = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "mealie.js"));
 const greenlight = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "greenlight.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
+const countdownPhotos = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "countdowns.js"));
 const share = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "share.js"));
 
 const DRY = process.env.OPENSKY_DRY_RUN === "1";
@@ -427,6 +428,35 @@ module.exports = NodeHelper.create({
         if (!p) return this.send(res, 404, { error: "Not found" });
         const ext = path.extname(p.file).toLowerCase();
         return this.send(res, 200, fs.readFileSync(p.file), { "Content-Type": ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg", "Cache-Control": "private, max-age=300" });
+      }
+    }
+
+    // Countdown photos: POST /api/countdowns/photo?id=<countdown id> (the raw image as the body, or ?from=<photo library id> to
+    // use a photo already in the library) · POST /api/countdowns/photo/delete {id} · GET /api/countdowns/photo/<id>
+    if (url.pathname.startsWith("/api/countdowns/photo")) {
+      const id = String(url.searchParams.get("id") || "");
+      if (url.pathname === "/api/countdowns/photo" && req.method === "POST") {
+        try {
+          const from = url.searchParams.get("from");
+          if (from) {
+            const p = /^[0-9a-f]{20}$/.test(from) ? photos.findInFolder(readJson(SETTINGS, {}).photos || {}, from) : null;
+            if (!p) return this.send(res, 404, { error: "That photo isn't in the photo library any more" });
+            countdownPhotos.copyFrom(id, p.file);
+          } else countdownPhotos.save(id, await this.rawBody(req, countdownPhotos.MAX_BYTES));
+          console.log("[OpenSky] phone setup: a countdown photo was set");
+          return this.send(res, 200, { ok: true });
+        } catch (e) { return this.send(res, e.status || 500, { error: e.status ? e.message : "Couldn't save that photo on the Pi" }); }
+      }
+      if (url.pathname === "/api/countdowns/photo/delete" && req.method === "POST") {
+        const b = await this.body(req);
+        countdownPhotos.remove(String(b.id || ""));
+        return this.send(res, 200, { ok: true });
+      }
+      const m = url.pathname.match(/^\/api\/countdowns\/photo\/([a-z0-9]{4,24})$/);
+      if (m && req.method === "GET") {
+        const img = countdownPhotos.read(m[1]);
+        if (!img) return this.send(res, 404, { error: "Not found" });
+        return this.send(res, 200, img.body, { "Content-Type": img.type, "Cache-Control": "private, no-cache" });
       }
     }
 

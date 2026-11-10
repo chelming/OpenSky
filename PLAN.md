@@ -47,6 +47,7 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 | Smart Home page | Home Assistant dashboard (webview) ✅ | Home Assistant; **any URL** embed; none | Generic "embedded page" with optional PIN |
 | HA integration | screen switch/sensor, presence, sleep helpers ✅ | optional: auto-create HA entities via MQTT discovery or a small HA integration 💭 | Reference build uses REST + templates |
 | Header countdown pill | US holidays + birthdays ✅ | holidays by **country** ✅ (US: Google list; ~200 others: Nager.Date, + regions); birthdays from a calendar or a list | Themed icons ✅ |
+| Countdowns (trip, birthday, big day) | — | **countdowns** ✅: title, date, photo (upload or from the photo library), card on Home / banner on portrait, optional page, hides after the date; set up from the phone | Separate from the header pill |
 | Sports pill | Patriots (ESPN) ✅ | pick any team ✅: NFL/NBA/MLB/NHL/MLS/college/EPL (ESPN); off by default | ESPN API is unofficial → can break |
 | Curbside pickup icons | New Bedford rules (collection.js) ✅ | generic schedule ✅ (trash day, recycling weekly/every other week, yard-waste weeks, holiday shift rule); ICS import ✅ (city / ReCollect pickup calendars → icons by keyword) (many cities / ReCollect publish one); city presets contributed by users | Reference city = example preset |
 | Timer chime | USB speaker (PipeWire) ✅ | any audio output; 💭 smart-speaker announcement via HA | |
