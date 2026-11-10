@@ -68,10 +68,10 @@
 .ost-dim { position: fixed; inset: 0; z-index: 9990; background: #000; opacity: 0; pointer-events: none; transition: opacity .4s; }
 
 /* pages, look & extras, backups */
-.ost-page.off .ost-label { color: #9ca3af; }
+.ost-hc.off .ost-label, .ost-page.off .ost-label { color: #9ca3af; }
 .ost-order { display: flex; gap: 6px; margin-left: auto; }
-.ost-page .ost-toggle { margin-left: 8px; }
-.ost-page:not(:has(.ost-order button)) .ost-toggle { margin-left: auto; }
+.ost-hc .ost-toggle, .ost-page .ost-toggle { margin-left: 8px; }
+.ost-hc:not(:has(.ost-order button)) .ost-toggle, .ost-page:not(:has(.ost-order button)) .ost-toggle { margin-left: auto; }
 .ost-mini { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #f3f4f6; color: #4b5563; font-size: 16px; cursor: pointer; }
 .ost-mini:disabled { opacity: .3; }
 .ost-chips { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -110,5 +110,5 @@
 .ost-input.ost-hex { flex: 0 0 190px; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 .ost-grip { flex: none; width: 36px; height: 44px; margin-right: 6px; display: inline-flex; align-items: center; justify-content: center; color: #9ca3af; cursor: grab; touch-action: none; user-select: none; }
 .ost-grip svg { width: 20px; height: 20px; }
-.ost-page.ost-dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
-.ost-page.ost-dragging .ost-grip { cursor: grabbing; }
+.ost-hc.ost-dragging, .ost-page.ost-dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
+.ost-hc.ost-dragging .ost-grip, .ost-page.ost-dragging .ost-grip { cursor: grabbing; }

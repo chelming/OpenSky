@@ -168,6 +168,13 @@ const ss = ssOf({ enabled: true, afterMinutes: 3, upNext: false, photoSeconds: 8
 ok("22 screensaver: settings reach the module; bad numbers → defaults (10 min, 20 s)", ss && ss.config.afterMinutes === 3 && ss.config.upNext === false && ss.config.photos.intervalSeconds === 8 &&
   ss.config.hour12 === false && ssd.config.afterMinutes === 10 && ssd.config.photos.intervalSeconds === 20 && ssd.config.upNext === true, ss && ss.config);
 
+const hcOf = (home) => mod(build({ pages: ["home"], ...(home ? { home } : {}), meals: { provider: "local", types: ["dinner"] } }), "MMM-OpenSky-Home").config;
+const hc0 = hcOf(), hc1 = hcOf({ cards: ["photos", "bogus", "lists", "photos"] }), hc2 = hcOf({ cards: ["lists"] });
+ok("23 Home cards: not set → all four in the old order; a list → that order (unknown/repeats dropped); a missing card is off (photos, tonight)",
+  JSON.stringify(hc0.cards) === '["notes","tonight","lists","photos"]' && hc0.photos.enabled === true && hc0.tonight === true &&
+  JSON.stringify(hc1.cards) === '["photos","lists"]' && hc1.photos.enabled === true && hc1.tonight === false &&
+  hc2.photos.enabled === false && hc2.tonight === false, [hc0.cards, hc1.cards, hc2.cards]);
+
 delete global.window; delete global.document;
 
 
