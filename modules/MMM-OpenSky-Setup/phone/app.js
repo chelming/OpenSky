@@ -185,6 +185,7 @@
       for (const k of ["family", "locale", "location", "weather", "header", "calendar", "lists", "photos", "share", "pickup", "wordgame", "embeds"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
       if (!Array.isArray(S.pages)) S.pages = ["home", "calendar", "lists", "timer"];
       if (!Array.isArray(S.profiles)) S.profiles = [];
+      if (!S.ai || typeof S.ai !== "object") S.ai = {};
       if (!Array.isArray(S.screens)) S.screens = [];
       if (!Array.isArray(S.calendar.sources)) S.calendar.sources = [];
       if (!Array.isArray(S.lists.lists)) S.lists.lists = [];
@@ -198,7 +199,7 @@
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
       el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["weather", "Weather"], ["countdowns", "Countdowns"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["homecards", "Home cards"], ["web", "Web pages"], ["screens", "Screens"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), weatherCard(), countdownsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), homeCardsCard(), webCard(), screensCard(), extrasCard(), backupCard(),
+      familyCard(), calendarsCard(), listsCard(), mealsCard(), weatherCard(), countdownsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), homeCardsCard(), webCard(), screensCard(), aiCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -346,32 +347,37 @@
       el("div", { class: "photo-row" }, prev, el("button", { type: "button", class: "btn", onclick: () => file.click() }, "Choose a photo"), rm, file), msg);
   }
 
+  // A person's email: only used to invite them to events made with the AI helper's quick add. Stays on the Pi (never sent to the screen page).
+  const emailOk = (v) => (!v || /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]{2,}$/.test(v) ? "" : "That email doesn't look right — it should look like name@example.com");
+  const emailField = (cur, onchange) => field("Email (optional)", text(cur || "", (v) => { onchange(v.trim()); }, { inputmode: "email", autocapitalize: "off", placeholder: "name@example.com", maxlength: "120" }), "Used to invite this person to events you add by voice or text. Leave it empty if they shouldn't get invites.");
+
   function addPerson() {
-    const d = { name: "", color: COLORS[S.profiles.length % COLORS.length], photo: "" };
+    const d = { name: "", color: COLORS[S.profiles.length % COLORS.length], photo: "", email: "" };
     const err = el("p", { class: "err" });
-    sheet("Add a person", (b) => b.append(field("Name", text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Mom, Zoe", maxlength: "20" })), colorField(d.color, (c) => { d.color = c; }), photoField("", (v) => { d.photo = v; }), err),
+    sheet("Add a person", (b) => b.append(field("Name", text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Mom, Zoe", maxlength: "20" })), colorField(d.color, (c) => { d.color = c; }), photoField("", (v) => { d.photo = v; }), emailField("", (v) => { d.email = v; }), err),
       [["Cancel", "", () => {}], ["Add", "primary", () => {
-        const bad = nameOk(d.name, S.profiles.map((p) => p.name));
+        const bad = nameOk(d.name, S.profiles.map((p) => p.name)) || emailOk(d.email);
         if (bad) { err.textContent = bad; return false; }
-        S.profiles.push(d.photo ? { name: d.name, color: d.color, photo: d.photo } : { name: d.name, color: d.color }); change(); render();
+        S.profiles.push({ name: d.name, color: d.color, ...(d.photo ? { photo: d.photo } : {}), ...(d.email ? { email: d.email } : {}) }); change(); render();
       }]]);
   }
 
   function editPerson(i) {
     const p = S.profiles[i], was = p.name;
-    let name = p.name, color = p.color || "blue", photo = p.photo || "";
+    let name = p.name, color = p.color || "blue", photo = p.photo || "", email = p.email || "";
     const err = el("p", { class: "err" });
-    sheet(p.name, (b) => b.append(field("Name", text(p.name, (v) => { name = v.trim(); }, { maxlength: "20" })), colorField(color, (c) => { color = c; }), photoField(photo, (v) => { photo = v; }), err),
+    sheet(p.name, (b) => b.append(field("Name", text(p.name, (v) => { name = v.trim(); }, { maxlength: "20" })), colorField(color, (c) => { color = c; }), photoField(photo, (v) => { photo = v; }), emailField(email, (v) => { email = v; }), err),
       [["Remove", "danger", () => {   // their calendars and lists stay; they just aren't linked to this person any more
         S.profiles.splice(i, 1);
         S.screens.forEach((x) => { if (x.person === was) delete x.person; });
         [...S.calendar.sources, ...S.lists.lists].forEach((x) => { setLinks(x, linked(x).filter((n) => n !== was)); if (linked(x).length !== 1) delete x.colorFromProfile; });
         change(); render();
       }], ["Done", "primary", () => {
-        const bad = nameOk(name, S.profiles.filter((_, j) => j !== i).map((q) => q.name));
+        const bad = nameOk(name, S.profiles.filter((_, j) => j !== i).map((q) => q.name)) || emailOk(email);
         if (bad) { err.textContent = bad; return false; }
         p.name = name; p.color = color;
         if (photo) p.photo = photo; else delete p.photo;
+        if (email) p.email = email; else delete p.email;
         if (name !== was) S.screens.forEach((x) => { if (x.person === was) x.person = name; });
         if (name !== was) [...S.calendar.sources, ...S.lists.lists].forEach((x) => setLinks(x, linked(x).map((n) => (n === was ? name : n))));
         change(); render();
@@ -670,6 +676,32 @@
       }
     }
     return section("meals", "meals", "Meals", "Tonight's dinner and the week's meal plan", ...body);
+  }
+
+  // AI helper: a model on your own network (llama.cpp, Ollama…) that turns "dentist Tuesday 3pm" (typed or spoken) into a filled-in New Event form.
+  // Both addresses are tested before they are kept; empty = the feature is off and the box never shows.
+  const aiUi = {};
+  function aiCard() {
+    const A = S.ai, ok = (v) => /^https?:\/\/[^/\s]+/i.test(String(v || "").trim());
+    const test = async () => {
+      aiUi.busy = true; aiUi.err = ""; aiUi.good = ""; render();
+      try {
+        const r = await api("POST", "/api/ai/test", { url: A.url || "", transcribeUrl: A.transcribeUrl || "" });
+        aiUi.good = `Connected ✓ ${r.model}${r.vision ? "" : " (it can't read photos)"}${A.transcribeUrl ? (r.voice ? " · speech helper answers ✓" : "") : ""}`;
+      } catch (e) { aiUi.err = e.message; }
+      aiUi.busy = false; render();
+    };
+    const set = (key) => (v) => { v = v.trim(); if (v) A[key] = v.replace(/\/+$/, ""); else delete A[key]; aiUi.good = ""; change(); };
+    const body = [
+      field("AI helper address", text(A.url || "", set("url"), { placeholder: "https://llama-cpp.example", inputmode: "url", autocapitalize: "off" }),
+        "A model that understands sentences, running on your own network (llama.cpp's llama-server, Ollama, LM Studio…). Leave empty to switch quick add off."),
+      field("Speech helper address (optional)", text(A.transcribeUrl || "", set("transcribeUrl"), { placeholder: "https://asr.example", inputmode: "url", autocapitalize: "off" }),
+        "Adds a microphone button to New Event. Any server with an OpenAI-style /v1/audio/transcriptions works."),
+      el("button", { type: "button", class: "btn primary block", disabled: aiUi.busy || !ok(A.url), onclick: test }, aiUi.busy ? "Testing…" : "Test the connection")];
+    if (aiUi.good) body.push(el("p", { class: "good-note" }, aiUi.good));
+    if (aiUi.err) body.push(el("p", { class: "err" }, aiUi.err));
+    if (A.url && !S.profiles.some((p) => p.email)) body.push(el("p", { class: "hint" }, "To invite people to events, add their email under Your family → tap a person."));
+    return section("ai", "extras", "AI helper", "Type or say “dentist Tuesday 3pm” and the New Event form fills itself in. You check it, then tap Add Event.", ...body);
   }
 
   // Weather page: the next 24 hours, weather alerts (US) and a rain radar. Each part has its own switch; the page itself is one more page.

@@ -37,6 +37,7 @@ const google = require(path.join(global.root_path || process.cwd(), "modules", "
 const backup = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "backup.js"));
 const photos = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "photos.js"));
 const mealie = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "mealie.js"));
+const llm = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "llm.js"));
 const greenlight = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "greenlight.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
 const haTiles = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "ha-tiles.js"));
@@ -510,6 +511,17 @@ module.exports = NodeHelper.create({
           console.log("[OpenSky] phone setup: connected to Mealie");
         }
         return this.send(res, 200, { ...r, url: creds.url.replace(/\/+$/, "") });
+      } catch (e) { return this.send(res, e.status === 502 ? 502 : 400, { error: e.message }); }   // (never 401: the phone reads that as "not paired")
+    }
+
+    // AI helper (quick add): check the addresses typed on the phone, before they are saved (the page saves them with the rest of the settings)
+    if (url.pathname === "/api/ai/test" && req.method === "POST") {
+      const b = await this.body(req);
+      const u = String(b.url || "").trim(), t = String(b.transcribeUrl || "").trim();
+      try {
+        const r = await llm.connect({ url: u });
+        const voice = t ? await llm.reachable({ transcribeUrl: t }) : null;
+        return this.send(res, 200, { model: r.model, vision: r.vision, voice });
       } catch (e) { return this.send(res, e.status === 502 ? 502 : 400, { error: e.message }); }   // (never 401: the phone reads that as "not paired")
     }
 

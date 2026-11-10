@@ -242,6 +242,21 @@ ok("29 screen profiles: none by default; names trimmed, pages/person/size/accent
   Array.isArray(scr()) && scr().length === 0 && sc.length === 2 && sc[0].name === "Kitchen" && sc[0].pages.join() === "home,lists" && sc[0].person === "Mom" && sc[0].textSize === "xlarge" && sc[0].accent === "teal" &&
   sc[1].person === null && sc[1].textSize === null && sc[1].accent === "#3b82f6", sc);
 
+// quick add (AI helper): the page only learns whether the box / mic button show; addresses and people's emails never reach the built config
+const qaCfg = (ai, sources = [{ name: "Family", type: "local" }]) => build({ profiles: [{ name: "Mia", email: "mia.secret@example.com" }, { name: "Dad" }], calendar: { sources }, ...(ai === undefined ? {} : { ai }) });
+const qaOf = (c2) => mod(c2, "MMM-OpenSky-EventEditor").config;
+const qaOn = qaCfg({ url: " https://ai.example.test/ ", transcribeUrl: "http://asr.example.test:8082" });
+ok("30 quick add: off by default; on with a valid AI address (+ mic only with a valid speech address); no editable calendar → off; a bad address → off",
+  qaOf(qaCfg()).quickAdd.enabled === false && qaOf(qaCfg()).quickAdd.voice === false &&
+  qaOf(qaOn).quickAdd.enabled === true && qaOf(qaOn).quickAdd.voice === true &&
+  qaOf(qaCfg({ url: "https://ai.example.test" })).quickAdd.voice === false &&
+  qaOf(qaCfg({ transcribeUrl: "http://asr.example.test" })).quickAdd.enabled === false && qaOf(qaCfg({ transcribeUrl: "http://asr.example.test" })).quickAdd.voice === false &&
+  qaOf(qaCfg({ url: "https://ai.example.test" }, [{ name: "Holidays link", type: "link", url: "https://x.test/a.ics" }])).quickAdd.enabled === false &&
+  qaOf(qaCfg({ url: "javascript:alert(1)" })).quickAdd.enabled === false, qaOf(qaOn).quickAdd);
+const qaText = JSON.stringify(qaOn);
+ok("31 quick add: the AI addresses and people's emails are not in the built config (MagicMirror serves it to the whole network)",
+  !qaText.includes("ai.example.test") && !qaText.includes("asr.example.test") && !qaText.includes("mia.secret@example.com") && mod(qaOn, "MMM-OpenSky-Header").config.profiles.length === 2 && mod(qaOn, "MMM-OpenSky-Header").config.profiles.every((p) => !("email" in p)), qaText.length);
+
 delete global.window; delete global.document;
 
 

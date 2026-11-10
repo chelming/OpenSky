@@ -182,6 +182,10 @@ if (pk.url) calendarSources.push({ name: "Pickup", type: "link", role: "pickup",
 const editableCalendars = calendarSources.filter((c) => c.type === "local" || c.type === "caldav" || (c.type === "google" && !c.readOnly))
   .map((c) => ({ name: c.name, type: c.type, ...(c.type === "google" ? { calendarId: c.calendarId } : {}) }));
 const canAddEvents = editableCalendars.length > 0;
+// Quick add ("dentist Tuesday 3pm", typed or spoken): the AI helper's address is only used by the node helpers; the page just
+// learns whether the box and the mic button should show. opensky.json → ai: { url, model?, transcribeUrl? }
+const aiSet = (s.ai && typeof s.ai === "object") ? s.ai : {};
+const quickAddFlags = { enabled: canAddEvents && /^https?:\/\/[^/\s]+/i.test(String(aiSet.url || "").trim()), voice: canAddEvents && /^https?:\/\/[^/\s]+/i.test(String(aiSet.transcribeUrl || "").trim()) && /^https?:\/\/[^/\s]+/i.test(String(aiSet.url || "").trim()) };
 
 // Timer buttons: whole minutes; anything else (one number instead of a list, words) → the usual buttons
 function quickMinutes(v) {
@@ -402,7 +406,7 @@ const fixed = [
   ...(s.keyboard && s.keyboard.enabled === false ? [] : [{ module: "MMM-OpenSky-Keyboard", config: { layout: (s.keyboard && s.keyboard.layout) || "en" } }]),
   ...(mealsOn ? [{ module: "MMM-OpenSky-Meals", config: { types: mealTypes, addToList: mealList, local: mealsLocal } }] : []),
   ...(familyLists.length ? [{ module: "MMM-OpenSky-Lists", config: { lists: familyLists, refreshMinutes: listSettings.refreshMinutes || 2 } }] : []),
-  ...(calendarSources.length ? [{ module: "MMM-OpenSky-EventEditor", config: { editable: editableCalendars, servicePort } }] : []),
+  ...(calendarSources.length ? [{ module: "MMM-OpenSky-EventEditor", config: { editable: editableCalendars, servicePort, quickAdd: quickAddFlags } }] : []),
   ...(saver.enabled === true ? [{
     module: "MMM-OpenSky-Screensaver",
     config: {
