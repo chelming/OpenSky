@@ -89,6 +89,20 @@
 .hb-theme-thanksgiving{ --cd-bg:#fdf0e4; --cd-fg:#a3531c; --cd-solid:#c46a2b; }
 .hb-theme-birthday    { --cd-bg:#fff4ef; --cd-fg:#b4532f; --cd-solid:var(--os-accent-mid); }
 
+/* Weather alerts pill, after the clock: green when calm, amber for watches, red for warnings; a button when it can open the Weather page */
+.hb-alert{
+  flex:0 1 auto; min-width:0; max-width:34vw; display:inline-flex; align-items:center; gap:10px; box-sizing:border-box;
+  min-height:44px; padding:6px 16px; border:0; border-radius:999px; font:inherit; font-size:18px; font-weight:700; white-space:nowrap;
+  pointer-events:auto; background:#e8f8ee; color:#14532d;
+}
+.hb-alert svg{ width:20px; height:20px; flex:none; }
+.hb-alert span{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+button.hb-alert{ cursor:pointer; }
+.hb-alert-warn{ background:#fff1c9; color:#6b4300; }
+.hb-alert-hot{ background:#fde3e0; color:#a8231a; }
+html[data-layout="compact"] .hb-alert{ font-size:16px; padding:4px 12px; min-height:44px; }
+html[data-layout="portrait"] .hb-alert{ order:4; max-width:none; font-size:22px; }
+
 /* Sports game-day pill (left of the countdown) */
 .hb-game{
   margin-left:auto;

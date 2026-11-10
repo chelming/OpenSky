@@ -23,7 +23,13 @@ function create(port = 0) {
         temp.push(50.4 + i); code.push(i < 6 ? 0 : 61); pop.push(i < 6 ? 0 : 40 + i);
       }
       state.seen.unit = u.searchParams.get("temperature_unit");
-      return json({ hourly: { time, temperature_2m: temp, weather_code: code, precipitation_probability: pop } });
+      state.seen.wind = u.searchParams.get("wind_speed_unit");
+      const days = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => { const t = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; });
+      return json({
+        hourly: { time, temperature_2m: temp, weather_code: code, precipitation_probability: pop },
+        current: { temperature_2m: 50.4, apparent_temperature: 47.6, relative_humidity_2m: 62, wind_speed_10m: 8.2, weather_code: 0, is_day: 1 },
+        daily: { time: days, precipitation_probability_max: [10, 70, 10, 10, 60, 20, 50, 0] }
+      });
     }
     if (u.pathname === "/alerts/active") {
       state.seen.nwsAgent = req.headers["user-agent"]; state.seen.point = u.searchParams.get("point");

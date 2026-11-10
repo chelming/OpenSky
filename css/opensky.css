@@ -114,5 +114,6 @@ html[data-layout="compact"] {
    inverted back so they look as they are; the screensaver is already dark and is turned back as a whole. */
 html[data-os-theme="dark"] { filter: invert(1) hue-rotate(180deg); background: #fff; }
 html[data-os-theme="dark"] :is(img, video, canvas, webview, iframe):not(.ss-root *),
-html[data-os-theme="dark"] .ss-root { filter: invert(1) hue-rotate(180deg); }
+html[data-os-theme="dark"] .ss-root,
+html[data-os-theme="dark"] .wp-hero { filter: invert(1) hue-rotate(180deg); }
 html[data-os-theme="dark"] .ost-dim { background: #fff; }   /* the evening dim layer is black; inverted it has to start out white */

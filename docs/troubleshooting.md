@@ -29,7 +29,7 @@ Raspberry Pi OS blanks the screen when idle. Run `sudo raspi-config nonint do_bl
 - `location` needs a latitude and longitude. Add them with `opensky edit` (see [Settings](configure.md#family-and-place)).
 - Using `"openweathermap"`? Check the key in `secrets.json`; new keys take up to 2 hours to start working. Or switch back to `"open-meteo"`, which needs no key.
 - The weather fills in about a minute after the internet comes back.
-- The **Weather page** says in plain words which part (hours, radar, alerts) could not load, and tries again every 10 minutes. A grey radar map means the map pictures cannot be reached (no internet, or the map service is down). Alerts only exist for the United States.
+- The **Weather page** says in plain words which part (hours, radar, alerts) could not load (no alerts pill in the top bar means alerts could not be checked, or you are outside the US), and tries again every 10 minutes. A grey radar map means the map pictures cannot be reached (no internet, or the map service is down). Alerts only exist for the United States.
 
 ## A calendar doesn't show
 - `opensky logs` names the calendar and the reason:
