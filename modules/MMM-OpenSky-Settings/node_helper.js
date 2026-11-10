@@ -379,12 +379,6 @@ module.exports = NodeHelper.create({
       s.look = s.look || {};
       if (a === "peach") delete s.look.accent; else s.look.accent = a;
     }
-    if ("textSize" in patch) {
-      const t = textSize.normalize(patch.textSize);
-      if (!t) return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: "Pick Small, Normal, Large or Extra large" });
-      s.look = s.look || {};
-      if (t === "normal") delete s.look.textSize; else s.look.textSize = t;
-    }
     if ("wordgame" in patch) { s.wordgame = s.wordgame || {}; s.wordgame.source = patch.wordgame === "opensky" ? "opensky" : "nyt"; restartNeeded = true; }
     if ("photos" in patch) { s.photos = s.photos || {}; s.photos.enabled = !!patch.photos; restartNeeded = true; }
     if ("trashDay" in patch) { s.pickup = s.pickup || {}; s.pickup.trashDay = String(patch.trashDay || ""); restartNeeded = true; }

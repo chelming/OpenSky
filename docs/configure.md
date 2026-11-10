@@ -64,8 +64,10 @@ screen (the Pi's display settings) and restart OpenSky.
 
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
-at once, like a smaller screen. Pick it on the screen (Settings → Look & extras → Text size, applied at once) or on the
-phone (Extras → Text size).
+at once, like a smaller screen. This setting is the **default for every screen** (set it on the phone: Extras → Text size).
+Each screen can pick its **own** size in Settings → Look & extras → Text size (applied at once; "Default" follows the setting
+above). That choice is remembered by that screen's browser only, so a kitchen screen and a hallway tablet can differ, and it
+isn't saved in `opensky.json`.
 
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the

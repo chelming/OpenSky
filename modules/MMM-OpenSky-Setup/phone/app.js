@@ -729,8 +729,8 @@
     drawWeather(w.provider || "open-meteo");
     return section("extras", "extras", "Extras", null,
       accentField(),
-      field("Text size", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
-        "Makes everything on the screen bigger or smaller. Large and Extra large show less at once."),
+      field("Text size (default for every screen)", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
+        "Makes everything on the screen bigger or smaller; Large and Extra large show less at once. Each screen can pick its own in Settings on that screen; this is what the others use."),
       field("Screensaver", select([["0", "Off"], ...[5, 10, 15, 30, 60].map((m) => [String(m), `After ${m} minutes without a touch`])], String(S.screensaver && S.screensaver.enabled === true ? (S.screensaver.afterMinutes || 10) : 0), (v) => {
         const sv = S.screensaver = S.screensaver || {};
         if (v === "0") sv.enabled = false; else { sv.enabled = true; sv.afterMinutes = Number(v); }
