@@ -41,6 +41,8 @@ Everything above lives in the `/config` volume (`./docker-config/` on the host) 
 "Restart OpenSky" (and finishing phone setup) exits the process so the compose restart policy starts it again
 (`docker restart opensky` does the same from outside). `OPENSKY_SETUP_URL` is the address phone setup shows in its QR code and accepts as its Host.
 
+**Mealie** (`lib/mealie.js`): list provider `mealie` + calendar source type `mealie` (the meal plan). Address and token are `secrets.json → mealie.url/.token`, set from phone setup (Lists / Calendars → Mealie → *Connect*, `POST /api/mealie/connect`, which saves them once they work). Tests: `tools/test-mealie.js`, `tools/scenarios/mealie.js`.
+
 **Two kinds of phone access, never mixed:** phone *setup* (pairing code, short-lived, can change everything) and the *share* page
 (a family passcode, always on when enabled, can only add photos and notes). Keep it that way: a new share endpoint must never read or write
 settings, secrets, backups or calendars, and `tools/test-share.js` checks what a share phone can't reach.
