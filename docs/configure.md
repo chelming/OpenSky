@@ -427,7 +427,7 @@ Works the same in Docker with the screen shown in a browser (it only needs page 
 "keyboard": { "enabled": true }
 ```
 A keyboard slides up whenever you tap a text box (adding a list item, naming an event). Turn it off with `false`
-if you use a real keyboard. Dates and times use pickers instead.
+if you use a real keyboard. Dates and times use pickers instead. The keyboard takes 40 % of the screen height, but never more than 440 px (design size), so on a portrait screen its keys stay normal-sized instead of stretching.
 
 ## The Settings panel (on the screen)
 | Setting | What it does |

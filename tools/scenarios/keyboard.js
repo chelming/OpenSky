@@ -44,6 +44,26 @@ module.exports = async (page, h) => {
   ok("the hide key closes it", !(await kb()));
   await page.evaluate(() => document.querySelector(".event-close-btn, .event-btn-secondary")?.click());
 
+  // Portrait (1080x1920): the keyboard is capped (440 design px), not 40 % of 1920 px, so the keys keep their shape
+  const kbBox = () => page.evaluate(() => {
+    const k = document.querySelector(".okb"), z = Number(getComputedStyle(document.documentElement).getPropertyValue("--os-zoom")) || 1, keys = [...k.querySelectorAll(".okb-key")].filter((x) => /^[a-z]$/.test(x.dataset.key || ""));
+    const r = k.getBoundingClientRect(), q = keys[0].getBoundingClientRect();
+    return { H: innerHeight / z, kb: Math.round(r.height / z), keyH: Math.round(q.height / z), keyW: Math.round(q.width / z) };
+  });
+  await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Home")[0].sendNotification("CALENDAR_ADD_EVENT", { date: new Date() })); await h.sleep(500);
+  const land = await (async () => { await page.evaluate(() => document.getElementById("event-title").focus()); await until(kb); await h.sleep(500); return kbBox(); })();
+  ok("landscape 1080 px tall: the keyboard is 40 % (432 px)", Math.abs(land.kb - 0.4 * land.H) < 2 && land.kb <= 440, land);
+  await h.tap(".okb-hide"); await h.sleep(300);
+  await page.setViewportSize({ width: 1080, height: 1920 }); await h.sleep(1500);
+  await page.evaluate(() => document.getElementById("event-title") && document.getElementById("event-title").focus()); await until(kb); await h.sleep(500);
+  const port = await kbBox();
+  ok("portrait 1920 px tall: the keyboard is capped (<= 440 px, not 768) and its keys are not stretched (taller than wide by less than 1.3x)", port.kb <= 440 && port.kb > 300 && port.keyH <= port.keyW * 1.3, port);
+  await h.shot("keyboard-portrait");
+  const room = await page.evaluate(() => { const m = document.querySelector(".calendar-editor-modal"), k = document.querySelector(".okb"); return m ? m.getBoundingClientRect().bottom <= k.getBoundingClientRect().top + 1 : null; });
+  ok("portrait: the event form still sits above the keyboard", room === true, room);
+  await h.tap(".okb-hide"); await h.sleep(300);
+  await page.evaluate(() => document.querySelector(".event-close-btn, .event-btn-secondary")?.click());
+
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };
