@@ -10,6 +10,7 @@ global.root_path = path.join(tmp, "mm");
 process.env.OPENSKY_DRY_RUN = "1";
 process.env.OPENSKY_SETTINGS = path.join(tmp, "opensky.json");
 process.env.OPENSKY_SECRETS = path.join(tmp, "secrets.json");
+process.env.OPENSKY_SETUP_DEVICES = path.join(tmp, "setup-devices.json");
 process.env.OPENSKY_WELCOME_FILE = path.join(tmp, ".welcomed");
 // a stand-in for MagicMirror's node_helper
 const origResolve = Module._resolveFilename;
@@ -27,7 +28,7 @@ function call(method, url, body, headers = {}) {
     const data = body === undefined ? null : JSON.stringify(body);
     const r = http.request({ host: "127.0.0.1", port, path: url, method, headers: { Host: "localhost", ...(method === "POST" ? { "X-OpenSky": "1" } : {}), ...(data ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), ...headers } }, (res) => {
       let d = ""; res.on("data", (c) => { d += c; });
-      res.on("end", () => { let j = null; try { j = JSON.parse(d); } catch (e) { /* not JSON */ } resolve({ status: res.statusCode, body: j, cookie: (res.headers["set-cookie"] || [""])[0].split(";")[0] }); });
+      res.on("end", () => { let j = null; try { j = JSON.parse(d); } catch (e) { /* not JSON */ } resolve({ status: res.statusCode, body: j, cookies: res.headers["set-cookie"] || [], cookie: (res.headers["set-cookie"] || [""])[0].split(";")[0] }); });
     });
     r.on("error", () => resolve({ status: 0 }));
     if (data) r.write(data);
@@ -83,6 +84,24 @@ function burst(n) {
   const cookie = (await call("POST", "/api/pair", { code: h.code })).cookie;
   const as = { Cookie: cookie };
   ok("4 the right code pairs the phone", /^os_setup=[a-f0-9]{64}$/.test(cookie), cookie.slice(0, 12));
+
+  // 4b-4e "remember this device": a 30-day cookie skips the code; only its hash is kept; Forget ends it
+  ok("4b without the box ticked no device cookie is set", !(await call("POST", "/api/pair", { code: h.code })).cookies.some((c) => c.startsWith("os_device=")) && !fs.existsSync(process.env.OPENSKY_SETUP_DEVICES));
+  h.lockedUntil = 0; h.codeUntil = Date.now() + 60000;
+  const rem = await call("POST", "/api/pair", { code: h.code, remember: true });
+  const dev = (rem.cookies.find((c) => c.startsWith("os_device=")) || "").split(";")[0];
+  ok("4c ticking it sets a 30-day HttpOnly cookie", /^os_device=[a-f0-9]{64}$/.test(dev) && rem.cookies.some((c) => /os_device=.*HttpOnly.*Max-Age=2592000/.test(c)), rem.cookies);
+  const stored = fs.readFileSync(process.env.OPENSKY_SETUP_DEVICES, "utf8");
+  ok("4d the token itself is not stored, the file is private", !stored.includes(dev.split("=")[1]) && (fs.statSync(process.env.OPENSKY_SETUP_DEVICES).mode & 0o077) === 0);
+  h.sessions = new Set();   // (as after a restart)
+  ok("4e a remembered device needs no code", (await call("GET", "/api/state", undefined, { Cookie: dev })).status === 200);
+  ok("4f a made-up device cookie doesn't", (await call("GET", "/api/state", undefined, { Cookie: "os_device=" + "a".repeat(64) })).status === 401);
+  await call("POST", "/api/devices/forget", {}, { Cookie: dev });
+  ok("4g Forget ends it", (await call("GET", "/api/state", undefined, { Cookie: dev })).status === 401);
+  h.lockedUntil = 0; h.codeUntil = Date.now() + 60000;
+  const again = (await call("POST", "/api/pair", { code: h.code })).cookie;
+  ok("4h pairing with the code still works", again.startsWith("os_setup="));
+  as.Cookie = again;
 
   // 5-7 a damaged secrets.json (a typo from editing it by hand) is never replaced by just the new value
   const damaged = '{ "lists": { "todoist": { "token": "tok-testers-123" } }, }';

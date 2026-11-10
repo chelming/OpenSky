@@ -2,7 +2,8 @@
  *
  * Runs a small web server on the Pi's network address (port 8090, opensky.json → setup.port) ONLY while setup is
  * open on the screen (or a paired phone is still busy with it); it stops by itself after 30 quiet minutes. The phone pairs with the 6-digit code shown on the
- * screen (good for 10 minutes; 5 wrong tries → a 1-minute pause) and gets a session cookie that dies with the server.
+ * screen (good for 10 minutes; 5 wrong tries → a 1-minute pause) and gets a session cookie that dies with the server
+ * (or, if it asks to be remembered, a 30-day device cookie that skips the code; see setup-devices.json).
  *   - opensky.json is read and written whole (a copy of the previous one is kept as opensky.json.bak).
  *   - secrets.json is WRITE-ONLY from the phone: it learns which secrets are set, never their values.
  *   - "Done" restarts OpenSky (when it runs as the opensky service) so the screen shows the new settings.
@@ -47,6 +48,8 @@ const DOCKER = process.env.OPENSKY_DOCKER === "1";   // the container restarts w
 const MM_CONFIG = path.join(global.root_path || process.cwd(), "config");
 const SETTINGS = process.env.OPENSKY_SETTINGS || path.join(MM_CONFIG, "opensky.json");
 const SECRETS = process.env.OPENSKY_SECRETS || path.join(path.dirname(SETTINGS), "secrets.json");
+const DEVICES = process.env.OPENSKY_SETUP_DEVICES || path.join(path.dirname(SETTINGS), "setup-devices.json");   // "remember this device": hashes only, chmod 600
+const REMEMBER_DAYS = 30;
 const WELCOMED = process.env.OPENSKY_WELCOME_FILE || path.join(path.dirname(SETTINGS), ".welcomed");
 const EXAMPLE = path.join(__dirname, "..", "..", "config", "opensky.example.json");
 const PHONE = path.join(__dirname, "phone");
@@ -252,9 +255,26 @@ module.exports = NodeHelper.create({
     return [...ips, host.toLowerCase(), "localhost", "127.0.0.1", os.hostname().toLowerCase(), ...own].includes(h);
   },
 
+  // a remembered device (cookie os_device, 30 days) needs no code; only the sha256 of its token is kept on the Pi
+  remembered(req) {
+    const m = String(req.headers.cookie || "").match(/(?:^|;\s*)os_device=([a-f0-9]{64})/);
+    if (!m) return false;
+    const h = crypto.createHash("sha256").update(m[1]).digest("hex");
+    const now = Date.now();
+    return (readJson(DEVICES, {}).devices || []).some((d) => d.hash === h && d.until > now);
+  },
+
+  remember() {
+    const token = crypto.randomBytes(32).toString("hex"), now = Date.now();
+    const devices = (readJson(DEVICES, {}).devices || []).filter((d) => d.until > now).slice(-19);
+    devices.push({ hash: crypto.createHash("sha256").update(token).digest("hex"), until: now + REMEMBER_DAYS * 86400 * 1000 });
+    writeJson(DEVICES, { devices }, 0o600);
+    return `os_device=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${REMEMBER_DAYS * 86400}`;
+  },
+
   authed(req) {
     const m = String(req.headers.cookie || "").match(/(?:^|;\s*)os_setup=([a-f0-9]{64})/);
-    return !!(m && this.sessions.has(m[1]));
+    return !!(m && this.sessions.has(m[1])) || this.remembered(req);
   },
 
   body(req, limit = 256 * 1024) {
@@ -286,7 +306,7 @@ module.exports = NodeHelper.create({
     if (req.method === "POST" && req.headers["x-opensky"] !== "1") return this.send(res, 403, { error: "Refused" });
 
     if (url.pathname === "/api/pair" && req.method === "POST") {
-      const { code } = await this.body(req);
+      const { code, remember } = await this.body(req);
       // checked once the code has arrived: many requests can be waiting for their bodies at the same moment
       const now = Date.now();
       if (this.lockedUntil > now) return this.send(res, 429, { error: `Too many tries — wait ${Math.ceil((this.lockedUntil - now) / 1000)} s` });
@@ -297,7 +317,9 @@ module.exports = NodeHelper.create({
         this.sessions.add(token);
         this.touch();
         this.sendSocketNotification("OS_SETUP_PAIRED", { phones: this.sessions.size });
-        return this.send(res, 200, { ok: true }, { "Set-Cookie": `os_setup=${token}; HttpOnly; SameSite=Strict; Path=/` });
+        const cookies = [`os_setup=${token}; HttpOnly; SameSite=Strict; Path=/`];
+        if (remember === true) { try { cookies.push(this.remember()); } catch (e) { console.error(`[OpenSky] phone setup: couldn't remember the device (${e.message})`); } }
+        return this.send(res, 200, { ok: true, remembered: cookies.length > 1 }, { "Set-Cookie": cookies });
       }
       this.wrong += 1;
       if (this.wrong % 5 === 0) this.lockedUntil = now + 60 * 1000;
@@ -311,6 +333,13 @@ module.exports = NodeHelper.create({
     if (!this.authed(req)) return this.send(res, 401, { error: "Not paired", pair: true });
     this.touch();   // only a paired phone keeps setup open (anyone else on the Wi-Fi can't hold it open forever)
 
+    // forget every remembered device (this one too: it pairs with the code again next time)
+    if (url.pathname === "/api/devices/forget" && req.method === "POST") {
+      try { writeJson(DEVICES, { devices: [] }, 0o600); } catch (e) { return this.send(res, 500, { error: "Couldn't update the list on the Pi" }); }
+      console.log("[OpenSky] phone setup: remembered devices forgotten");
+      return this.send(res, 200, { ok: true }, { "Set-Cookie": "os_device=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0" });
+    }
+
     if (url.pathname === "/api/state" && req.method === "GET") {
       const settings = readJson(SETTINGS, null);
       // a damaged opensky.json: showing the example instead would let Save replace the family's settings with it
@@ -320,7 +349,7 @@ module.exports = NodeHelper.create({
       return this.send(res, 200, {
         settings: settings || readJson(EXAMPLE, {}), secretsSet: secretPaths(readJson(SECRETS, {})), shown: shownSecrets(readJson(SECRETS, {})), presets,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, service: !!process.env.INVOCATION_ID || DOCKER || DRY, docker: DOCKER,
-        addons: { music: musicInstalled() }
+        addons: { music: musicInstalled() }, remembered: (readJson(DEVICES, {}).devices || []).filter((d) => d.until > Date.now()).length
       });
     }
 

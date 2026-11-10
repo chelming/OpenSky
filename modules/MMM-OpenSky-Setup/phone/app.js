@@ -157,10 +157,11 @@
     const draw = () => { boxes.innerHTML = ""; for (let i = 0; i < 6; i++) boxes.append(el("span", { class: i === input.value.length ? "cur" : "" }, input.value[i] || "")); };
     const msg = el("p", { class: "pair-msg" }, err || "");
     const go = el("button", { type: "button", class: "btn primary big", disabled: true }, "Connect");
+    const keep = el("input", { type: "checkbox", id: "remember-device" });
     const submit = async () => {
       if (input.value.length !== 6 || busy) return;
       busy = true; go.textContent = "Connecting…"; go.disabled = true;
-      try { await api("POST", "/api/pair", { code: input.value }); busy = false; load(); }
+      try { await api("POST", "/api/pair", { code: input.value, remember: keep.checked }); busy = false; load(); }
       catch (e) { busy = false; msg.textContent = e.message; msg.className = "pair-msg bad"; input.value = ""; draw(); go.textContent = "Connect"; boxes.classList.remove("shake"); void boxes.offsetWidth; boxes.classList.add("shake"); }
     };
     input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 6); draw(); go.disabled = input.value.length !== 6; msg.textContent = ""; if (input.value.length === 6) submit(); });
@@ -169,7 +170,8 @@
       el("img", { class: "brand-icon", src: "icon.png", alt: "OpenSky" }),
       el("h1", {}, "Connect to your OpenSky"),
       el("p", { class: "lead" }, "Type the 6-digit code shown on the screen."),
-      el("div", { class: "code-wrap" }, boxes, input), msg, go,
+      el("div", { class: "code-wrap" }, boxes, input),
+      el("label", { class: "remember", for: "remember-device" }, keep, " Remember this device for 30 days (only on your own phone or computer)"), msg, go,
       el("p", { class: "fine" }, "Only phones that know the code can change your screen. The code changes every time setup opens.")));
     draw();
     setTimeout(() => input.focus(), 300);
@@ -1304,7 +1306,11 @@
       el("div", { class: "line top" }, el("span", {}, el("b", {}, "Include passwords & keys"), el("small", {}, "Keep that file somewhere private")),
         toggle(false, (v) => { link.setAttribute("href", v ? "/api/backup?secrets=1" : "/api/backup"); }, "Include passwords")),
       link,
-      el("button", { type: "button", class: "btn block", onclick: () => file.click() }, "Restore from a backup"), file, auto);
+      el("button", { type: "button", class: "btn block", onclick: () => file.click() }, "Restore from a backup"), file, auto,
+      el("h4", { class: "sub-title" }, "Remembered devices"),
+      el("p", { class: "hint" }, "Phones and computers that ticked \"Remember this device\" skip the pairing code for 30 days."),
+      el("button", { type: "button", class: "btn block", onclick: () => api("POST", "/api/devices/forget").then(() => { toast("Forgotten — every device needs the code again", "good"); load(); }, (x) => toast(x.message, "bad")) },
+        info && info.remembered ? `Forget remembered devices (${info.remembered})` : "Forget remembered devices"));
   }
 
   /* ---------------- start ---------------- */
