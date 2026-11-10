@@ -14,6 +14,7 @@
  *   POST /api/pair {code} · GET /api/state · POST /api/save {settings, secrets} · GET /api/geocode?q= · POST /api/done
  *   Google Calendar sign-in: GET /api/google · POST /api/google/start {clientId?, clientSecret?} → {url}
  *     · POST /api/google/finish {address} → {calendars} · GET /api/google/calendars
+ *   Mealie: GET /api/mealie → {set, url} · POST /api/mealie/connect {url?, token?} → {shoppingLists} (saves new address/token when they work)
  *   GET /api/music/speakers → {speakers: [{id, name, state}]} (Home Assistant media players, for the Music page)
  *   Photos in the Pi's folder: GET /api/photos → {folder, photos: [{id, name, size}]} · GET /api/photos/<id> (the image)
  *     · POST /api/photos?name= (the raw image as the body) · POST /api/photos/delete {id}
@@ -31,6 +32,7 @@ const { execFile } = require("child_process");
 const google = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "google-calendar.js"));
 const backup = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "backup.js"));
 const photos = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "photos.js"));
+const mealie = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "mealie.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
 const share = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "share.js"));
 
@@ -52,7 +54,7 @@ const STATIC = {
 };
 const CODE_MINUTES = 10, IDLE_MINUTES = 30;
 // secrets the phone may set (dotted paths under these)
-const SECRET_ROOTS = ["weather.openweathermap.", "lists.todoist.", "homeassistant.", "photos.immich.", "calendar.sources.", "calendar.caldav.", "embeds."];
+const SECRET_ROOTS = ["weather.openweathermap.", "lists.todoist.", "homeassistant.", "mealie.", "photos.immich.", "calendar.sources.", "calendar.caldav.", "embeds."];
 
 // the Music add-on's speakers, installed by `opensky addon music` (tests: OPENSKY_MUSIC_INSTALLED=spotify,airplay)
 function musicInstalled() {
@@ -423,6 +425,28 @@ module.exports = NodeHelper.create({
         const ext = path.extname(p.file).toLowerCase();
         return this.send(res, 200, fs.readFileSync(p.file), { "Content-Type": ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg", "Cache-Control": "private, max-age=300" });
       }
+    }
+
+    // Mealie: check an address + token (new ones are saved when they work; empty = the saved ones) → its shopping lists
+    if (url.pathname === "/api/mealie" && req.method === "GET") {
+      const m = readJson(SECRETS, {}).mealie || {};
+      return this.send(res, 200, { set: !!(m.url && m.token), url: m.url || "" });
+    }
+    if (url.pathname === "/api/mealie/connect" && req.method === "POST") {
+      const b = await this.body(req);
+      const given = { url: String(b.url || "").trim(), token: String(b.token || "").trim() };
+      try {
+        const saved = readJson(SECRETS, {}).mealie || {};
+        const creds = { url: given.url || saved.url, token: given.token || saved.token };
+        const r = await mealie.connect(creds);
+        if (given.url || given.token) {   // it works: keep it, so nothing has to be saved first
+          const cur = secretsForChange();
+          applySecret(cur, "mealie", { url: creds.url.replace(/\/+$/, ""), token: creds.token });
+          writeJson(SECRETS, cur, 0o600);
+          console.log("[OpenSky] phone setup: connected to Mealie");
+        }
+        return this.send(res, 200, { ...r, url: creds.url.replace(/\/+$/, "") });
+      } catch (e) { return this.send(res, e.status === 502 ? 502 : 400, { error: e.message }); }   // (never 401: the phone reads that as "not paired")
     }
 
     if (url.pathname === "/api/backup" && req.method === "GET") {

@@ -25,6 +25,14 @@ const fakeHA = http.createServer((req, res) => {
 });
 fakeHA.listen(HA, "127.0.0.1"); fakeHA.unref();
 
+// a stand-in Mealie (port 8099): one token, two shopping lists
+const MEALIE = 8099;
+const fakeMealie = http.createServer((req, res) => {
+  res.writeHead(req.headers.authorization === "Bearer mealie-phone-token" ? 200 : 401, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(req.url.startsWith("/api/households/shopping/lists") ? { items: [{ id: "L1", name: "Weekly Shop" }, { id: "L2", name: "Hardware" }] } : { id: "u1" }));
+});
+fakeMealie.listen(MEALIE, "127.0.0.1"); fakeMealie.unref();
+
 module.exports = async (page, h, app) => {
   const R = {}; const ok = (k, v, i) => { R[k] = v; h.log(`${v ? "PASS" : "FAIL"}  ${k}${i !== undefined ? "  — " + JSON.stringify(i) : ""}`); };
   const until = async (fn, tries = 40) => { for (let i = 0; i < tries && !(await fn()); i++) await h.sleep(250); return fn(); };
@@ -141,6 +149,38 @@ module.exports = async (page, h, app) => {
   ok("lists: Todoist 'Errands' (project, token in secrets), Groceries → orange, Chores removed",
     JSON.stringify(S.lists.lists) === JSON.stringify([{ name: "Groceries", color: "orange" }, { name: "Errands", color: S.lists.lists[1]?.color, provider: "todoist", project: "Errands Project" }]) &&
     sec.lists?.todoist?.token === "todoist-token-123456", S.lists.lists);
+
+  // ---- Mealie: connect from the phone (a wrong token first), a shopping list, and the meal plan as a calendar ----
+  await tap("#lists", ".add", null);
+  await tap(".sheet", ".seg button", "Mealie");
+  await type(".sheet input[inputmode=url]", `http://127.0.0.1:${MEALIE}`);
+  await type(".sheet input[type=password]", "wrong-token");
+  await tap(".sheet", ".btn.block", "Connect to Mealie");
+  await until(() => phone.evaluate(() => /refused the API token/.test(document.querySelector(".sheet .err")?.textContent || "")));
+  ok("mealie: a wrong token is explained, and nothing is saved", await phone.evaluate(() => /refused the API token/.test(document.querySelector(".sheet .err")?.textContent || "")) && !(secrets().mealie), secrets().mealie);
+  await type(".sheet input[type=password]", "mealie-phone-token");
+  await tap(".sheet", ".btn.block", "Connect to Mealie");
+  await until(() => phone.evaluate(() => !!document.querySelector(".sheet .good-note")));
+  ok("mealie: connected; the address and token are already kept on the Pi (no need to Save first)", secrets().mealie?.token === "mealie-phone-token" && secrets().mealie?.url === `http://127.0.0.1:${MEALIE}`, secrets().mealie);
+  await pick(".sheet", "Which shopping list?", "L1");
+  ok("mealie: picking a shopping list names the list after it", await phone.evaluate(() => document.querySelector(".sheet input.input[type=text]")?.value === "Weekly Shop"));
+  await sheetButton("Add");
+  await tap("#calendars", ".add", null);
+  await tap(".sheet", ".seg button", "Mealie");
+  await until(() => phone.evaluate(() => !!document.querySelector(".sheet .good-note")));
+  await tap(".sheet", ".toggle", "Lunch");
+  await sheetButton("Add");
+  await save();
+  S = settings(); sec = secrets();
+  ok("mealie: the list (with its Mealie id) and the meal plan calendar (lunch + dinner) are saved; the token only in secrets",
+    JSON.stringify(S.lists.lists.find((l) => l.provider === "mealie")) === JSON.stringify({ name: "Weekly Shop", color: S.lists.lists.find((l) => l.provider === "mealie")?.color, provider: "mealie", shoppingList: "Weekly Shop", shoppingListId: "L1" }) &&
+    JSON.stringify(S.calendar.sources.find((c) => c.type === "mealie")) === JSON.stringify({ name: "Dinner", color: S.calendar.sources.find((c) => c.type === "mealie")?.color, type: "mealie", meals: ["lunch", "dinner"] }) &&
+    sec.mealie.token === "mealie-phone-token" && !JSON.stringify(S).includes("mealie-phone-token"), [S.lists.lists.at(-1), S.calendar.sources.at(-1)]);
+  await row("#calendars", "Dinner");
+  await tap(".sheet", ".toggle", "Lunch");
+  await sheetButton("Done");
+  await save();
+  ok("mealie: meals can be changed later", JSON.stringify(settings().calendar.sources.find((c) => c.type === "mealie").meals) === '["dinner"]', settings().calendar.sources.find((c) => c.type === "mealie").meals);
 
   // ---- Colors as codes: a calendar's typed (upper case), a list's from the phone's color picker ----
   await row("#calendars", "Kids");

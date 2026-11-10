@@ -28,8 +28,8 @@ const c = build({
   calendar: { holidays: "GB", holidaysRegion: "GB-SCT", sources: [
     { name: "Family", type: "local", color: "blue", role: "shared" }, { name: "Shared", type: "caldav", color: "green" },
     { name: "Work", type: "google", calendarId: "primary" }, { name: "Club", type: "google", calendarId: "c@group.calendar.google.com", readOnly: true },
-    { name: "Mom", profiles: ["mom", "Zoe", "Nobody"], colorFromProfile: true, color: "red" }, { name: "ZoeCal", profiles: ["zoe"], colorFromProfile: true, color: "red" }, { name: "ZoeOwn", profiles: ["zoe"], color: "red" }, { name: "Holidays", url: "https://x/evil.ics" }], service: { port: 5099 }, mergeShared: true },
-  lists: { lists: [{ name: "Shopping", provider: "homeassistant", entity: "todo.shopping" }, { name: "Chores", profiles: ["Zoe"] }], columns: 3 },
+    { name: "Mom", profiles: ["mom", "Zoe", "Nobody"], colorFromProfile: true, color: "red" }, { name: "ZoeCal", profiles: ["zoe"], colorFromProfile: true, color: "red" }, { name: "ZoeOwn", profiles: ["zoe"], color: "red" }, { name: "Dinner", type: "mealie", meals: ["dinner", "lunch"] }, { name: "Holidays", url: "https://x/evil.ics" }], service: { port: 5099 }, mergeShared: true },
+  lists: { lists: [{ name: "Shopping", provider: "homeassistant", entity: "todo.shopping" }, { name: "Chores", profiles: ["Zoe"] }, { name: "Food", provider: "mealie", shoppingList: "Weekly", shoppingListId: "L1" }], columns: 3 },
   pickup: { trashDay: "monday", url: "secret" },
   embeds: { smarthome: { title: "Smart Home", url: "http://ha.local:8123" }, money: { title: "Money" } },
   wordgame: { source: "opensky", extraWords: ["emoji"] }, look: { accent: "teal" }, keyboard: { enabled: false }, header: {}
@@ -60,7 +60,10 @@ ok("10 a calendar for one person can take their color (colorFromProfile), also o
   { zoe: byName("ZoeCal").color, own: byName("ZoeOwn").color, mom: byName("Mom").color, ec });
 const people = mod(c, "MMM-OpenSky-Home").config.calendarPeople;
 ok("14 Home gets the calendars as people for the shared-event badges: settings order, the shared family calendar and OpenSky's own names left out, each with its color",
-  JSON.stringify(people.map((p) => p.name)) === '["Shared","Work","Club","Mom","ZoeCal","ZoeOwn"]' && people.find((p) => p.name === "ZoeCal").color === "#3b82f6" && people.find((p) => p.name === "Shared").color === "green" && people.find((p) => p.name === "Work").color === null, people);
+  JSON.stringify(people.map((p) => p.name)) === '["Shared","Work","Club","Mom","ZoeCal","ZoeOwn","Dinner"]' && people.find((p) => p.name === "ZoeCal").color === "#3b82f6" && people.find((p) => p.name === "Shared").color === "green" && people.find((p) => p.name === "Work").color === null, people);
+ok("6b Mealie: a meal plan source (meals passed on, not editable) and a Mealie shopping list",
+  byName("Dinner").type === "mealie" && JSON.stringify(byName("Dinner").meals) === '["dinner","lunch"]' && !ed.editable.some((e) => e.name === "Dinner") &&
+  mod(c, "MMM-OpenSky-Lists").config.lists[2].provider === "mealie" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingList === "Weekly" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingListId === "L1", mod(c, "MMM-OpenSky-Lists").config.lists[2]);
 const pages = mod(c, "MMM-pages").config.modules;
 ok("7 pages in order; embed pages told apart by class; an unknown page skipped with a message",
   JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-WordGame"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);

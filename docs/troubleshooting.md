@@ -72,6 +72,9 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
 - **"No Todoist project called …"**: the list's `project` (or its `name`) must match a Todoist project. Letter case doesn't matter.
 - **Home Assistant: "refused the token"** — make a new long-lived access token (HA → profile → Security) for
   `secrets.json → homeassistant.token`. **"didn't accept that"** — check the list's `entity` (e.g. `todo.shopping_list`).
+- **Mealie: "refused the API token"** — make a new token (Mealie → your profile → API Tokens) and connect again in phone setup (Lists → Add a list → Mealie).
+  **"Can't reach Mealie"** — Mealie must be on and reachable from the Pi at the address you gave; open that address in a browser on the same network. **"No Mealie shopping list called …"** — the list was renamed or deleted in Mealie: remove it in phone setup and add it again.
+- **Mealie meal plan is empty** — only the kinds of meal you chose show (Calendars → the Mealie calendar). Entries without a recipe or a title are skipped.
 - **Todoist changes take a minute or two** to show on the screen (`refreshMinutes`). Changes made on the screen show at once.
 
 ## Photos

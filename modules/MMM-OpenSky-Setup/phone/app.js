@@ -371,7 +371,7 @@
 
   function calendarsCard() {
     const cal = S.calendar, list = el("div", { class: "rows" });
-    const kind = (c) => c.type === "local" ? "On this screen · add & edit on the screen" : c.type === "caldav" ? "iCloud / CalDAV · add & edit" : c.type === "google" ? `Google${c.readOnly ? " · view only" : " · add & edit"}` : "Calendar link · read-only";
+    const kind = (c) => c.type === "local" ? "On this screen · add & edit on the screen" : c.type === "caldav" ? "iCloud / CalDAV · add & edit" : c.type === "google" ? `Google${c.readOnly ? " · view only" : " · add & edit"}` : c.type === "mealie" ? `Mealie meal plan · ${(c.meals || ["dinner"]).join(", ")}` : "Calendar link · read-only";
     cal.sources.forEach((c, i) => list.append(row(hex(shownColor(c) || "blue"), c.name, kind(c), () => editCalendar(i))));
     if (!cal.sources.length) list.append(el("p", { class: "empty" }, "No calendars yet."));
     return section("calendars", "calendar", "Calendars", "Each with its own color",
@@ -392,7 +392,7 @@
 
   function addCalendar() {
     const d = { kind: "link", name: "", link: "", server: "icloud", url: "", user: "", pass: "", remote: "",
-      g: null, gcals: null, gcal: "", gurl: "", cid: "", csec: "", gaddr: "", gbusy: false, gerr: "" };
+      meals: { dinner: true }, g: null, gcals: null, gcal: "", gurl: "", cid: "", csec: "", gaddr: "", gbusy: false, gerr: "" };
     d.st = { color: COLORS[S.calendar.sources.length % COLORS.length], who: [], sync: false };
     const err = el("p", { class: "err" });
     sheet("Add a calendar", (b) => {
@@ -400,8 +400,9 @@
       const draw = () => {
         parts.replaceChildren(
           ...(d.kind === "google" ? [googleBox()] : []),
-          ...(d.kind !== "google" || d.gcals ? [
-            field("Name", text(d.name, (v) => { d.name = v.trim(); d.named = true; }, { placeholder: d.kind === "local" ? "e.g. Family" : "e.g. Mom, School, Soccer" })),
+          ...(d.kind === "mealie" ? [mealieBox(d, draw)] : []),
+          ...((d.kind !== "google" || d.gcals) && (d.kind !== "mealie" || d.mlists) ? [
+            field("Name", text(d.name, (v) => { d.name = v.trim(); d.named = true; }, { placeholder: d.kind === "local" ? "e.g. Family" : d.kind === "mealie" ? "e.g. Dinner" : "e.g. Mom, School, Soccer" })),
             whoColor(d.st)] : []),
           ...(d.kind === "link" ? [
             field("Calendar link", el("textarea", { class: "input", rows: "3", placeholder: "https://… or webcal://…", oninput: (e) => { d.link = e.target.value.trim(); } }), "Kept private on the Pi."),
@@ -419,6 +420,7 @@
               d.server === "icloud" ? "Not your Apple ID password: make one at appleid.apple.com → Sign-In and Security → App-Specific Passwords." : null),
             field("Calendar's name in your calendar app", text(d.remote, (v) => { d.remote = v.trim(); }, { placeholder: "Same as the name above if empty" }))
           ] : []),
+          ...(d.kind === "mealie" && d.mlists ? [el("p", { class: "hint" }, "Your Mealie meal plan shows on the calendar and Home as all-day entries. Plan meals in Mealie."), ...mealToggles(d.meals)] : []),
           ...(d.kind === "local" ? [el("p", { class: "hint" }, "Events are kept on the Pi — no account needed. Add and edit them right on the screen.")] : []),
           err);
       };
@@ -460,12 +462,14 @@
         if (d.gerr) box.append(el("p", { class: "err" }, d.gerr));
         return box;
       };
-      b.append(seg([["link", "Link"], ["google", "Google"], ["caldav", "iCloud & co."], ["local", "On screen"]], d.kind, (v) => { d.kind = v; draw(); }), parts);
+      b.append(seg([["link", "Link"], ["google", "Google"], ["caldav", "iCloud & co."], ["local", "On screen"], ["mealie", "Mealie"]], d.kind, (v) => { d.kind = v; if (v === "mealie" && !d.name && !d.named) d.name = "Dinner"; draw(); }), parts);
       draw();
     }, [["Cancel", "", () => {}], ["Add", "primary", () => {
       const bad = nameOk(d.name, S.calendar.sources.map((c) => c.name)) ||
         (d.kind === "link" && !/^(https?|webcal):\/\/\S+$/i.test(d.link) ? "Paste the calendar's link (it starts with https:// or webcal://)" : null) ||
         (d.kind === "caldav" && (!d.user || !d.pass) ? "Please fill in the username and password" : null) ||
+        (d.kind === "mealie" && !d.mlists ? "Connect to Mealie first" : null) ||
+        (d.kind === "mealie" && !Object.values(d.meals).some(Boolean) ? "Choose at least one meal" : null) ||
         (d.kind === "google" && !d.gcal ? "Sign in to Google and pick a calendar first" : null) ||
         (d.kind === "caldav" && d.server === "other" && !/^https?:\/\//.test(d.url) ? "Please add the server address" : null);
       if (bad) { err.textContent = bad; return false; }
@@ -473,6 +477,7 @@
       setLinks(src, d.st.who);
       if (d.st.sync && d.st.who.length === 1) src.colorFromProfile = true;
       if (d.kind === "local") src.type = "local";
+      if (d.kind === "mealie") { src.type = "mealie"; src.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => d.meals[m]); }
       if (d.kind === "google") { src.type = "google"; src.calendarId = d.gcal; const c = (d.gcals || []).find((x) => x.id === d.gcal); if (c && !c.canEdit) src.readOnly = true; }
       if (d.kind === "caldav") {
         src.type = "caldav";
@@ -485,15 +490,22 @@
     }]]);
   }
 
+  function mealToggles(meals) {
+    return [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["side", "Sides"]].map(([k, t]) =>
+      el("div", { class: "line" }, el("span", {}, el("b", {}, t)), toggle(!!meals[k], (v) => { meals[k] = v; }, t)));
+  }
+
   function editCalendar(i) {
     const c = S.calendar.sources[i];
     const st = { color: c.color || "blue", who: linked(c), sync: !!c.colorFromProfile };
     let shared = c.role === "shared";
+    const meals = Object.fromEntries((c.meals || ["dinner"]).map((m) => [m, true]));
     sheet(c.name, (b) => {
       b.append(whoColor(st));
       if (S.calendar.mergeShared) b.append(el("div", { class: "line" }, el("span", {}, el("b", {}, "Shared family calendar"), el("small", {}, "When the same event is on this calendar and another, it is shown once, with only the other calendar's name")),
         toggle(shared, (v) => { shared = v; }, "Shared family calendar")));
-      if (c.type !== "local" && c.type !== "caldav" && c.type !== "google") b.append(field("Replace the link", el("textarea", { class: "input", rows: "2", placeholder: isSet(`calendar.sources.${c.name}`) ? "Saved ✓ — paste a new link to replace it" : "https://… or webcal://…", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.sources.${c.name}`] = e.target.value.trim(); } })));
+      if (c.type === "mealie") b.append(el("p", { class: "hint" }, "Which meals show:"), ...mealToggles(meals));
+      if (c.type !== "local" && c.type !== "caldav" && c.type !== "google" && c.type !== "mealie") b.append(field("Replace the link", el("textarea", { class: "input", rows: "2", placeholder: isSet(`calendar.sources.${c.name}`) ? "Saved ✓ — paste a new link to replace it" : "https://… or webcal://…", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.sources.${c.name}`] = e.target.value.trim(); } })));
       if (c.type === "caldav") b.append(field("New password", el("input", { type: "password", class: "input", placeholder: "Saved ✓ — type to replace", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.caldav.${c.name}`] = { password: e.target.value.trim() }; } })));
       if (c.type === "local") b.append(el("p", { class: "hint" }, "Removing it here takes it off the screen. Its events stay saved on the Pi."));
     }, [["Remove", "danger", () => {
@@ -501,12 +513,34 @@
       if (isSet(`calendar.sources.${c.name}`)) pending[`calendar.sources.${c.name}`] = null;
       if (isSet(`calendar.caldav.${c.name}`)) pending[`calendar.caldav.${c.name}`] = null;
       change(); render();
-    }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; change(); render(); }]]);
+    }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (c.type === "mealie" && Object.values(meals).some(Boolean)) c.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => meals[m]); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; change(); render(); }]]);
+  }
+
+  // Mealie: its address + an API token (checked, and kept on the Pi as soon as they work), then the caller's own pickers.
+  // `d` holds the state (m, mlists, mbusy, merr, murl, mtoken); `draw` redraws the sheet.
+  function mealieBox(d, draw) {
+    const box = el("div", { class: "gbox" });
+    const run = async (body) => {
+      d.mbusy = true; d.merr = ""; draw();
+      try { const r = await api("POST", "/api/mealie/connect", body); d.mlists = r.shoppingLists; d.m = { set: true, url: r.url }; }
+      catch (e) { d.merr = e.message; }
+      d.mbusy = false; draw();
+    };
+    if (!d.m) { box.append(el("p", { class: "hint" }, "Checking Mealie…")); api("GET", "/api/mealie").then((m) => { d.m = m; draw(); }, (e) => { d.merr = e.message; d.m = { set: false }; draw(); }); return box; }
+    if (d.m.set && !d.mlists && !d.mbusy && !d.merr && !d.mtried) { d.mtried = true; run({}); }
+    if (d.mlists) { box.append(el("p", { class: "good-note" }, `Connected to Mealie ✓ ${d.m.url || ""}`)); return box; }
+    box.append(
+      field("Mealie address", text(d.murl, (v) => { d.murl = v.trim(); }, { placeholder: d.m.url || "http://mealie.local:9925", inputmode: "url", autocapitalize: "off" }), "The web address you open Mealie at."),
+      field("Mealie API token", el("input", { type: "password", class: "input", autocomplete: "off", placeholder: d.m.set ? "Saved ✓ — type to replace" : "Paste the token", oninput: (e) => { d.mtoken = e.target.value.trim(); } }),
+        "In Mealie: your profile (top left) → API Tokens → give it a name → Create, then copy the token."),
+      el("button", { type: "button", class: "btn primary block", disabled: d.mbusy, onclick: () => run({ url: d.murl || "", token: d.mtoken || "" }) }, d.mbusy ? "Connecting…" : "Connect to Mealie"));
+    if (d.merr) box.append(el("p", { class: "err" }, d.merr));
+    return box;
   }
 
   function listsCard() {
     const L = S.lists, rows = el("div", { class: "rows" });
-    const where = (l) => l.provider === "todoist" ? `Todoist${l.project && l.project !== l.name ? ` · project “${l.project}”` : ""}` : l.provider === "homeassistant" ? `Home Assistant · ${l.entity || "?"}` : "On this screen";
+    const where = (l) => l.provider === "todoist" ? `Todoist${l.project && l.project !== l.name ? ` · project “${l.project}”` : ""}` : l.provider === "homeassistant" ? `Home Assistant · ${l.entity || "?"}` : l.provider === "mealie" ? `Mealie · ${l.shoppingList || "shopping list"}` : "On this screen";
     L.lists.forEach((l, i) => rows.append(row(hex(l.color || "blue"), l.name, where(l), () => editList(i))));
     if (!L.lists.length) rows.append(el("p", { class: "empty" }, "No lists yet."));
     const usesTodoist = L.lists.some((l) => l.provider === "todoist"), usesHA = L.lists.some((l) => l.provider === "homeassistant");
@@ -519,24 +553,28 @@
   }
 
   function addList() {
-    const d = { name: "", color: COLORS[(S.lists.lists.length + 3) % COLORS.length], who: [], provider: "local", project: "", entity: "" };
+    const d = { name: "", color: COLORS[(S.lists.lists.length + 3) % COLORS.length], who: [], provider: "local", project: "", entity: "", mlist: "" };
     const err = el("p", { class: "err" });
     sheet("Add a list", (b) => {
       const extra = el("div");
       const draw = () => extra.replaceChildren(...(d.provider === "todoist" ? [field("Todoist project", text(d.project, (v) => { d.project = v.trim(); }, { placeholder: "Same as the list's name if empty" }))]
         : d.provider === "homeassistant" ? [field("Home Assistant to-do list", text(d.entity, (v) => { d.entity = v.trim().toLowerCase(); }, { placeholder: "todo.shopping_list", autocapitalize: "off" }), "Its entity ID (Settings → Entities in Home Assistant). Address and token go below the lists.")]
+        : d.provider === "mealie" ? [mealieBox(d, draw), ...(d.mlists ? [d.mlists.length ? field("Which shopping list?", select([["", "Choose…"], ...d.mlists.map((x) => [x.id, x.name])], d.mlist, (v) => { d.mlist = v; const x = d.mlists.find((y) => y.id === v); if (x && !d.name) { d.name = x.name.slice(0, 30); nameBox.value = d.name; } })) : el("p", { class: "hint" }, "Mealie has no shopping lists yet — make one in Mealie first (Shopping Lists).")] : [])]
         : [el("p", { class: "hint" }, "Kept on the Pi — no account needed.")]));
-      b.append(field("Name", text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Groceries" })),
+      const nameBox = text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Groceries" });
+      b.append(field("Name", nameBox),
         colorField(d.color, (c) => { d.color = c; }), whoField(d.who, (n) => { d.who = n; }),
-        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
+        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"], ["mealie", "Mealie"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
       draw();
     }, [["Cancel", "", () => {}], ["Add", "primary", () => {
-      const bad = nameOk(d.name, S.lists.lists.map((l) => l.name)) || (d.provider === "homeassistant" && !/^todo\.[a-z0-9_]+$/.test(d.entity) ? "The list's entity ID looks like todo.shopping_list" : null);
+      const bad = nameOk(d.name, S.lists.lists.map((l) => l.name)) || (d.provider === "homeassistant" && !/^todo\.[a-z0-9_]+$/.test(d.entity) ? "The list's entity ID looks like todo.shopping_list" : null) ||
+        (d.provider === "mealie" && !d.mlist ? "Connect to Mealie and choose a shopping list" : null);
       if (bad) { err.textContent = bad; return false; }
       const l = { name: d.name, color: d.color };
       setLinks(l, d.who);
       if (d.provider === "todoist") { l.provider = "todoist"; if (d.project && d.project !== d.name) l.project = d.project; }
       if (d.provider === "homeassistant") { l.provider = "homeassistant"; l.entity = d.entity; }
+      if (d.provider === "mealie") { const x = d.mlists.find((y) => y.id === d.mlist); l.provider = "mealie"; l.shoppingList = x.name; l.shoppingListId = x.id; }
       S.lists.lists.push(l);
       if (!S.pages.includes("lists") && S.lists.lists.length > 3) S.pages.splice(Math.min(3, S.pages.length), 0, "lists");
       change(); render();
@@ -548,7 +586,7 @@
     let color = l.color || "blue", who = linked(l);
     sheet(l.name, (b) => {
       b.append(colorField(color, (v) => { color = v; }), whoField(who, (n) => { who = n; }));
-      if (l.provider !== "todoist") b.append(el("p", { class: "hint" }, "Removing the list takes it off the screen; its items stay saved on the Pi."));
+      if (l.provider !== "todoist" && l.provider !== "mealie") b.append(el("p", { class: "hint" }, "Removing the list takes it off the screen; its items stay saved on the Pi."));
     }, [["Remove", "danger", () => { S.lists.lists.splice(i, 1); change(); render(); }], ["Done", "primary", () => { l.color = color; setLinks(l, who); change(); render(); }]]);
   }
 

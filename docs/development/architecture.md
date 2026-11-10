@@ -38,7 +38,7 @@ opensky/
 | MMM-OpenSky-Header | MMM-HeaderBar | family name, clock, weather provider, countdown + sports pills |
 | MMM-OpenSky-Home | MMM-HomeDashboard | week tiles, lists card, photos card (providers), pickup icons |
 | MMM-OpenSky-CalendarNav / -CalendarHelper / -EventEditor | MMM-CalendarNav / -CalendarHelper / -CalendarEditor | month/week view uses MMM-CalendarExt3 (pinned + patch) |
-| MMM-OpenSky-Lists ✅ | MMM-Todoist / MMM-TaskEditor / MMM-TodoistQuickAdd | `lib/lists.js` providers: on-device (default, `config/lists.json`), Todoist (token in secrets.json); add / edit / check-off-with-Undo popups; broadcasts `OPENSKY_LISTS` |
+| MMM-OpenSky-Lists ✅ | MMM-Todoist / MMM-TaskEditor / MMM-TodoistQuickAdd | `lib/lists.js` providers: on-device (default, `config/lists.json`), Todoist (token in secrets.json), Home Assistant, Mealie (`lib/mealie.js`, also the `mealie` calendar source = meal plan); add / edit / check-off-with-Undo popups; broadcasts `OPENSKY_LISTS` |
 | MMM-OpenSky-ListsPage ✅ | (Todoist page) | page `lists`: every list side by side; columns drawn by `lib/client` `OpenSkyListColumn` (+ `list-columns.css`), same as Home |
 | Profiles (in Header, Calendars, Lists) | — | `opensky.json → profiles [{name,color}]`; sources and lists carry `profiles: [names]` (resolved by `config.js`). The Header's circles send `OPENSKY_PROFILE_FILTER {selected}`; Calendars (after merging shared events) and Lists filter what they broadcast, so every page follows. Unlinked sources/lists hide while a filter is on; Holidays stay |
 | MMM-OpenSky-Timer | MMM-Timer | |
