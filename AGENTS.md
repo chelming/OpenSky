@@ -87,3 +87,5 @@ The **screensaver** (`modules/MMM-OpenSky-Screensaver`, `screensaver` in `opensk
 - The maintainer also edits on GitHub: `git pull --rebase` before pushing; never force-push.
 - Every provider (calendar, list, photo…) gets an on-screen scenario, not only a unit test: wiring between modules is where bugs hide (see tools/scenarios/google.js, holidays.js), plus a line in tools/test-config.js.
 
+
+**Calendar title filter** (`opensky.json → calendar.sources[].only`, a case-insensitive regular expression, set from phone setup → Calendars → tap a calendar → *Only show events titled…*, `editCalendar` in `phone/app.js`): `config/config.js` (`titlePattern`) drops invalid patterns; `MMM-OpenSky-Calendars.broadcast()` keeps only matching titles for that source. Docs: `configure.md` → "Showing only some events". Tests: `tools/test-config.js` (5b), `tools/scenarios/calendars.js`.

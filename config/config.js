@@ -143,10 +143,13 @@ const profileColor = (c) => {
   const p = ps.length === 1 ? profiles.find((q) => q.name === ps[0]) : null;
   return p && p.color ? p.color : null;
 };
+// a source's "only show events titled…" pattern (a regular expression, any case): kept only when it is a valid one
+const titlePattern = (v) => { const t = typeof v === "string" ? v.trim().slice(0, 200) : ""; if (!t) return ""; try { new RegExp(t, "i"); return t; } catch (e) { return ""; } };
 const calendarSources = (Array.isArray(cal.sources) ? cal.sources : []).filter((c) => c && c.name)
   .filter((c) => c.name !== "Pickup" && c.name !== "Holidays" && !(mealsOn && c.name === "Meals"))   // (names OpenSky uses itself)
   .map((c) => ({ name: String(c.name), type: ["local", "caldav", "google", "mealie"].includes(c.type) ? c.type : "link", url: c.url || null, color: profileColor(c) || c.color || null, fetchMinutes: c.fetchMinutes || 5,
     ...(c.role === "shared" ? { role: "shared" } : {}),
+    ...(titlePattern(c.only) ? { only: titlePattern(c.only) } : {}),
     profiles: linkedProfiles(c.profiles),
     ...(c.type === "mealie" ? { meals: Array.isArray(c.meals) ? c.meals.map(String) : ["dinner"] } : {}),
     ...(c.type === "google" ? { calendarId: String(c.calendarId || "primary"), readOnly: !!c.readOnly } : {}) }));
