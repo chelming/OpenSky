@@ -97,9 +97,10 @@ const profileColor = (c) => {
 };
 const calendarSources = (Array.isArray(cal.sources) ? cal.sources : []).filter((c) => c && c.name)
   .filter((c) => c.name !== "Pickup" && c.name !== "Holidays")   // (names OpenSky uses itself)
-  .map((c) => ({ name: String(c.name), type: ["local", "caldav", "google"].includes(c.type) ? c.type : "link", url: c.url || null, color: profileColor(c) || c.color || null, fetchMinutes: c.fetchMinutes || 5,
+  .map((c) => ({ name: String(c.name), type: ["local", "caldav", "google", "mealie"].includes(c.type) ? c.type : "link", url: c.url || null, color: profileColor(c) || c.color || null, fetchMinutes: c.fetchMinutes || 5,
     ...(c.role === "shared" ? { role: "shared" } : {}),
     profiles: linkedProfiles(c.profiles),
+    ...(c.type === "mealie" ? { meals: Array.isArray(c.meals) ? c.meals.map(String) : ["dinner"] } : {}),
     ...(c.type === "google" ? { calendarId: String(c.calendarId || "primary"), readOnly: !!c.readOnly } : {}) }));
 // calendar.colors.calendars (a color per calendar name) wins over a source's own color, so a synced color goes in there too
 const syncedColors = Object.fromEntries((Array.isArray(cal.sources) ? cal.sources : []).filter((c) => c && c.name && profileColor(c)).map((c) => [String(c.name), profileColor(c)]));
@@ -116,9 +117,10 @@ else if (/^[A-Za-z]{2}$/.test(cal.holidays || "")) calendarSources.push({ name: 
 // Lists (groceries, to-dos…): on-device by default; Todoist with a token in secrets.json
 const listSettings = s.lists || {};
 const familyLists = (Array.isArray(listSettings.lists) ? listSettings.lists : []).filter((l) => l && l.name)
-  .map((l) => ({ name: String(l.name), color: l.color || null, profiles: linkedProfiles(l.profiles), provider: ["todoist", "homeassistant"].includes(l.provider) ? l.provider : "local",
+  .map((l) => ({ name: String(l.name), color: l.color || null, profiles: linkedProfiles(l.profiles), provider: ["todoist", "homeassistant", "mealie"].includes(l.provider) ? l.provider : "local",
     ...(l.project ? { project: String(l.project) } : {}), ...(l.projectId ? { projectId: String(l.projectId) } : {}),
-    ...(l.entity ? { entity: String(l.entity) } : {}) }));
+    ...(l.entity ? { entity: String(l.entity) } : {}),
+    ...(l.shoppingList ? { shoppingList: String(l.shoppingList) } : {}), ...(l.shoppingListId ? { shoppingListId: String(l.shoppingListId) } : {}) }));
 // Trash / recycling days from a calendar link (many cities and ReCollect publish one): opensky.json → pickup.url,
 // or a private one in secrets.json → calendar.sources.Pickup (with pickup.url: "secret")
 const pk = s.pickup || {};

@@ -11,6 +11,7 @@ const CalendarFetcher = require(path.join(global.root_path, "defaultmodules", "c
 const { secret } = require(path.join(global.root_path, "modules", "opensky-lib", "secrets.js"));
 const local = require(path.join(global.root_path, "modules", "opensky-lib", "local-calendar.js"));
 const holidays = require(path.join(global.root_path, "modules", "opensky-lib", "holidays.js"));
+const mealie = require(path.join(global.root_path, "modules", "opensky-lib", "mealie.js"));
 const google = require(path.join(global.root_path, "modules", "opensky-lib", "google-calendar.js"));
 const Log = require("logger");
 
@@ -56,6 +57,17 @@ module.exports = NodeHelper.create({
     setInterval(load, 12 * 60 * 60 * 1000);
   },
 
+  // Mealie meal plan (lib/mealie.js): 30 days back to `days` ahead, every fetchMinutes (at least 5)
+  startMealie(src, days) {
+    this.mealieLists = this.mealieLists || new Map();
+    if (this.mealieLists.has(src.name)) return this.sendSocketNotification("OS_CAL_EVENTS", { name: src.name, events: this.mealieLists.get(src.name) });
+    const load = () => { const now = Date.now(); return mealie.mealEvents(now - 30 * 86400e3, now + Math.min(days || 400, 120) * 86400e3, src.meals).then(
+      (events) => { this.mealieLists.set(src.name, events); if (this.lastError) this.lastError.delete(src.name); this.sendSocketNotification("OS_CAL_EVENTS", { name: src.name, events }); },
+      (e) => this.error(src.name, e.message)); };
+    load();
+    setInterval(load, Math.max(5, src.fetchMinutes || 5) * 60 * 1000);
+  },
+
   // Google calendars (lib/google-calendar.js): 30 days back to `days` ahead, every fetchMinutes
   startGoogle(src, days) {
     this.googleLoads = this.googleLoads || new Map();
@@ -88,6 +100,7 @@ module.exports = NodeHelper.create({
     for (const src of p.sources) {
       if (src.type === "local") { this.localNames.add(src.name); this.sendLocal(src.name); continue; }   // on this Pi
       if (src.type === "holidays") { this.startHolidays(src); continue; }                                // any country
+      if (src.type === "mealie") { this.startMealie(src, p.days); continue; }                             // Mealie meal plan
       if (src.type === "google") { this.startGoogle(src, p.days); continue; }                             // Google Calendar API
       if (this.fetchers.has(src.name)) { this.fetchers.get(src.name).broadcastEvents(); continue; }   // page reload
       let url = src.url || secret(`calendar.sources.${src.name}`);

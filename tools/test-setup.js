@@ -144,6 +144,33 @@ function burst(n) {
   r = await call("POST", "/api/photos/delete", { id: first.id }, as);
   ok("19 deleting removes the file", r.status === 200 && fs.readdirSync(pics).length === 0, r.body);
 
+  // 20 Mealie: the phone checks an address + token; they are kept only when they work, and never sent back
+  fs.writeFileSync(process.env.OPENSKY_SETTINGS, JSON.stringify({ family: { name: "The Testers" } }));
+  const fake = http.createServer((q, s) => {
+    const good = q.headers.authorization === "Bearer mealie-testers-token";
+    s.writeHead(good ? 200 : 401, { "Content-Type": "application/json" });
+    s.end(JSON.stringify(q.url.startsWith("/api/users/self") ? { id: "u" } : { items: [{ id: "L1", name: "Groceries" }] }));
+  });
+  await new Promise((r) => fake.listen(0, "127.0.0.1", r));
+  const addr = `http://127.0.0.1:${fake.address().port}`;
+  r = await call("GET", "/api/mealie", undefined, as);
+  ok("20 Mealie not set up yet", r.status === 200 && r.body.set === false, r.body);
+  r = await call("POST", "/api/mealie/connect", { url: addr, token: "wrong" }, as);
+  ok("21 a wrong Mealie token → a message (not 401, which means 'pair again'), nothing saved",
+    r.status === 400 && /refused/.test(r.body.error) && !(JSON.parse(fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8")).mealie), r);
+  r = await call("POST", "/api/mealie/connect", { url: `${addr}/`, token: "mealie-testers-token" }, as);
+  const mm = JSON.parse(fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8"));
+  ok("22 a working address + token → its shopping lists, and they are kept (token file only readable by the owner)",
+    r.status === 200 && r.body.shoppingLists[0].name === "Groceries" && mm.mealie.url === addr && mm.mealie.token === "mealie-testers-token" && mm.lists.todoist.token === "tok-testers-123" &&
+    (fs.statSync(process.env.OPENSKY_SECRETS).mode & 0o077) === 0, r.body);
+  r = await call("GET", "/api/mealie", undefined, as);
+  ok("23 the phone learns that it is set (and where), never the token", r.body.set === true && r.body.url === addr && !JSON.stringify(r.body).includes("mealie-testers-token"), r.body);
+  r = await call("POST", "/api/mealie/connect", {}, as);
+  ok("24 Connect with nothing typed uses the saved ones", r.status === 200 && r.body.shoppingLists.length === 1, r.body);
+  r = await call("POST", "/api/save", { settings: { pages: ["home"] }, secrets: { "mealie.token": "mealie-new-token" } }, as);
+  ok("25 mealie.* is a secret the phone may set", JSON.parse(fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8")).mealie.token === "mealie-new-token" && r.body.secretsSet.includes("mealie.url"), r.body);
+  fake.close();
+
   h.stopServer("test over");
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);

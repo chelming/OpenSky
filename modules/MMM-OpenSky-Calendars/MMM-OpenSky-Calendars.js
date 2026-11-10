@@ -20,7 +20,7 @@ Module.register("MMM-OpenSky-Calendars", {
     this.sendSocketNotification("OS_CAL_START", {
       // everything a source type needs (holidays: country/region; google: calendarId) — no colors, no secrets here
       sources: this.config.sources.map((s) => ({ name: s.name, type: s.type || "link", url: s.url || null, fetchMinutes: s.fetchMinutes,
-        country: s.country, region: s.region, calendarId: s.calendarId })),
+        country: s.country, region: s.region, calendarId: s.calendarId, meals: s.meals })),
       days: this.config.days
     });
   },
