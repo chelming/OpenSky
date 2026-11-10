@@ -80,6 +80,7 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
 - **Mealie meal plan is empty** — only the kinds of meal you chose show (phone setup → Meals → Meals to show). Entries without a recipe or a title are skipped, and the page looks from a week back to five weeks ahead.
 - **Mealie: the Meals page says "Can't reach Mealie"** — OpenSky keeps showing the last plan it got; fix the address or token in phone setup → Meals. In Docker use the container name (`http://mealie:9000`), not `localhost`.
 - **A recipe opens but "Add ingredients" fails** — the shopping list may have been deleted in Mealie: pick the list again in phone setup → Meals → *Add a recipe's ingredients to*.
+- **A countdown isn't on Home** — its date may have passed (they hide the day after, or later if you chose that: phone setup → Countdowns → *After the date has passed, hide it*), *Show on Home* may be off for it (it then shows on the Countdowns page only), or two others are nearer (Home shows the nearest two; three on a portrait screen). Its photo missing means only the gift icon shows: choose the photo again.
 - **Todoist changes take a minute or two** to show on the screen (`refreshMinutes`). Changes made on the screen show at once.
 
 ## Photos
