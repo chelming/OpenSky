@@ -288,19 +288,21 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
   long-lived access token (HA → your profile → Security) in `secrets.json → homeassistant.url / .token`.
 - **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Meals (Mealie)](#meals-mealie).
 - Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap **Add item** to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
-- **Greenlight chores** (`"provider": "greenlight", "kid": "<Greenlight user id>"`): a child's chores for today. See [Greenlight chores](#greenlight-chores-unofficial).
+- **Greenlight chores** have their own page. See [Chores](#chores-greenlight-unofficial).
 
-## Greenlight chores (unofficial)
-Show a child's chores from the [Greenlight](https://greenlight.com) app as a list, and tick them off from the screen. Greenlight has no public
+## Chores (Greenlight, unofficial)
+A **Chores** page shows each child's chores for today from the [Greenlight](https://greenlight.com) app: open chores first, finished ones struck through
+below, "2 of 3 done", and the streak and allowance Greenlight reports. Tap a chore to tick it off; tap it again to undo. Greenlight has no public
 interface, so this uses the private service its own app talks to and **can stop working whenever Greenlight changes it**. It is off unless you set it up.
 
-1. On the phone: **Lists → Add a list → Greenlight**.
-2. Enter the parent's phone number and Greenlight password and tap **Connect to Greenlight**. If Greenlight texts a code, type it in. They are kept on the Pi (`secrets.json`), never on the screen.
-3. Choose the child (one list per child) and **Add**.
+1. On the phone: **Chores** (a card next to Lists). Enter the parent's phone number and Greenlight password and tap **Connect to Greenlight**. If Greenlight texts a code, type it in.
+2. Turn on the children to show. The first one also turns on the **Chores** page (Settings → Pages, where you can drag it into place).
+3. Optional: **Chores left on the badge** puts the number of chores a child still has to do on their circle at the top. It needs a person under Family with the same name as the child.
 
-- OpenSky signs in as its own device, so your phone's Greenlight app keeps working; it may show up as another device on the account. Its sign-in details (generated device id and tokens) live in `greenlight-state.json` next to `secrets.json` (chmod 600) and are not part of backups.
-- It shows **today's open chores**. Ticking one off (with Undo time, as in other lists) marks it done in Greenlight. Adding, renaming and removing chores is done in the Greenlight app; OpenSky never deletes a chore.
-- Changes made in the app show within `refreshMinutes`.
+- The settings are `"chores": { "kids": [{ "id": "<Greenlight user id>", "name": "Reese", "profile": "Reese" }], "badges": true, "refreshMinutes": 5 }` and the page key `chores` in `pages`; a linked profile gives the child's color.
+- OpenSky signs in as its own device, so your phone's Greenlight app keeps working; it may show up as another device on the account. Its sign-in details (generated device id and tokens) live in `greenlight-state.json` next to `secrets.json` (chmod 600) and are not part of backups. The phone and password are in `secrets.json → greenlight`.
+- Adding, renaming and removing chores is done in the Greenlight app; OpenSky never deletes a chore. Changes made in the app show within `refreshMinutes`.
+- A list with `"provider": "greenlight", "kid": "<id>"` also works as a plain list (today's open chores), but the Chores page is the way to use it.
 
 ## Meals (Mealie)
 [Mealie](https://mealie.io) is a self-hosted recipe manager. OpenSky can show its **meal plan** and **recipes**, and use its

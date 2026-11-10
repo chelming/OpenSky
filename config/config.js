@@ -54,6 +54,7 @@ const PAGE_INFO = {
   lists: { label: "Lists" },
   meals: { label: "Meals", icon: "food" },
   smarthome: { label: "Smart Home" },
+  chores: { label: "Chores" },
   wordgame: { label: "Word Game" },
   timer: { label: "Timer" },
   music: { label: "Music" }
@@ -99,6 +100,13 @@ const mealTypes = (() => {
 })();
 const mealList = mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
   ? { id: String(mealSettings.addToList.id), name: String(mealSettings.addToList.name || "the shopping list").slice(0, 40) } : null;
+
+// Chores (Greenlight): the children shown on the Chores page. A linked profile gives the color, else the child's own.
+const choreKids = (Array.isArray(s.chores && s.chores.kids) ? s.chores.kids : []).filter((k) => k && /^\d+$/.test(String(k.id))).slice(0, 8)
+  .map((k) => {
+    const p = profiles.find((q) => q.name.toLowerCase() === String(k.profile || "").trim().toLowerCase());
+    return { id: String(k.id), name: String(k.name || "").trim().slice(0, 30) || "Chores", ...(p ? { profile: p.name } : {}), color: (p && p.color) || k.color || null };
+  });
 
 // Calendar sources (a module with no screen of its own; any page can use the events)
 const cal = s.calendar || {};
@@ -221,6 +229,12 @@ const PAGES = {
     module: "MMM-OpenSky-MealsPage",
     position: "fullscreen_above",
     config: { firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0, types: mealTypes }
+  }],
+  // the kids' chores from Greenlight (unofficial): opensky.json → chores.kids [{ id, name, profile?, color? }]; the login is secrets.json → greenlight
+  chores: () => [{
+    module: "MMM-OpenSky-Chores",
+    position: "fullscreen_above",
+    config: { kids: choreKids, refreshMinutes: Math.max(1, Number(s.chores && s.chores.refreshMinutes) || 5), badges: !!(s.chores && s.chores.badges) }
   }],
   wordgame: () => [{
     module: "MMM-OpenSky-WordGame",

@@ -334,6 +334,17 @@ module.exports = async (page, h, app) => {
   S = settings();
   ok("pages: Timer off, Lists moved up one", !S.pages.includes("timer") && S.pages.indexOf("lists") === 1, S.pages);
 
+  // ---- Pages: drag the last page's grip up to fourth place ----
+  const pagesNow = settings().pages, dragKey = pagesNow[pagesNow.length - 1];
+  await phone.evaluate(() => { const rows = [...document.querySelectorAll("#pages .pagerow:not(.off)")]; rows[rows.length - 1].scrollIntoView({ block: "center", behavior: "instant" }); }); await h.sleep(400);
+  const pos = await phone.evaluate(() => { const rows = [...document.querySelectorAll("#pages .pagerow:not(.off)")], g = rows[rows.length - 1].querySelector(".grip").getBoundingClientRect(), t = rows[3].getBoundingClientRect(); return { fx: g.x + g.width / 2, fy: g.y + g.height / 2, ty: t.top + 4 }; });
+  await phone.mouse.move(pos.fx, pos.fy); await phone.mouse.down();
+  await phone.mouse.move(pos.fx, (pos.fy + pos.ty) / 2, { steps: 4 }); await phone.mouse.move(pos.fx, pos.ty, { steps: 6 });
+  await phone.mouse.up(); await h.sleep(250);
+  await save();
+  S = settings();
+  ok("pages: dragging a page by its grip moves it (saved)", S.pages.indexOf(dragKey) === 3, S.pages);
+
   // ---- Extras: accent, trash day, city schedule, pickup link, sports, word game, weather + key ----
   await tap("#extras", ".chip", "teal");
   await pick("#extras", "Trash day", "thursday");
