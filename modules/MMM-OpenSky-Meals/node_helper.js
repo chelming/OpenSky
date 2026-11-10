@@ -3,11 +3,15 @@
  *   OS_MEALS_REFRESH                  → fetch again now (throttled)
  *   OS_MEALS_RECIPE {slug}            → OS_MEALS_RECIPE_DATA {slug, recipe | error}
  *   OS_MEALS_ADD {id, listId, recipeId} → OS_MEALS_ADDED {id, ok, error?}
+ *   OS_MEALS_SAVE {id?, date, type, title} → add (no id) or change an entry of the on-device plan → OS_MEALS_SAVED {ok, error?}
+ *   OS_MEALS_DELETE {id}              → remove one → OS_MEALS_SAVED {ok, error?}
+ *                                       (both only when the plan is on-device, config local: true; Mealie's plan is read-only here)
  *   GET /opensky-meal-image/<recipe id> → the recipe's picture (cached for an hour)
  */
 const NodeHelper = require("node_helper");
 const path = require("path");
 const mealie = require(path.join(global.root_path, "modules", "opensky-lib", "mealie.js"));
+const localMeals = require(path.join(global.root_path, "modules", "opensky-lib", "local-meals.js"));
 
 const DAY = 86400e3;
 
@@ -32,13 +36,21 @@ module.exports = NodeHelper.create({
 
   socketNotificationReceived(n, p) {
     if (n === "OS_MEALS_INIT") {
-      this.cfg = { types: (p && p.types) || ["dinner"] };
+      this.cfg = { types: (p && p.types) || ["dinner"], local: !!(p && p.local) };
+      if (this.cfg.local && !this.watching) { this.watching = true; localMeals.bus.on("change", () => this.refresh()); }
       clearInterval(this.timer);
       this.timer = setInterval(() => this.refresh(), 10 * 60 * 1000);
       if (this.last) this.send();   // a page reload: show what we have at once
       this.refresh();
     } else if (n === "OS_MEALS_REFRESH") {
       if (Date.now() - (this.lastRefresh || 0) > 30 * 1000) this.refresh();
+    } else if ((n === "OS_MEALS_SAVE" || n === "OS_MEALS_DELETE") && p && this.cfg && this.cfg.local) {
+      try {
+        if (n === "OS_MEALS_DELETE") localMeals.remove(String(p.id || ""));
+        else if (p.id) localMeals.update(String(p.id), p);
+        else localMeals.add(p);
+        this.sendSocketNotification("OS_MEALS_SAVED", { ok: true });
+      } catch (e) { this.sendSocketNotification("OS_MEALS_SAVED", { ok: false, error: e.message }); }
     } else if (n === "OS_MEALS_RECIPE" && p && p.slug) {
       this.recipe(String(p.slug)).then(
         (recipe) => this.sendSocketNotification("OS_MEALS_RECIPE_DATA", { slug: p.slug, recipe }),
@@ -66,7 +78,7 @@ module.exports = NodeHelper.create({
     this.lastRefresh = Date.now();
     try {
       const now = Date.now();
-      this.last = { entries: await mealie.planEntries(now - 7 * DAY, now + 35 * DAY, this.cfg.types) };
+      this.last = { entries: this.cfg.local ? localMeals.planEntries(now - 7 * DAY, now + 35 * DAY, this.cfg.types) : await mealie.planEntries(now - 7 * DAY, now + 35 * DAY, this.cfg.types) };
       if (this.error) console.log("[OpenSky] meals: Mealie is answering again");
       this.error = null;
     } catch (e) {

@@ -40,3 +40,19 @@ html[data-layout="portrait"] .osm-body, html[data-layout="compact"] .osm-body { 
 html[data-layout="portrait"] .osm-side, html[data-layout="compact"] .osm-side { overflow: visible; }
 html[data-layout="portrait"] .osm-main, html[data-layout="compact"] .osm-main { overflow: visible; }
 html[data-layout="portrait"] .osm-img, html[data-layout="compact"] .osm-img { aspect-ratio: 16 / 9; }
+
+/* add / change a meal (on-device plan) */
+.osm-edit { width: min(640px, calc(94 * var(--vw))); }
+.osm-form { display: flex; flex-direction: column; gap: 16px; }
+.osm-input { width: 100%; box-sizing: border-box; height: 64px; padding: 0 18px; border: 2px solid #e5e7eb; border-radius: 16px; font: inherit; font-size: 22px; color: #1f2937; background: #fff; }
+.osm-input:focus { outline: none; border-color: var(--os-accent, #2e8bd6); }
+.osm-types { display: flex; flex-wrap: wrap; gap: 8px; }
+.osm-type { min-height: 52px; padding: 0 20px; border: 0; border-radius: 26px; cursor: pointer; background: #f3f4f6; color: #374151; font: inherit; font-size: 18px; font-weight: 700; }
+.osm-type.osm-on { background: var(--os-accent, #2e8bd6); color: #fff; }
+.osm-err { margin: 0; color: #b91c1c; font-size: 17px; font-weight: 600; }
+.osm-err[hidden] { display: none; }
+.osm-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.osm-btn { min-height: 60px; min-width: 120px; padding: 0 24px; border: 0; border-radius: 16px; cursor: pointer; background: #f3f4f6; color: #374151; font: inherit; font-size: 19px; font-weight: 800; }
+.osm-btn.osm-main { background: var(--os-accent, #2e8bd6); color: #fff; }
+.osm-btn.osm-danger { margin-right: auto; background: #fee2e2; color: #b91c1c; }
+.osm-btn:disabled { opacity: .6; }

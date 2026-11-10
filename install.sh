@@ -174,6 +174,7 @@ ENVS="Environment=OPENSKY_SETTINGS=$CONFIG/opensky.json
 Environment=OPENSKY_SECRETS=$CONFIG/secrets.json
 Environment=OPENSKY_LOCAL_CALENDAR=$CONFIG/local-calendar.json
 Environment=OPENSKY_LOCAL_LISTS=$CONFIG/lists.json
+Environment=OPENSKY_LOCAL_MEALS=$CONFIG/meals.json
 Environment=OPENSKY_CALENDAR_CACHE=$CONFIG/calendar-cache"
 cat > "$UNITS/opensky-calendar.service" <<EOF
 [Unit]

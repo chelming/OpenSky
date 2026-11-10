@@ -25,7 +25,7 @@ timers, photos, weather and smart-home controls on one screen. Built on [MagicMi
 - **Calendar:** month / two-week / week view; tap to see, add, edit or delete events.
   - Works with Google, Outlook, iCloud, Fastmail, Nextcloud or any calendar link — or no account at all.
 - **Lists:** to-dos and groceries — kept on the Pi, or in Todoist, Home Assistant or Mealie, plus kids' chores from Greenlight (unofficial). Check off with Undo.
-- **Meals:** Mealie's meal plan on a Meals page, "Dinner tonight" on Home and the calendar, with recipes and one-tap "add ingredients to my shopping list".
+- **Meals:** a meal plan on a Meals page, "Dinner tonight" on Home and the calendar — planned right on the screen, or from Mealie with recipes and one-tap "add ingredients to my shopping list".
 - **Timer**, holiday & birthday countdown, your team's game day, sleep button, photos from a folder, USB stick or Immich.
 - **Add-on — Music:** the screen becomes an AirPlay and Spotify speaker, with a Music page
   ([details](music.md)): `opensky addon music`.

@@ -28,6 +28,7 @@ ENV OPENSKY_SETTINGS=/config/opensky.json \
     OPENSKY_SECRETS=/config/secrets.json \
     OPENSKY_LOCAL_CALENDAR=/config/local-calendar.json \
     OPENSKY_LOCAL_LISTS=/config/lists.json \
+    OPENSKY_LOCAL_MEALS=/config/meals.json \
     OPENSKY_CALENDAR_CACHE=/config/calendar-cache \
     OPENSKY_MM=/opt/MagicMirror \
     OPENSKY_ADDRESS=0.0.0.0 \

@@ -514,24 +514,25 @@
     }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (c.type === "mealie" && Object.values(meals).some(Boolean)) c.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => meals[m]); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; change(); render(); }]]);
   }
 
-  // Meals from Mealie: the meal plan on a Meals page, "Dinner tonight" on Home, on the calendar, and a recipe's ingredients
+  // Meals: kept on this screen (added on the Meals page, no account) or from Mealie. The meal plan on a Meals page, "Dinner tonight" on Home, on the calendar, and a recipe's ingredients
   // sent to a shopping list. (The connection is the same box as for a Mealie shopping list.)
   const mealUi = {};   // the Mealie connection, kept while the page redraws
   function mealsCard() {
     const ensure = () => { if (!S.meals || typeof S.meals !== "object" || Array.isArray(S.meals)) S.meals = {}; return S.meals; };
     const M = S.meals && typeof S.meals === "object" ? S.meals : {};
-    const on = M.provider === "mealie";
+    const mealie = M.provider === "mealie", local = M.provider === "local", on = mealie || local;
     const types = Array.isArray(M.types) && M.types.length ? M.types : ["dinner"];
     const line = (title, sub, flag, onflip) => el("div", { class: "line" }, el("span", {}, el("b", {}, title), sub ? el("small", {}, sub) : null), toggle(flag, onflip, title));
     const hasPage = S.pages.includes("meals");
-    const body = [line("Use my Mealie meal plan", "Mealie (mealie.io) is a recipe and meal planning app you run yourself", on, (v) => {
-      if (v) Object.assign(ensure(), { provider: "mealie", types, home: M.home !== false });
+    const body = [field("Where the meal plan lives", seg([["", "Off"], ["local", "On this screen"], ["mealie", "Mealie"]], M.provider || "", (v) => {
+      if (v) Object.assign(ensure(), { provider: v, types, home: M.home !== false });
       else { delete ensure().provider; const i = S.pages.indexOf("meals"); if (i >= 0 && S.pages.length > 1) S.pages.splice(i, 1); }
+      if (v === "local") { delete ensure().addToList; if (!S.pages.includes("meals")) { const at = S.pages.indexOf("lists"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "meals"); } }
       change(); render();
-    })];
+    }), local ? "Plan meals right on the Meals page: tap + on a day. Nothing to sign up for." : "On this screen needs no account. Mealie (mealie.io) is a recipe and meal planning app you run yourself.")];
     if (on) {
-      body.push(mealieBox(mealUi, render));
-      if (mealUi.mlists) {
+      if (mealie) body.push(mealieBox(mealUi, render));
+      if (local || mealUi.mlists) {
         const m = ensure();
         body.push(el("p", { class: "label" }, "Meals to show"),
           ...[["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["side", "Sides"]].map(([k, t]) => line(t, null, types.includes(k), (v) => {
@@ -544,18 +545,18 @@
             else if (!v && S.pages.length > 1) S.pages.splice(S.pages.indexOf("meals"), 1);
             change(); render();
           }),
-          line("Dinner tonight on Home", types.includes("dinner") ? "A card on the Home page, tap it for the recipe" : "Turn on Dinner above to use this", types.includes("dinner") && M.home !== false, (v) => { m.home = v; change(); }),
+          line("Dinner tonight on Home", types.includes("dinner") ? (local ? "A card on the Home page, tap it to change it" : "A card on the Home page, tap it for the recipe") : "Turn on Dinner above to use this", types.includes("dinner") && M.home !== false, (v) => { m.home = v; change(); }),
           line("Meals on the calendar", "Each meal as an all-day entry", !!M.calendar, (v) => { m.calendar = v; if (!v) delete m.calendarColor; change(); render(); }));
         if (M.calendar) body.push(colorField(M.calendarColor || "orange", (c) => { m.calendarColor = c; change(); }));
-        body.push(el("p", { class: "label" }, "Recipes"));
-        body.push(field("Shopping list for “Add ingredients”", select([["", "None (no button on recipes)"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
+        if (mealie) body.push(el("p", { class: "label" }, "Recipes"));
+        if (mealie) body.push(field("Shopping list for “Add ingredients”", select([["", "None (no button on recipes)"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
           const x = mealUi.mlists.find((y) => y.id === v);
           if (x) m.addToList = { id: x.id, name: x.name }; else delete m.addToList;
           change();
         }), "When you open a recipe on the screen, an “Add ingredients” button sends everything it needs to this shopping list. Choose None to hide the button."));
       }
     }
-    return section("meals", "meals", "Meals", "Tonight's dinner and the week's meal plan, from Mealie", ...body);
+    return section("meals", "meals", "Meals", "Tonight's dinner and the week's meal plan", ...body);
   }
 
   // Mealie: its address + an API token (checked, and kept on the Pi as soon as they work), then the caller's own pickers.
@@ -777,7 +778,7 @@
   }
 
   function pagesCard() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && S.meals.provider === "mealie" ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });
