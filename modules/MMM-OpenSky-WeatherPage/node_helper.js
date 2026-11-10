@@ -2,7 +2,7 @@
  * (except the map pictures). Each part is fetched on its own, so one failing leaves the others working.
  *   OS_WX_INIT {latitude, longitude, units, hourly, alerts, radar, refreshMinutes} → starts refreshing; answers OS_WX_DATA
  *   OS_WX_REFRESH                                                                  → fetch again now (throttled to once a minute)
- *   OS_WX_DATA { hourly?: {ok, hours|error}, alerts?: {ok, supported, alerts|error}, radar?: {ok, frames, base|error}, at }
+ *   OS_WX_DATA { hourly?: {ok, hours, current, rainDays|error}, alerts?: {ok, supported, alerts|error}, radar?: {ok, frames, base|error}, at }
  */
 const NodeHelper = require("node_helper");
 const path = require("path");
@@ -29,7 +29,7 @@ module.exports = NodeHelper.create({
     this.lastAt = Date.now();
     const part = async (fn) => { try { return { ok: true, ...(await fn()) }; } catch (e) { return { ok: false, error: e.message }; } };
     const [hourly, alerts, radar] = await Promise.all([
-      c.hourly ? part(async () => ({ hours: await extras.fetchHourly(c) })) : null,
+      c.hourly ? part(() => extras.fetchForecast(c)) : null,
       c.alerts ? part(() => extras.fetchAlerts(c)) : null,
       c.radar ? part(() => extras.fetchRadar()) : null
     ]);

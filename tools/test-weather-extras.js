@@ -16,6 +16,11 @@ const fails = async (fn) => { try { await fn(); return null; } catch (e) { retur
   await x.fetchHourly({ ...boston, units: "metric" });
   ok("2 hourly: metric asks for Celsius", fake.state.seen.unit === "celsius");
 
+  const fc = await x.fetchForecast(boston);
+  ok("2b forecast: current feels-like, wind (mph), humidity, and the chance of rain per day", fc.current.feels === 48 && fc.current.wind === 8 && fc.current.humidity === 62 && fc.current.isDay === true && Object.values(fc.rainDays).length === 8 && Object.values(fc.rainDays)[1] === 70 && fake.state.seen.wind === "mph", fc.current);
+  await x.fetchForecast({ ...boston, units: "metric" });
+  ok("2c forecast: metric asks for km/h", fake.state.seen.wind === "kmh");
+
   const a = await x.fetchAlerts(boston);
   ok("3 alerts (US): worst first, the test message skipped", a.supported && a.alerts.length === 2 && a.alerts[0].event === "Tornado Warning" && a.alerts[0].severity === "extreme" && a.alerts[1].severity === "moderate", a);
   ok("4 alerts: the NWS gets a User-Agent and the point", /OpenSky/.test(fake.state.seen.nwsAgent) && fake.state.seen.point === "42.3601,-71.0589", fake.state.seen);

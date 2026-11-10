@@ -118,6 +118,8 @@ const wx = build({ pages: ["home", "weather"], location: { name: "Boston, MA", l
 const wxm = mod(wx, "MMM-OpenSky-WeatherPage");
 ok("23 Weather page: location, units and clock reach it; each extra is on unless switched off", wxm && wxm.config.latitude === 42.36 && wxm.config.placeName === "Boston, MA" && wxm.config.units === "metric" && wxm.config.hour12 === false &&
   wxm.config.hourly === true && wxm.config.alerts === true && wxm.config.radar === false && mod(wx, "MMM-pages").config.modules.length === 2, wxm && wxm.config);
+ok("24b the header knows which page is Weather (its alerts pill opens it); no Weather page = no link",
+  mod(wx, "MMM-OpenSky-Header").config.weatherPage === 1 && mod(build({ pages: ["home"] }), "MMM-OpenSky-Header").config.weatherPage === null, mod(wx, "MMM-OpenSky-Header").config.weatherPage);
 const wx2 = build({ pages: ["weather"], weather: { hourly: false, alerts: false } });
 ok("24 Weather page without a location still builds (the page says to set the town); no key or secret in its config",
   mod(wx2, "MMM-OpenSky-WeatherPage").config.latitude === null && mod(wx2, "MMM-OpenSky-WeatherPage").config.hourly === false && mod(wx2, "MMM-OpenSky-WeatherPage").config.radar === true && !/key|token|secret/i.test(JSON.stringify(mod(wx2, "MMM-OpenSky-WeatherPage").config)));

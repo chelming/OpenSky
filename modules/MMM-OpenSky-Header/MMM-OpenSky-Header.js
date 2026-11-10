@@ -8,6 +8,7 @@
 Module.register("MMM-OpenSky-Header", {
   defaults: {
     title: "Our Family",
+    weatherPage: null,                                             // MMM-pages index of the Weather page (the alerts pill opens it)
     time: { format12: true, showSeconds: false, updateInterval: 1000 },
     weather: { provider: "open-meteo", latitude: null, longitude: null, units: "imperial", refreshMinutes: 15 },
     countdown: { holidays: "US", custom: [], birthdays: true },  // custom: [{ name, month (1-12), day, icon? }]
@@ -73,6 +74,10 @@ Module.register("MMM-OpenSky-Header", {
     wx.className = "hb-weather";
     wx.innerHTML = this._formatWeather();
     row.appendChild(wx);
+
+    // Weather alerts: a quiet green pill, or an amber / red one with the alert (tap: the Weather page opens with the text)
+    const ap = this._alertPill();
+    if (ap) row.insertBefore(ap, wx);
 
     // Sports game-day pill (only on the day of a game, gone at midnight)
     const g = this.gameToday();
@@ -178,6 +183,11 @@ Module.register("MMM-OpenSky-Header", {
 
   // Birthdays come from the calendar ("… Birthday" / "Bday" events), broadcast by the calendar module
   notificationReceived(n, payload) {
+    if (n === "OPENSKY_WX_ALERTS") {   // { state: "none" | "alerts" | "unknown", alerts: [{ event, severity }] } from the Weather page
+      const key = JSON.stringify(payload || {});
+      if (key !== this._alertKey) { this._alertKey = key; this.wxAlerts = payload && payload.state !== "unknown" ? payload : null; this.updateDom(0); }
+      return;
+    }
     if (n === "OPENSKY_CHORE_COUNTS") {   // { counts: { "<profile name>": chores left today } } from the Chores page
       const counts = (payload && payload.counts) || {};
       if (JSON.stringify(counts) !== JSON.stringify(this.choreCounts || {})) { this.choreCounts = counts; this.updateDom(0); }
@@ -318,6 +328,24 @@ Module.register("MMM-OpenSky-Header", {
       h = h.toString().padStart(2, "0");
       return this.config.time.showSeconds ? `${h}:${m}:${s}` : `${h}:${m}`;
     }
+  },
+
+  _alertPill() {
+    const a = this.wxAlerts;
+    if (!a) return null;
+    const none = a.state !== "alerts" || !a.alerts.length;
+    const worst = none ? null : a.alerts[0], hot = worst && (worst.severity === "extreme" || worst.severity === "severe");
+    const open = Number.isInteger(this.config.weatherPage) && !none;
+    const pill = document.createElement(open ? "button" : "div");
+    pill.className = `hb-alert ${none ? "hb-alert-none" : hot ? "hb-alert-hot" : "hb-alert-warn"}`;
+    const ico = none ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M12 3 2 21h20L12 3zM12 10v5M12 18v.01"/>';
+    pill.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ico}</svg><span></span>`;
+    pill.querySelector("span").textContent = none ? "No weather alerts" : worst.event + (a.alerts.length > 1 ? ` +${a.alerts.length - 1}` : "");
+    if (open) {
+      pill.type = "button";
+      pill.onclick = () => { this.sendNotification("PAGE_CHANGED", this.config.weatherPage); setTimeout(() => this.sendNotification("OPENSKY_WX_ALERTS_OPEN"), 250); };
+    }
+    return pill;
   },
 
   _formatWeather() {

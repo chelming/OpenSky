@@ -422,6 +422,7 @@ const fixed = [
     position: "top_bar",
     config: {
       title: familyName || "Our Family",
+      weatherPage: pages.indexOf("weather") >= 0 ? pages.indexOf("weather") : null,   // the alerts pill opens it
       profiles,
       time: { format12: locale.timeFormat !== 24, showSeconds: false, updateInterval: 1000 },
       weather: {

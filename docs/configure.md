@@ -183,14 +183,21 @@ pick an icon, optionally lock it with a PIN, then **Restart now**. Edit or remov
 - `"openweathermap"` needs a free API key from <https://openweathermap.org/>, put in `secrets.json → weather.openweathermap.apiKey`.
 
 ### Weather page (hourly, radar, alerts)
-Add `"weather"` to `pages` (or phone setup → **Weather** → *Weather page*) for a page with three extras. Each one can be switched off:
+Add `"weather"` to `pages` (or phone setup → **Weather** → *Weather page*) for a page you can read from across the room: **Right now**
+(a sky-colored card with the temperature, one plain sentence such as "Warming to 62° around 2 PM, then dropping fast after 5. Bring a jacket
+if you're out tonight", and feels-like, wind and humidity), **Next 24 hours** (a temperature curve with Now / High / Low and the chance of
+rain), **Plan around it** (four periods with the temperature range and a clothing tip: light layer, jacket, warm coat or rain jacket),
+**This week** (the next six days; highs, lows and icons are the same as the Home calendar's, the bars share one scale) and a **Radar** card
+(tap it for the full-screen radar). The sentences and tips are worked out from the forecast, nothing is typed in. Three extras can be switched off:
 ```json
 "weather": { "provider": "open-meteo", "hourly": true, "radar": true, "alerts": true }
 ```
-- `hourly`: the next 24 hours with temperature, sky and chance of rain (Open-Meteo, free, no key). Scroll sideways for later hours.
-- `radar`: an animated map of the last hour of rain (RainViewer, free, no key), with a pause button and zoom. The map pictures come
+- `hourly`: Right now details, Next 24 hours and Plan around it (Open-Meteo, free, no key). Off: only the sky card and This week stay.
+- `radar`: an animated map of the last hour of rain (RainViewer, free, no key). Tap the small map for the full-screen radar: a back button,
+  zoom buttons, play/pause, a time slider and a "Dry near <town> for the next N hours" note. The map pictures come
   straight from the internet; if they can't load, the map says so instead of staying blank. Everything else keeps working.
-- `alerts`: warnings and watches for your location from the US National Weather Service (free, no key). Tap one for the full text.
+- `alerts`: warnings and watches for your location from the US National Weather Service (free, no key). The top bar shows a green
+  "No weather alerts" pill after the clock, or an amber / red pill with the alert; tap it for the full text on the Weather page.
   Outside the United States there is no free, worldwide alert service, so the page says alerts are US-only.
 - Each extra is on unless set to `false`. All three use your `location` and need the internet; there is nothing to enter, and no key is stored.
 
