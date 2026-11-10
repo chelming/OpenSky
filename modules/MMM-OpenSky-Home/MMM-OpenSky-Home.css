@@ -69,7 +69,7 @@ html[data-layout="compact"] .hd-note-x { width: 38px; height: 38px; padding: 10p
   filter: blur(28px) saturate(1.1) brightness(.92);
 }
 .hd-ph-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.hd-ph-cell.cover .hd-ph-img { object-fit: cover; }
+.hd-ph-cell.cover .hd-ph-img { object-fit: cover; object-position: 50% 30%; }
 .hd-ph-cell.cover .hd-ph-blur { display: none; }
 .hd-ph-caption {
   position: absolute; left: 12px; bottom: 12px;
