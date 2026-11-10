@@ -35,7 +35,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const touch = () => { this.lastActivity = Date.now(); this.idleHandled = false; };
     ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, touch, { capture: true, passive: true }));
     if (this.config.idleReturnMinutes > 0) setInterval(() => this.checkIdle(), 10 * 1000);
-    this.applyAccent(this.config.accent);
+    this.applyAccent(this.deviceAccent() || this.config.accent);
     this.applyScale();
     window.addEventListener("resize", () => this.applyScale());
   },
@@ -130,6 +130,19 @@ Module.register("MMM-OpenSky-Sidebar", {
     this.applyScale();
   },
   setDefaultTextSize(size) { this.config.textSize = size; this.applyScale(); },
+
+  // The accent is per screen too: this browser remembers its own pick (localStorage["opensky.accent"], never sent anywhere); a screen
+  // that hasn't chosen follows look.accent from opensky.json (the phone setting).
+  deviceAccent() {
+    try { return window.OpenSkyAccent.normalize(localStorage.getItem("opensky.accent")); } catch (e) { return this._accentFallback || null; }
+  },
+  // Settings → Accent color on this screen: a palette name / "#rrggbb", or null = follow the default
+  setAccent(accent) {
+    const v = window.OpenSkyAccent.normalize(accent);
+    try { if (v) localStorage.setItem("opensky.accent", v); else localStorage.removeItem("opensky.accent"); } catch (e) { this._accentFallback = v; /* private window: this visit only */ }
+    this.applyAccent(v || this.config.accent || "peach");
+  },
+  setDefaultAccent(accent) { this.config.accent = accent; this.applyAccent(this.deviceAccent() || accent || "peach"); },
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {

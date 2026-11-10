@@ -71,9 +71,10 @@ isn't saved in `opensky.json`.
 
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
-default peach. Pick it on the screen (Settings → Look & extras: a chip, or type a code under "Or a color code") or on
-the phone (Extras: a chip, the color picker, or a code). A very light color gets a warning: the text on buttons is
-white.
+default peach. This setting is the **default for every screen** (set it on the phone: Extras: a chip, the color picker, or
+a code). Each screen can pick its **own** in Settings → Look & extras (a chip, or type a code under "Or a color code";
+"Default" follows the setting above). That choice is remembered by that screen's browser only and isn't saved in
+`opensky.json`. A very light color gets a warning: the text on buttons is white.
 
 ## Pages
 ```json

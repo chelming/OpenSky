@@ -58,7 +58,7 @@ Module.register("MMM-OpenSky-Settings", {
       }
     } else if (n === "OS_LOOK") {   // the saved look, after a page refresh (the screen's config is from the last restart)
       const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0];
-      if (sb && p) { sb.setDefaultTextSize(p.textSize); sb.applyAccent(p.accent); }
+      if (sb && p) { sb.setDefaultTextSize(p.textSize); sb.setDefaultAccent(p.accent); }
     } else if (n === "OS_SET_STATUS") {
       this.status = p;
       if (this.isOpen()) this.renderStatus();
@@ -299,7 +299,8 @@ Module.register("MMM-OpenSky-Settings", {
     const pal = (window.OpenSkyEventColors && window.OpenSkyEventColors.PALETTE) || {};
     const accents = ["peach", ...Object.keys(pal).filter((c) => c !== "gray")];
     const A = window.OpenSkyAccent;
-    const custom = /^#/.test(P.prefs.accent) ? P.prefs.accent : null;   // a color code (look.accent "#rrggbb")
+    const mine = sbar && sbar.deviceAccent ? sbar.deviceAccent() : null;   // this screen's own accent; null = follows the phone setting
+    const custom = /^#/.test(mine || "") ? mine : null;   // a color code ("#rrggbb")
     if (this.hexDraft == null) this.hexDraft = custom || "";
     const placeOpts = [["", "Off"], ...P.places.map((x) => [x.path, x.label + (x.freeMB != null ? ` · ${x.freeMB >= 1024 ? Math.round(x.freeMB / 1024) + " GB" : x.freeMB + " MB"} free` : "")])];
     if (P.backup.destination && !P.places.some((x) => x.path === P.backup.destination)) placeOpts.push([P.backup.destination, `${P.backup.destination} (not available now)`]);
@@ -325,7 +326,8 @@ Module.register("MMM-OpenSky-Settings", {
       </section>
       <section class="ost-section">
         <h3>Look &amp; extras</h3>
-        <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips">${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === P.prefs.accent ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
+        <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips"><button class="ost-btn ost-small ost-accent-default${mine ? "" : " on"}" data-accent-default="1">Default</button>${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === mine ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
+        <div class="ost-note">This screen only; other screens keep their own. Default follows the phone setting (now ${esc(P.prefs.accent)}).</div>
         <div class="ost-row"><span class="ost-label">Or a color code</span><span class="ost-swatch"></span><input class="ost-input ost-hex" maxlength="7" data-okb-caps="off" autocomplete="off" spellcheck="false" placeholder="#3b82f6" value="${esc(this.hexDraft)}"><button class="ost-btn ost-hex-use">Use</button></div>
         <div class="ost-note ost-hex-note">Any color as a code, e.g. your team's color (the # is optional).</div>
         <div class="ost-row"><span class="ost-label">Text size</span><span class="ost-seg" data-seg="textSize">${[["default", "Default"], ...Object.entries(window.OpenSkyTextSize.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceSize() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
@@ -389,7 +391,9 @@ Module.register("MMM-OpenSky-Settings", {
     box.querySelector(".ost-add-web").onclick =() => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.renderPrefs(); this.focusWebForm(); };
     box.querySelectorAll(".ost-edit-web").forEach((b) => { b.onclick = () => { const e = P.embeds.find((x) => x.key === b.dataset.key); this.webForm = { key: e.key, title: e.title, url: e.url || "", icon: e.icon, locked: e.locked, pin: null }; this.renderPrefs(); this.focusWebForm(); }; });
     if (this.webForm) this.bindWebForm(box);
-    const pickAccent = (c) => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.applyAccent(A.hex(c)); this.savePrefs({ accent: c }); };
+    const pickAccent = (c) => { const sb = this.sidebar(); if (sb) sb.setAccent(c); this.renderPrefs(); };   // this screen only: nothing is saved on the Pi
+    const dflt = box.querySelector("[data-accent-default]");
+    if (dflt) dflt.onclick = () => { this.hexDraft = ""; const sb = this.sidebar(); if (sb) sb.setAccent(null); this.renderPrefs(); };
     box.querySelectorAll("[data-accent]").forEach((b) => {
       b.style.setProperty("--c", A.hex(b.dataset.accent));
       b.onclick = () => { this.hexDraft = /^#/.test(b.dataset.accent) ? b.dataset.accent : ""; pickAccent(b.dataset.accent); };

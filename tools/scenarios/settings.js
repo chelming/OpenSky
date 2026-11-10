@@ -104,9 +104,10 @@ module.exports = async (page, h) => {
   await page.mouse.move(back.x, (back.y + bottom.y) / 2, { steps: 4 }); await page.mouse.move(back.x, bottom.y + 20, { steps: 6 });
   await page.mouse.up();
   await until(async () => S().pages.join() === dragBefore.join());
+  const mine = () => page.evaluate(() => localStorage.getItem("opensky.accent"));
   await page.evaluate(() => document.querySelector('[data-accent="teal"]').click());
-  await until(async () => S().look && S().look.accent === "teal");
-  ok("accent color from the screen: saved and applied at once", S().look.accent === "teal" && await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim()) === "#11998e");
+  await until(async () => (await mine()) === "teal");
+  ok("accent color from the screen: remembered by this screen only (not in opensky.json) and applied at once", (await mine()) === "teal" && !(S().look || {}).accent && await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim()) === "#11998e");
   // any color as a code, typed with the on-screen keyboard (no # needed, any case): previewed, then saved + applied
   const css = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--os-accent").trim());
   await page.evaluate(() => document.querySelector(".ost-hex").scrollIntoView({ block: "center" })); await h.sleep(300);
@@ -115,18 +116,18 @@ module.exports = async (page, h) => {
   for (const k of ["{numbers}", "1", "{letters}", "d", "{numbers}", "4", "{letters}", "e", "d", "{numbers}", "8"]) await h.tap(`.okb-key[data-key="${k}"]`);
   const typed = await page.evaluate(() => ({ v: document.querySelector(".ost-hex").value, sw: document.querySelector(".ost-swatch").style.getPropertyValue("--c"), empty: document.querySelector(".ost-swatch").classList.contains("empty") }));
   await h.tap(".ost-hex-use");
-  await until(async () => S().look && S().look.accent === "#1d4ed8");
+  await until(async () => (await mine()) === "#1d4ed8");
   ok("accent color code: typed on the on-screen keyboard, previewed, Use → saved as #rrggbb and applied at once", typed.v === "1d4ed8" && typed.sw === "#1d4ed8" && !typed.empty &&
-    S().look.accent === "#1d4ed8" && await css() === "#1d4ed8", typed);
+    (await mine()) === "#1d4ed8" && await css() === "#1d4ed8", typed);
   await until(async () => page.evaluate(() => !!document.querySelector('.ost-chip.on[data-accent="#1d4ed8"]')));
   ok("…and it shows as the chosen chip, with the code still in the box", await page.evaluate(() => !!document.querySelector('.ost-chip.on[data-accent="#1d4ed8"]') && document.querySelector(".ost-hex").value === "#1d4ed8"));
   await page.evaluate(() => { const i = document.querySelector(".ost-hex"); i.value = "#ffffe0"; i.dispatchEvent(new Event("input")); });
   ok("a very light color gets a warning before it's used", await page.evaluate(() => /very light/.test(document.querySelector(".ost-hex-note").textContent)));
   await page.evaluate(() => { const i = document.querySelector(".ost-hex"); i.value = "#12zz45"; i.dispatchEvent(new Event("input")); document.querySelector(".ost-hex-use").click(); });
   await h.sleep(400);
-  ok("a code that isn't a color is refused (a message; nothing saved)", S().look.accent === "#1d4ed8" && await page.evaluate(() => /color code like/.test(document.querySelector(".os-toast")?.textContent || "")) && await css() === "#1d4ed8");
+  ok("a code that isn't a color is refused (a message; nothing saved)", (await mine()) === "#1d4ed8" && await page.evaluate(() => /color code like/.test(document.querySelector(".os-toast")?.textContent || "")) && await css() === "#1d4ed8");
   await page.evaluate(() => document.querySelector('[data-accent="teal"]').click());
-  await until(async () => S().look && S().look.accent === "teal");
+  await until(async () => (await mine()) === "teal");
   const places = await page.evaluate(() => [...document.querySelectorAll('[data-backup="destination"] option')].map((o) => o.textContent));
   ok("backups: the places this Pi can write to are listed (here: a network folder + the home folder)", places.some((t) => /Network folder/.test(t)) && places.some((t) => /home folder/.test(t)), places);
   const nas = path.join(__dirname, "..", "out", "fake-nas");

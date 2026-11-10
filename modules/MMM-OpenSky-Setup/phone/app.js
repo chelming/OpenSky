@@ -882,7 +882,7 @@
       oninput: (e) => { const c = A.code(e.target.value); e.target.classList.remove("bad"); if (c) { picker.value = c; useCode(c); } },
       onblur: (e) => { e.target.classList.toggle("bad", !!e.target.value.trim() && !A.code(e.target.value)); } });
     showWarn(custom || null);
-    return el("div", { class: "field" }, el("span", { class: "label" }, "Accent color (buttons, highlights)"), box,
+    return el("div", { class: "field" }, el("span", { class: "label" }, "Accent color (buttons, highlights; default for every screen)"), box,
       el("div", { class: "hex-row" }, picker, code), el("span", { class: "hint" }, "Or any color: tap the swatch to pick one, or type its code (e.g. your team's color)."), warn);
   }
 
