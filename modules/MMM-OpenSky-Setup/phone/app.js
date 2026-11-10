@@ -643,7 +643,7 @@
       msg.textContent = failed || `Added ${done} photo${done === 1 ? "" : "s"}. They appear on the screen within a few minutes.`;
       load();
     } });
-    const ask = (p) => sheet("Delete this photo?", (b) => b.append(el("img", { class: "pm-big", src: `/api/photos/${p.id}`, alt: "" }), el("p", { class: "hint" }, `${p.name} is deleted from the Pi and can't be brought back.`)), [
+    const ask = (p) => sheet("Delete this photo?", (b) => b.append(el("img", { class: "pm-big", src: `/api/photos/${p.id}`, alt: "" }), el("p", { class: "hint" }, (info.docker ? `${p.name} will be deleted for good.` : `${p.name} will be deleted from the Pi for good.`))), [
       ["Keep it", "", () => {}],
       ["Delete", "danger", () => { api("POST", "/api/photos/delete", { id: p.id }).then(load).catch((x) => { msg.className = "hint bad"; msg.textContent = x.message; }); }]]);
     async function load() {
