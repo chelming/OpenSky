@@ -33,6 +33,20 @@ module.exports = async (page, h) => {
   });
   ok("a pickup calendar is kept out of the events and sent for the icons", !pk.inEvents && pk.pickup && pk.pickup[0] === "Trash", pk);
 
+  // "Only show events titled…" on a source (phone setup → Calendars): only matching titles reach the screen
+  const only = await page.evaluate(() => {
+    const m = MM.getModules().withClass("MMM-OpenSky-Calendars")[0];
+    const sent = []; const orig = m.sendNotification.bind(m);
+    m.sendNotification = (n, p) => { sent.push([n, p]); };
+    const day = (t) => ({ title: t, startDate: String(Date.now() + 86400000), endDate: String(Date.now() + 2 * 86400000), fullDayEvent: true });
+    m.config.sources.push({ name: "District", type: "link", only: "^Day [1-6]$" });
+    m.events.set("District", [day("Day 3"), day("Day 7"), day("Early release"), day("day 1")]);
+    m.broadcast();
+    m.sendNotification = orig; m.config.sources.pop(); m.events.delete("District"); m.broadcast();
+    return sent.find(([n]) => n === "CALENDAR_EVENTS")[1].filter((e) => e.calendarName === "District").map((e) => e.title);
+  });
+  ok("a source with 'only' keeps just the matching titles (Day 1-6, any case)", JSON.stringify(only) === '["Day 3","day 1"]', only);
+
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };

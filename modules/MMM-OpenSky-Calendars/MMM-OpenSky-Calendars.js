@@ -41,7 +41,9 @@ Module.register("MMM-OpenSky-Calendars", {
     let list = [];
     const pickup = [];
     for (const src of this.config.sources) {
-      const evs = this.events.get(src.name) || [];
+      let evs = this.events.get(src.name) || [];
+      // "only show events titled…" (set per calendar in phone setup): a regular expression, any case
+      if (src.only) { try { const re = new RegExp(src.only, "i"); evs = evs.filter((ev) => re.test(String(ev.title || "").trim())); } catch (e) { /* invalid pattern: show everything */ } }
       // a trash/recycling calendar isn't shown as events: the Home page turns it into pickup icons
       if (src.role === "pickup") { evs.forEach((ev) => pickup.push({ title: ev.title, startDate: ev.startDate, fullDayEvent: ev.fullDayEvent })); continue; }
       const EC = window.OpenSkyEventColors;

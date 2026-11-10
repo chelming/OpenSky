@@ -276,6 +276,18 @@ OpenSky can show any number of calendars, each with its own color. Some can also
   3. the calendar's own `color` in `sources`
   4. otherwise a steady automatic color
 
+### Showing only some events of a calendar (e.g. the school's "Day 1"–"Day 6")
+A busy calendar, such as a school district's, can be cut down to the events you want.
+**On the phone:** Settings → Set up from your phone → Calendars → tap the calendar → *Only show events titled…*.
+Type a pattern (upper or lower case doesn't matter); only events whose whole title matches stay. Empty shows everything.
+
+| Pattern | Keeps |
+|---|---|
+| `^Day [1-6]$` | exactly "Day 1" … "Day 6" (the school's rotation day) |
+| `soccer\|practice` | any title containing either word |
+
+An invalid pattern is ignored (everything shows). It is saved as `only` on the calendar in `opensky.json`; you don't edit it by hand.
+
 ### One event on several calendars (kids who share an activity)
 If each person has their own calendar and an event is on more than one of them, turn on **Show shared events once** and it
 shows **once**, with a box that blends each person's color, their initials as small badges at the top right of the Home tile (`Q`, `Re`: the shortest start that tells the calendars apart; up to 4, then `+N`), and their full names in the event's details. It's off by default.
