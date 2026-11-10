@@ -19,6 +19,7 @@
     "smarthome": { "title": "Smart Home", "url": "http://localhost:8083/modules/opensky-fixtures/embed.html" },
     "vault": { "title": "Vault", "icon": "embed" }
   },
+  "screensaver": { "enabled": true, "afterMinutes": 10, "photoSeconds": 5 },
   "photos": { "provider": "folder", "folder": "photos", "usb": false, "intervalSeconds": 30 },
   "pickup": { "trashDay": "monday", "preset": "new-bedford-ma" }
 }

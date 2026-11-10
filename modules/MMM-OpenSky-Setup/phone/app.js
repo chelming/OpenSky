@@ -731,6 +731,12 @@
       accentField(),
       field("Text size", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
         "Makes everything on the screen bigger or smaller. Large and Extra large show less at once."),
+      field("Screensaver", select([["0", "Off"], ...[5, 10, 15, 30, 60].map((m) => [String(m), `After ${m} minutes without a touch`])], String(S.screensaver && S.screensaver.enabled === true ? (S.screensaver.afterMinutes || 10) : 0), (v) => {
+        const sv = S.screensaver = S.screensaver || {};
+        if (v === "0") sv.enabled = false; else { sv.enabled = true; sv.afterMinutes = Number(v); }
+        change();
+      }), "Shows your photos full screen with the time and what's up next. A touch brings the screen back."),
+      field("Screensaver: show what's up next", toggle(!(S.screensaver && S.screensaver.upNext === false), (v) => { const sv = S.screensaver = S.screensaver || {}; if (v) delete sv.upNext; else sv.upNext = false; change(); }, "Show what's up next on the screensaver")),
       field("Trash day", select(days, pk.trashDay || "", (v) => { pk.trashDay = v; change(); })),
       (info.presets || []).length ? field("City pickup schedule", select([["", "None — just my trash day"], ...info.presets.map((p) => [p, p.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ (\w\w)$/, (m) => m.toUpperCase())])], pk.preset || "", (v) => { pk.preset = v; change(); }), "Adds recycling, yard waste and holiday delays.") : null,
       field("Or a pickup calendar link", el("input", { type: "password", class: "input", autocomplete: "off", inputmode: "url",

@@ -1,0 +1,41 @@
+/* The screensaver: a full-screen photo with the time, date, weather and Up next in the left column.
+   Designed for 1920×1080 like the rest (the body zoom fits other screens). */
+.ss-root { position: fixed; inset: 0; z-index: 2000000000; background: #0b1b22; color: #fff; opacity: 0; transition: opacity .45s ease; cursor: none; overflow: hidden; }
+.ss-root.on { opacity: 1; }
+.ss-root[hidden] { display: none; }
+.ss-photos, .ss-layer { position: absolute; inset: 0; }
+.ss-layer { opacity: 0; transition: opacity 1.5s ease; background: #000; }
+.ss-layer.shown { opacity: 1; }
+.ss-blur { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(40px) brightness(.7); }
+.ss-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.ss-layer.cover .ss-img { object-fit: cover; }
+.ss-layer.cover .ss-blur { display: none; }
+/* a soft shade behind the text, whatever the photo */
+.ss-scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.25) 38%, rgba(0,0,0,0) 62%), linear-gradient(0deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 40%); }
+.ss-root:not(.has-photo) .ss-scrim { background: radial-gradient(120% 120% at 10% 10%, #1d5c70 0%, #0b1b22 70%); }
+
+.ss-info { position: absolute; left: 72px; top: 56px; bottom: 56px; width: 560px; display: flex; flex-direction: column; text-shadow: 0 2px 12px rgba(0,0,0,.45);
+  transform: translate(var(--ss-dx, 0), var(--ss-dy, 0)); transition: transform 2s ease; }
+.ss-weather { display: flex; align-items: center; gap: 12px; font-size: 38px; font-weight: 700; }
+.ss-wx-ico { width: 44px; height: 44px; display: inline-block; }
+.ss-date { font-size: 44px; font-weight: 700; margin-top: 4px; }
+.ss-clock { font-size: 190px; line-height: 1; font-weight: 800; letter-spacing: -6px; margin: 6px 0 0 -6px; }
+.ss-next { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+.ss-next-head { font-size: 34px; font-weight: 700; margin-bottom: 4px; }
+/* Cards are the dashboard's event pills (Home: .hd-event): pale calendar color, rounded, no borders, initial badge */
+.ss-card { display: flex; align-items: center; gap: 14px; background: var(--evc-bg, #e5e7eb); color: #1f2937; border-radius: 16px; padding: 14px 18px; text-shadow: none; }
+.ss-card[style*="--evc-multi"] { background: var(--evc-multi); }
+.ss-card.live { box-shadow: 0 0 0 3px #1f2937; }   /* the same ring as "happening now" on the dashboard */
+.ss-card-main { flex: 1; min-width: 0; }
+.ss-card-title { font-size: 28px; font-weight: 700; line-height: 1.15; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-card.live .ss-card-title { font-weight: 800; }
+.ss-card-sub { font-size: 20px; color: #374151; margin-top: 2px; }
+.ss-card-empty { font-size: 24px; font-weight: 700; background: #e9ecf1; }
+/* initial badge: the dashboard's .hd-badge (pale fill, ring in the calendar's color) */
+.ss-badge { flex: none; box-sizing: border-box; width: 36px; height: 36px; border-radius: 50%; background: var(--evc-bg, #e5e7eb); border: 3px solid var(--evc-bar, #6b7280);
+  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; line-height: 1; color: #1f2937; }
+.ss-more { align-self: flex-start; background: #e9ecf1; color: #3b4452; font-size: 20px; font-weight: 700; padding: 8px 16px; border-radius: 12px; text-shadow: none; }
+
+/* portrait screens: the same column, a little narrower */
+html[data-layout="portrait"] .ss-info { left: 48px; right: 48px; width: auto; }
+html[data-layout="portrait"] .ss-clock { font-size: 220px; }

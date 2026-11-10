@@ -58,6 +58,12 @@
     "preset": ""
   },
 
+  "screensaver": {
+    "enabled": false,
+    "afterMinutes": 10,
+    "upNext": true
+  },
+
   "sidebar": {
     "idleReturnMinutes": 5
   },

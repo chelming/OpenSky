@@ -134,6 +134,16 @@ function quickMinutes(v) {
 }
 
 // Each page = the modules that appear on it.
+// The photo source settings (Home's photo card and the screensaver share them; only the change interval differs)
+const photosConfig = (defaultSeconds) => ({
+  enabled: !(s.photos && s.photos.enabled === false),
+  provider: (s.photos && s.photos.provider) || "folder",
+  folder: folderPath(s.photos && s.photos.folder) || "~/Pictures",
+  usb: !(s.photos && s.photos.usb === false),
+  url: (s.photos && s.photos.url) || null,
+  intervalSeconds: (s.photos && s.photos.intervalSeconds) || defaultSeconds
+});
+
 const PAGES = {
   calendar: () => [
     {
@@ -179,14 +189,7 @@ const PAGES = {
       maxEventsPerDay: 4,
       eventColors,
       calendarPeople,
-      photos: {
-        enabled: !(s.photos && s.photos.enabled === false),
-        provider: (s.photos && s.photos.provider) || "folder",
-        folder: folderPath(s.photos && s.photos.folder) || "~/Pictures",
-        usb: !(s.photos && s.photos.usb === false),
-        url: (s.photos && s.photos.url) || null,
-        intervalSeconds: (s.photos && s.photos.intervalSeconds) || 30
-      },
+      photos: photosConfig(30),
       pickup: pickupSchedule(s.pickup)
     }
   }],
@@ -259,6 +262,7 @@ const familyName = String((s.family && s.family.name) || "").trim();
 const loc = s.location || {};
 const units = locale.units === "metric" ? "metric" : "imperial";
 const header = s.header || {};
+const saver = s.screensaver || {};
 
 
 // Modules shown on every page
@@ -268,6 +272,15 @@ const fixed = [
   ...(s.keyboard && s.keyboard.enabled === false ? [] : [{ module: "MMM-OpenSky-Keyboard", config: { layout: (s.keyboard && s.keyboard.layout) || "en" } }]),
   ...(familyLists.length ? [{ module: "MMM-OpenSky-Lists", config: { lists: familyLists, refreshMinutes: listSettings.refreshMinutes || 2 } }] : []),
   ...(calendarSources.length ? [{ module: "MMM-OpenSky-EventEditor", config: { editable: editableCalendars, servicePort } }] : []),
+  ...(saver.enabled === true ? [{
+    module: "MMM-OpenSky-Screensaver",
+    config: {
+      afterMinutes: Number.isFinite(saver.afterMinutes) && saver.afterMinutes > 0 ? saver.afterMinutes : 10,
+      upNext: saver.upNext !== false, showClock: saver.showClock !== false, showWeather: saver.showWeather !== false,
+      hour12: locale.timeFormat !== 24, eventColors,
+      photos: { ...photosConfig(20), intervalSeconds: Number.isFinite(saver.photoSeconds) && saver.photoSeconds >= 5 ? saver.photoSeconds : 20 }
+    }
+  }] : []),
   ...(calendarSources.length ? [{ module: "MMM-OpenSky-Calendars", config: { sources: calendarSources, mergeShared: !!cal.mergeShared, eventColors } }] : []),
   {
     module: "MMM-OpenSky-Header",

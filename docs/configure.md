@@ -322,6 +322,18 @@ A small trash-can icon appears on pickup days in the week view. It moves a day l
 - **Sleep** (bottom left) blacks out the screen until the next touch.
 - `quickAddMinutes`: the timer's quick buttons. `chimeVolume` runs from 0 to 1.
 
+## Screensaver
+```json
+"screensaver": { "enabled": true, "afterMinutes": 10, "upNext": true, "showClock": true, "showWeather": true, "photoSeconds": 20 }
+```
+Off by default. When on, after `afterMinutes` without a touch the screen becomes a full-screen slideshow of your photos
+(the same photos as the Home card) with the time, date, weather and an **Up next** list: what is left today, then the start
+of tomorrow, and "+N more events today". A touch (or key) brings the dashboard back; that touch doesn't press anything.
+It doesn't start while the screen is asleep or a timer is running on the Timer page, and a finished timer ends it.
+`upNext`, `showClock` and `showWeather` hide those parts; `photoSeconds` is the time per photo (5 or more). With no photos
+you get a dark background and the same information. The text drifts a few pixels with each photo, to spare the screen.
+Works the same in Docker with the screen shown in a browser (it only needs page touches).
+
 ## On-screen keyboard
 ```json
 "keyboard": { "enabled": true }

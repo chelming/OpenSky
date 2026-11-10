@@ -34,6 +34,7 @@ opensky/
 | OpenSky module | From the reference build | Notes |
 |---|---|---|
 | MMM-OpenSky-Sidebar | MMM-SidebarNav | page list from settings; sleep/wake via the screen service |
+| MMM-OpenSky-Screensaver | — | idle photo slideshow + clock, weather, "Up next" (CALENDAR_EVENTS, OPENSKY_WEATHER); idle time from the Sidebar; own photo route `/opensky-saver-photo/<id>` (same source as Home, `next({single:true})`); styled with the dashboard's event-pill tokens (`--evc-*`) |
 | MMM-OpenSky-Header | MMM-HeaderBar | family name, clock, weather provider, countdown + sports pills |
 | MMM-OpenSky-Home | MMM-HomeDashboard | week tiles, lists card, photos card (providers), pickup icons |
 | MMM-OpenSky-CalendarNav / -CalendarHelper / -EventEditor | MMM-CalendarNav / -CalendarHelper / -CalendarEditor | month/week view uses MMM-CalendarExt3 (pinned + patch) |

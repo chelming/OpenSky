@@ -127,6 +127,13 @@ const libSize = require(path.join(__dirname, "..", "lib", "text-size.js")), ST =
 ok("20 the Pi's rule (lib/text-size.js) and the screen/phone's (OpenSkyTextSize) agree; unknown → 1×",
   sizeCases.filter(([v]) => typeof v === "string").every(([v]) => (libSize.normalize(v) || "normal") === sizeIn(v) && (ST.normalize(v) || "normal") === sizeIn(v)) &&
   ST.factor("xlarge") === 1.3 && ST.factor("small") === 0.9 && ST.factor("nope") === 1 && ST.factor() === 1);
+// screensaver: off unless enabled; settings reach the module (photos share the Home settings)
+const ssOf = (v) => mod(build(v === undefined ? {} : { screensaver: v, locale: { timeFormat: 24 } }), "MMM-OpenSky-Screensaver");
+ok("21 screensaver: absent / not enabled → no module", !ssOf() && !ssOf({ afterMinutes: 5 }) && !ssOf({ enabled: "yes" }));
+const ss = ssOf({ enabled: true, afterMinutes: 3, upNext: false, photoSeconds: 8 }), ssd = ssOf({ enabled: true, afterMinutes: -2, photoSeconds: 1 });
+ok("22 screensaver: settings reach the module; bad numbers → defaults (10 min, 20 s)", ss && ss.config.afterMinutes === 3 && ss.config.upNext === false && ss.config.photos.intervalSeconds === 8 &&
+  ss.config.hour12 === false && ssd.config.afterMinutes === 10 && ssd.config.photos.intervalSeconds === 20 && ssd.config.upNext === true, ss && ss.config);
+
 delete global.window; delete global.document;
 
 

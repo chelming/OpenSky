@@ -300,6 +300,18 @@ module.exports = async (page, h, app) => {
     S.header.sports.league === "nba" && S.header.sports.team === "BOS" && S.wordgame.source === "opensky" && S.weather.provider === "openweathermap" && sec.weather?.openweathermap?.apiKey === "owm-key-123456",
     { look: S.look, pickup: S.pickup, sports: S.header.sports, wordgame: S.wordgame, weather: S.weather });
 
+  // ---- Screensaver: after N minutes / off, and the Up next toggle ----
+  await pick("#extras", "Screensaver", 30);
+  await tap("#extras", ".toggle", "Show what's up next on the screensaver");
+  await save();
+  S = settings();
+  ok("extras: screensaver after 30 minutes, Up next off", S.screensaver?.enabled === true && S.screensaver.afterMinutes === 30 && S.screensaver.upNext === false, S.screensaver);
+  await pick("#extras", "Screensaver", 0);
+  await tap("#extras", ".toggle", "Show what's up next on the screensaver");
+  await save();
+  S = settings();
+  ok("extras: screensaver Off, Up next back on", S.screensaver?.enabled === false && S.screensaver.upNext === undefined, S.screensaver);
+
   // ---- accent: any color as a code (typed, any case) or from the phone's color picker; then back to teal ----
   await type("#extras .hex-input", "#2E7D32");
   const chipOff = await phone.evaluate(() => !document.querySelector("#extras .chip.on") && document.querySelector("#extras .color-pick").value === "#2e7d32");
