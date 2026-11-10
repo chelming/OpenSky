@@ -22,6 +22,9 @@ Module.register("MMM-OpenSky-Sidebar", {
     accent: null,                // opensky.json → look.accent: a palette color name ("teal") or "#rrggbb"; null = peach
     scale: "auto",               // opensky.json → look.scale: "auto" fits the 1920×1080 design to the screen; or a number (e.g. 1.2)
     textSize: "normal",          // opensky.json → look.textSize: the default for every screen; a screen can pick its own (deviceTextSize)
+    theme: "light",              // opensky.json → look.theme: "light" | "dark" | "auto" (by sun): the default for every screen; a screen can pick its own (deviceTheme)
+    lightSensor: false,          // look.lightSensor: let an ambient light sensor, if the screen has one, overrule the sun in Auto
+    latitude: null, longitude: null,   // opensky.json → location, for sunrise and sunset
     ui: { width: 92, gap: 8, tile: 76, icon: 28, font: 12 }
   },
 
@@ -36,6 +39,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, touch, { capture: true, passive: true }));
     if (this.config.idleReturnMinutes > 0) setInterval(() => this.checkIdle(), 10 * 1000);
     this.applyAccent(this.config.accent);
+    this.applyTheme();
     this.applyScale();
     window.addEventListener("resize", () => this.applyScale());
   },
@@ -130,6 +134,39 @@ Module.register("MMM-OpenSky-Sidebar", {
     this.applyScale();
   },
   setDefaultTextSize(size) { this.config.textSize = size; this.applyScale(); },
+
+  // ----- Dark mode (look.theme): css/opensky.css turns the whole page dark when <html data-os-theme="dark">. Per screen like the
+  // text size: this browser's own pick lives in localStorage["opensky.theme"]; a screen that hasn't chosen follows look.theme.
+  deviceTheme() {
+    try { return window.OpenSkyTheme.normalize(localStorage.getItem("opensky.theme")); } catch (e) { return this._themeFallback || null; }
+  },
+  setTheme(mode) {   // "light" | "dark" | "auto", or null / "default" = follow the default
+    const v = window.OpenSkyTheme.normalize(mode);
+    try { if (v) localStorage.setItem("opensky.theme", v); else localStorage.removeItem("opensky.theme"); } catch (e) { this._themeFallback = v; }
+    this.applyTheme();
+  },
+  setDefaultTheme(mode, sensor) { this.config.theme = window.OpenSkyTheme.normalize(mode) || "light"; if (typeof sensor === "boolean") this.config.lightSensor = sensor; this.applyTheme(); },
+  isDark() { return document.documentElement.dataset.osTheme === "dark"; },
+  applyTheme() {
+    const T = window.OpenSkyTheme, mode = this.deviceTheme() || this.config.theme;
+    const fresh = this._lux && Date.now() - this._lux.at < 15 * 60000 ? this._lux.v : null;   // a sensor reading from the last quarter hour
+    const dark = T.isDark(mode, new Date(), this.config.latitude, this.config.longitude, this.config.lightSensor ? fresh : null, this.isDark());
+    document.documentElement.dataset.osTheme = dark ? "dark" : "light";
+    if (!this._themeTimer) this._themeTimer = setInterval(() => this.applyTheme(), 60000);   // the sun moves on
+    if (this.config.lightSensor && !this._sensorTried) this.startLightSensor();
+  },
+  // Optional ambient light sensor (Chromium's AmbientLightSensor, only where the screen/browser has one and allows it).
+  // Anything missing or refused is ignored: Auto then simply follows the sun.
+  startLightSensor() {
+    this._sensorTried = true;
+    try {
+      if (typeof window.AmbientLightSensor !== "function") return;
+      const s = new window.AmbientLightSensor({ frequency: 0.2 });
+      s.onreading = () => { this._lux = { v: s.illuminance, at: Date.now() }; this.applyTheme(); };
+      s.onerror = () => { this._lux = null; };
+      s.start();
+    } catch (e) { /* no sensor, no permission: sun only */ }
+  },
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {

@@ -97,6 +97,15 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
 - The **text size is per device**: the default is `look.textSize` (opensky.json, shown as `config.textSize`, refreshed from the file
   at start-up through `OS_LOOK`), and a screen's own pick lives in that browser's `localStorage["opensky.textSize"]`
   (`Sidebar.deviceTextSize()` / `setTextSize()`); never written to the Pi. The harness starts Electron with a fresh profile each run.
+- **Dark mode** (`look.theme`: light | dark | auto, `look.lightSensor`) is per device like the text size: default in `config.theme`
+  (refreshed through `OS_LOOK`), a screen's own pick in `localStorage["opensky.theme"]` (`Sidebar.deviceTheme()` / `setTheme()`).
+  `Sidebar.applyTheme()` (every minute, plus on each sensor reading) sets `<html data-os-theme="dark">`; the rule lives in
+  `OpenSkyTheme` (`lib/client/opensky-client.js`: `normalize`, `sunTimes` from `config.latitude/longitude`, `isDark`) and
+  `lib/theme.js` (normalize only, kept in step by `tools/test-config.js`). The dark look is ONE rule in `css/opensky.css`:
+  `filter: invert(1) hue-rotate(180deg)` on `html` (so no page needs its own dark stylesheet), with images/video/canvas/webview/iframe
+  and the whole screensaver inverted back, and `.ost-dim` (the black dim layer) made white so it inverts to black. A new module that
+  paints a photo, or anything meant to keep its own colors, with a CSS `background-image` must be added to that exception list.
+  The light sensor is Chromium's `AmbientLightSensor` where present (hysteresis 5 / 30 lux), never started in Docker.
 - Where a page starts comes from tokens on `:root` (`--os-content-left/-top/-bottom/-right`, `--os-side-width`, tile sizes), set
   per layout — pages use them instead of literal 92px/112px. The sidebar shrinks its tiles (to 44 px) so every tile fits.
 - **Things drop out instead of overflowing** (big text, small screens): Home uses container queries (they see the card, not

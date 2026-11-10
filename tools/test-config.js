@@ -161,6 +161,26 @@ const libSize = require(path.join(__dirname, "..", "lib", "text-size.js")), ST =
 ok("20 the Pi's rule (lib/text-size.js) and the screen/phone's (OpenSkyTextSize) agree; unknown → 1×",
   sizeCases.filter(([v]) => typeof v === "string").every(([v]) => (libSize.normalize(v) || "normal") === sizeIn(v) && (ST.normalize(v) || "normal") === sizeIn(v)) &&
   ST.factor("xlarge") === 1.3 && ST.factor("small") === 0.9 && ST.factor("nope") === 1 && ST.factor() === 1);
+// dark mode: look.theme light (default) / dark / auto — config, the Pi (lib/theme.js) and the screen (OpenSkyTheme) agree; sun maths
+const themeIn = (v) => mod(build({ look: { theme: v } }), "MMM-OpenSky-Sidebar").config.theme;
+const themeCases = [["dark", "dark"], [" Auto ", "auto"], ["Auto (by sun)", "auto"], ["LIGHT", "light"], ["night", "light"], ["", "light"], [3, "light"], [undefined, "light"]];
+const themeGot = themeCases.map(([v]) => themeIn(v));
+ok("23 dark mode: names reach the screen; absent / anything else → light (today's look)", themeGot.every((g, i) => g === themeCases[i][1]), themeGot);
+const libTheme = require(path.join(__dirname, "..", "lib", "theme.js")), TH = global.window.OpenSkyTheme;
+ok("24 the Pi's rule (lib/theme.js) and the screen/phone's (OpenSkyTheme) agree", themeCases.filter(([v]) => typeof v === "string").every(([v]) => (libTheme.normalize(v) || "light") === themeIn(v) && (TH.normalize(v) || "light") === themeIn(v)));
+const sbT = mod(build({ look: { theme: "auto", lightSensor: true }, location: { latitude: 42.3601, longitude: -71.0589 } }), "MMM-OpenSky-Sidebar").config;
+ok("25 dark mode: location and light sensor reach the Sidebar; no location → null", sbT.latitude === 42.3601 && sbT.longitude === -71.0589 && sbT.lightSensor === true && mod(build({}), "MMM-OpenSky-Sidebar").config.latitude === null && mod(build({}), "MMM-OpenSky-Sidebar").config.lightSensor === false);
+process.env.OPENSKY_DOCKER = "1";
+ok("26 dark mode in Docker: the light sensor is never used (time / sun only)", mod(build({ look: { theme: "auto", lightSensor: true } }), "MMM-OpenSky-Sidebar").config.lightSensor === false);
+delete process.env.OPENSKY_DOCKER;
+// Boston, 10 Nov 2026: sunrise about 06:30 and sunset about 16:30 (EST = UTC-5; the maths is in UTC so check as instants)
+const bos = TH.sunTimes(new Date(2026, 10, 10, 12), 42.3601, -71.0589), minUtc = (d) => d.getUTCHours() * 60 + d.getUTCMinutes();
+ok("27 sun times: Boston in November (sunrise ~11:30 UTC, sunset ~21:30 UTC, on the same day); polar day / night; no location", bos && !bos.polar && Math.abs(minUtc(bos.rise) - 11 * 60 - 30) <= 15 && Math.abs(minUtc(bos.set) - 21 * 60 - 30) <= 15 && Math.abs(bos.set - bos.rise - 10 * 3600000) < 3600000 && bos.rise.getTime() > new Date(2026, 10, 10, 12).getTime() - 24 * 3600000 && bos.set.getTime() < new Date(2026, 10, 10, 12).getTime() + 24 * 3600000 &&
+  TH.sunTimes(new Date(Date.UTC(2026, 5, 21, 12)), 80, 0).polar === "day" && TH.sunTimes(new Date(Date.UTC(2026, 11, 21, 12)), 80, 0).polar === "night" && TH.sunTimes(new Date(), null, null) === null, bos);
+const at = (h, m) => new Date(2026, 5, 1, h, m);   // a local time; without a location the rule is 19:00-07:00
+ok("28 Auto: no location → dark 19:00-07:00; Light / Dark ignore the sun; sensor overrules with hysteresis",
+  TH.isDark("auto", at(20, 0), null, null) && TH.isDark("auto", at(6, 59), null, null) && !TH.isDark("auto", at(12, 0), null, null) && !TH.isDark("light", at(23, 0), null, null) && TH.isDark("dark", at(12, 0), null, null) &&
+  TH.isDark("auto", at(12, 0), null, null, 2) && !TH.isDark("auto", at(23, 0), null, null, 200) && TH.isDark("auto", at(12, 0), null, null, 15, true) && !TH.isDark("auto", at(23, 0), null, null, 15, false));
 // screensaver: off unless enabled; settings reach the module (photos share the Home settings)
 const ssOf = (v) => mod(build(v === undefined ? {} : { screensaver: v, locale: { timeFormat: 24 } }), "MMM-OpenSky-Screensaver");
 ok("21 screensaver: absent / not enabled → no module", !ssOf() && !ssOf({ afterMinutes: 5 }) && !ssOf({ enabled: "yes" }));

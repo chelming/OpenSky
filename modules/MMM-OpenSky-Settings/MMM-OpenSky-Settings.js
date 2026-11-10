@@ -58,7 +58,7 @@ Module.register("MMM-OpenSky-Settings", {
       }
     } else if (n === "OS_LOOK") {   // the saved look, after a page refresh (the screen's config is from the last restart)
       const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0];
-      if (sb && p) { sb.setDefaultTextSize(p.textSize); sb.applyAccent(p.accent); }
+      if (sb && p) { sb.setDefaultTextSize(p.textSize); sb.applyAccent(p.accent); sb.setDefaultTheme(p.theme, p.lightSensor); }
     } else if (n === "OS_SET_STATUS") {
       this.status = p;
       if (this.isOpen()) this.renderStatus();
@@ -285,6 +285,7 @@ Module.register("MMM-OpenSky-Settings", {
   /* ---------------- pages, look & extras, backups (also on the phone page) ---------------- */
   // this screen's own text size ("small"…"xlarge") or null when it follows the default
   deviceSize() { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; return sb ? sb.deviceTextSize() : null; },
+  deviceTheme() { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; return sb ? sb.deviceTheme() : null; },
 
   savePrefs(patch) { this.sendSocketNotification("OS_SET_PREFS_SAVE", { patch }); },
 
@@ -330,6 +331,8 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-note ost-hex-note">Any color as a code, e.g. your team's color (the # is optional).</div>
         <div class="ost-row"><span class="ost-label">Text size</span><span class="ost-seg" data-seg="textSize">${[["default", "Default"], ...Object.entries(window.OpenSkyTextSize.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceSize() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
         <div class="ost-note">This screen only; other screens keep their own. Default follows the setting from the phone page (now ${window.OpenSkyTextSize.LABELS[P.prefs.textSize] || "Normal"}).</div>
+        <div class="ost-row"><span class="ost-label">Dark mode</span><span class="ost-seg" data-seg="theme">${[["default", "Default"], ...Object.entries(window.OpenSkyTheme.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceTheme() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
+        <div class="ost-note">This screen only. Auto is dark from sunset to sunrise (19:00 to 07:00 if no location is set). Default follows the setting from the phone page (now ${window.OpenSkyTheme.LABELS[P.prefs.theme] || "Light"}).</div>
         <div class="ost-row"><span class="ost-label">Word game</span><span class="ost-seg" data-seg="wordgame"><button data-v="nyt" class="${P.prefs.wordgame === "nyt" ? "on" : ""}">NYT's daily word</button><button data-v="opensky" class="${P.prefs.wordgame === "opensky" ? "on" : ""}">OpenSky's words</button></span></div>
         <div class="ost-row">${this.toggle("photos", P.prefs.photos)}<span class="ost-label">Photo slideshow on Home</span></div>
         <div class="ost-row"><span class="ost-label">Trash day</span><select class="ost-select" data-pref="trashDay">${[["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]].map(([v, l]) => `<option value="${v}" ${v === P.prefs.trashDay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
@@ -417,6 +420,9 @@ Module.register("MMM-OpenSky-Settings", {
     preview();
     box.querySelectorAll('[data-seg="textSize"] button').forEach((b) => {
       b.onclick = () => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.setTextSize(b.dataset.v); this.renderPrefs(); };   // this screen only: nothing is saved on the Pi
+    });
+    box.querySelectorAll('[data-seg="theme"] button').forEach((b) => {
+      b.onclick = () => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.setTheme(b.dataset.v); this.renderPrefs(); };   // this screen only
     });
     box.querySelectorAll('[data-seg="wordgame"] button').forEach((b) => { b.onclick = () => this.savePrefs({ wordgame: b.dataset.v }); });
     box.querySelector('.ost-toggle[data-id="photos"]').onclick = () => this.savePrefs({ photos: !P.prefs.photos });
