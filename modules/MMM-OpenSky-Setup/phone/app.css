@@ -206,3 +206,6 @@ ol.steps li { margin: 4px 0; }
 .grip { flex: none; width: 32px; height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--faint); touch-action: none; user-select: none; -webkit-user-select: none; }
 .grip svg { width: 20px; height: 20px; }
 .pagerow.dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
+
+.remember { display: flex; gap: 8px; align-items: flex-start; max-width: 320px; margin: 16px auto 0; font-size: 14px; color: var(--muted); text-align: left; }
+.remember input { margin-top: 3px; }

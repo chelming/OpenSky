@@ -57,7 +57,7 @@ Everything above lives in the `/config` volume (`./docker-config/` on the host) 
 
 **Devices page** (`modules/MMM-OpenSky-Devices`, `lib/ha-tiles.js`, page key `devices`, `opensky.json → devices.tiles: [{ entity, name? }]`, set from phone setup → Extras → Devices via `GET /api/devices/entities`): Home Assistant lights/switches (tap toggles), locks (second tap to confirm), sensors (read-only). Address + token are the shared `secrets.json → homeassistant.url/.token`, used only by the node helper, which acts only on configured tiles. Tests: `tools/test-ha-tiles.js`, `tools/scenarios/devices.js`, `tools/scenarios/devices-setup.js`, line 6e in `tools/test-config.js`.
 
-**Two kinds of phone access, never mixed:** phone *setup* (pairing code, short-lived, can change everything) and the *share* page
+**Two kinds of phone access, never mixed:** phone *setup* (pairing code, short-lived, can change everything; a device that ticked "Remember this device" skips the code for 30 days via the `os_device` cookie, hashes in `setup-devices.json`, forgotten from phone setup → Backup; test 4b-4h in `tools/test-setup.js`) and the *share* page
 (a family passcode, always on when enabled, can only add photos and notes). Keep it that way: a new share endpoint must never read or write
 settings, secrets, backups or calendars, and `tools/test-share.js` checks what a share phone can't reach.
 
