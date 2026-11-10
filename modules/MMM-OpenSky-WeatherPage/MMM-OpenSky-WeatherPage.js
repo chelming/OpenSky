@@ -60,7 +60,7 @@ Module.register("MMM-OpenSky-WeatherPage", {
                 <button type="button" class="wp-btn wp-zout" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
                 <button type="button" class="wp-btn wp-zin" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
               </div>
-              <div class="wp-credit">Map &copy; OpenStreetMap contributors, CARTO &middot; radar RainViewer</div>
+              <div class="wp-credit">Map &copy; Esri, HERE, Garmin, OpenStreetMap contributors &middot; radar RainViewer</div>
             </div>
           </section>
         </div>`;
