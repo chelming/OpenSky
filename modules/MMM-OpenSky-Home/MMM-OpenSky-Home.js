@@ -514,7 +514,8 @@ Module.register("MMM-OpenSky-Home", {
   drawDay(tile, k) {
     const list = tile.querySelector(".hd-day-events"), events = tile._events;
     list.innerHTML = "";
-    events.slice(0, k).forEach((ev) => list.appendChild(this.eventPill(ev, tile._day, undefined, this.portrait())));
+    // an all-day event is one slim row on every day (as on today's tile); portrait week rows are already one-line chips
+    events.slice(0, k).forEach((ev) => list.appendChild(ev.allDay && !this.portrait() ? this.stripPill(ev) : this.eventPill(ev, tile._day, undefined, this.portrait())));
     if (events.length > k) {
       const more = document.createElement("button");
       more.className = "hd-more";
@@ -677,7 +678,7 @@ Module.register("MMM-OpenSky-Home", {
 
   colored(el, ev) { if (window.OpenSkyEventColors) el.setAttribute("style", window.OpenSkyEventColors.vars(ev)); },
 
-  // an all-day event on today's tile: one slim row
+  // an all-day event: one slim row (today's tile and every other day's)
   stripPill(ev) {
     const pill = document.createElement("button");
     pill.className = "hd-event hd-strip";

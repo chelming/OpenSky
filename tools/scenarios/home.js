@@ -19,7 +19,7 @@ module.exports = async (page, h) => {
     home.notificationReceived("CALENDAR_EVENTS", evs.map((e) => ({ ...e, startDate: String(e.startDate), endDate: String(e.endDate) })), { identifier: "test_calendar" });
   });
   await h.sleep(500);
-  const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].map((p) => ({ title: p.querySelector(".hd-event-title").textContent, time: p.querySelector(".hd-event-time").textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor })));
+  const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].map((p) => ({ title: p.querySelector(".hd-event-title").textContent, time: (p.querySelector(".hd-event-time") || p.querySelector(".hd-strip-tag")).textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor })));
   const by = (t) => pills.find((p) => p.title === t);
   ok("events on their days with times", by("Kids dentist") && /3 PM – 4 PM|3 – 4 PM/.test(by("Kids dentist").time) && by("Family picnic") && by("Family picnic").time === "All day", pills);
   ok("keyword color rule (dentist → indigo)", by("Kids dentist") && by("Kids dentist").bar === "rgb(74, 91, 216)", by("Kids dentist") && by("Kids dentist").bar);
