@@ -1,0 +1,42 @@
+/* MMM-OpenSky-Meals — the recipe popup (appended to <body>) */
+
+.osm-overlay {
+  position: fixed; inset: 0; z-index: 9999;           /* below the toast and the on-screen keyboard */
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .5); backdrop-filter: blur(4px);
+}
+.osm-modal {
+  display: flex; flex-direction: column;
+  width: min(1040px, calc(94 * var(--vw))); max-height: calc(92 * var(--vh));
+  padding: 22px 26px 26px; border-radius: 26px; box-sizing: border-box;
+  background: #fff; color: #1f2937; box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+.osm-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.osm-title { font-size: 30px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; min-width: 0; }
+.osm-x { flex: 0 0 auto; width: 52px; height: 52px; border: 0; border-radius: 50%; background: #f3f4f6; color: #4b5563; font-size: 30px; line-height: 1; cursor: pointer; }
+.osm-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 26px; overflow: hidden; }
+.osm-wait { grid-column: 1 / -1; margin: 30px 0; text-align: center; font-size: 20px; color: #6b7280; }
+.osm-side { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.osm-main { min-height: 0; overflow-y: auto; padding-right: 6px; }
+.osm-img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 18px; background: #f3f4f6; }
+.osm-facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.osm-fact { padding: 8px 14px; border-radius: 14px; background: #f3f4f6; display: flex; flex-direction: column; }
+.osm-fact small { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; }
+.osm-fact b { font-size: 17px; }
+.osm-desc { margin: 0; font-size: 16px; line-height: 1.4; color: #4b5563; }
+.osm-add {
+  min-height: 60px; padding: 12px 18px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--os-accent, #2e8bd6); color: #fff; font: inherit; font-size: 19px; font-weight: 800;
+}
+.osm-add:disabled { opacity: .6; }
+.osm-h { margin: 0 0 8px; font-size: 20px; font-weight: 800; }
+.osm-ingredients, .osm-steps { margin: 0 0 18px; padding-left: 24px; font-size: 19px; line-height: 1.35; }
+.osm-ingredients { list-style: none; padding-left: 0; }
+.osm-ingredients li { padding: 7px 0; border-bottom: 1px solid #f3f4f6; }
+.osm-ingredients .osm-section { margin-top: 8px; border-bottom: 0; font-weight: 800; color: #6b7280; }
+.osm-ingredients .osm-none { color: #9ca3af; }
+.osm-steps li { padding: 6px 0 10px; }
+html[data-layout="portrait"] .osm-body, html[data-layout="compact"] .osm-body { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
+html[data-layout="portrait"] .osm-side, html[data-layout="compact"] .osm-side { overflow: visible; }
+html[data-layout="portrait"] .osm-main, html[data-layout="compact"] .osm-main { overflow: visible; }
+html[data-layout="portrait"] .osm-img, html[data-layout="compact"] .osm-img { aspect-ratio: 16 / 9; }

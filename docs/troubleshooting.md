@@ -75,7 +75,9 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
 - **Mealie: "refused the API token"** — make a new token (Mealie → your profile → API Tokens) and connect again in phone setup (Lists → Add a list → Mealie).
   **"Can't reach Mealie"** — Mealie must be on and reachable from the Pi at the address you gave; open that address in a browser on the same network. **"No Mealie shopping list called …"** — the list was renamed or deleted in Mealie: remove it in phone setup and add it again.
 - **Greenlight: "didn't accept that phone number and password"** — use the parent's login for the Greenlight app. **"signed OpenSky out" / "wants a new text-message code"** — connect again in phone setup (Lists → Add a list → Greenlight). **Chores stopped showing** — Greenlight is unofficial and may have changed something; check `opensky logs`.
-- **Mealie meal plan is empty** — only the kinds of meal you chose show (Calendars → the Mealie calendar). Entries without a recipe or a title are skipped.
+- **Mealie meal plan is empty** — only the kinds of meal you chose show (phone setup → Meals → Meals to show). Entries without a recipe or a title are skipped, and the page looks from a week back to five weeks ahead.
+- **Mealie: the Meals page says "Can't reach Mealie"** — OpenSky keeps showing the last plan it got; fix the address or token in phone setup → Meals. In Docker use the container name (`http://mealie:9000`), not `localhost`.
+- **A recipe opens but "Add ingredients" fails** — the shopping list may have been deleted in Mealie: pick the list again in phone setup → Meals → *Add a recipe's ingredients to*.
 - **Todoist changes take a minute or two** to show on the screen (`refreshMinutes`). Changes made on the screen show at once.
 
 ## Photos

@@ -26,10 +26,10 @@ const fakeHA = http.createServer((req, res) => {
 fakeHA.listen(HA, "127.0.0.1"); fakeHA.unref();
 
 // a stand-in Mealie (port 8099): one token, two shopping lists
-const MEALIE = 8099;
+const MEALIE = 8099, LIST1 = "11111111-aaaa-4000-8000-000000000001";
 const fakeMealie = http.createServer((req, res) => {
   res.writeHead(req.headers.authorization === "Bearer mealie-phone-token" ? 200 : 401, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(req.url.startsWith("/api/households/shopping/lists") ? { items: [{ id: "L1", name: "Weekly Shop" }, { id: "L2", name: "Hardware" }] } : { id: "u1" }));
+  res.end(JSON.stringify(req.url.startsWith("/api/households/shopping/lists") ? { items: [{ id: "11111111-aaaa-4000-8000-000000000001", name: "Weekly Shop" }, { id: "22222222-bbbb-4000-8000-000000000002", name: "Hardware" }] } : { id: "u1" }));
 });
 fakeMealie.listen(MEALIE, "127.0.0.1"); fakeMealie.unref();
 
@@ -162,25 +162,36 @@ module.exports = async (page, h, app) => {
   await tap(".sheet", ".btn.block", "Connect to Mealie");
   await until(() => phone.evaluate(() => !!document.querySelector(".sheet .good-note")));
   ok("mealie: connected; the address and token are already kept on the Pi (no need to Save first)", secrets().mealie?.token === "mealie-phone-token" && secrets().mealie?.url === `http://127.0.0.1:${MEALIE}`, secrets().mealie);
-  await pick(".sheet", "Which shopping list?", "L1");
+  await pick(".sheet", "Which shopping list?", LIST1);
   ok("mealie: picking a shopping list names the list after it", await phone.evaluate(() => document.querySelector(".sheet input.input[type=text]")?.value === "Weekly Shop"));
-  await sheetButton("Add");
-  await tap("#calendars", ".add", null);
-  await tap(".sheet", ".seg button", "Mealie");
-  await until(() => phone.evaluate(() => !!document.querySelector(".sheet .good-note")));
-  await tap(".sheet", ".toggle", "Lunch");
   await sheetButton("Add");
   await save();
   S = settings(); sec = secrets();
-  ok("mealie: the list (with its Mealie id) and the meal plan calendar (lunch + dinner) are saved; the token only in secrets",
-    JSON.stringify(S.lists.lists.find((l) => l.provider === "mealie")) === JSON.stringify({ name: "Weekly Shop", color: S.lists.lists.find((l) => l.provider === "mealie")?.color, provider: "mealie", shoppingList: "Weekly Shop", shoppingListId: "L1" }) &&
-    JSON.stringify(S.calendar.sources.find((c) => c.type === "mealie")) === JSON.stringify({ name: "Dinner", color: S.calendar.sources.find((c) => c.type === "mealie")?.color, type: "mealie", meals: ["lunch", "dinner"] }) &&
-    sec.mealie.token === "mealie-phone-token" && !JSON.stringify(S).includes("mealie-phone-token"), [S.lists.lists.at(-1), S.calendar.sources.at(-1)]);
-  await row("#calendars", "Dinner");
-  await tap(".sheet", ".toggle", "Lunch");
-  await sheetButton("Done");
+  ok("mealie: the shopping list (with its Mealie id) is saved; the token only in secrets",
+    JSON.stringify(S.lists.lists.find((l) => l.provider === "mealie")) === JSON.stringify({ name: "Weekly Shop", color: S.lists.lists.find((l) => l.provider === "mealie")?.color, provider: "mealie", shoppingList: "Weekly Shop", shoppingListId: LIST1 }) &&
+    sec.mealie.token === "mealie-phone-token" && !JSON.stringify(S).includes("mealie-phone-token"), S.lists.lists.at(-1));
+
+  // ---- Meals card: the meal plan as a page, a Home card, the calendar, and recipe ingredients → a shopping list ----
+  await tap("#meals", ".toggle", "Use my Mealie meal plan");
+  await until(() => phone.evaluate(() => !!document.querySelector("#meals .good-note")));
+  ok("meals: already connected (the saved Mealie is checked without typing anything)", await phone.evaluate(() => /Connected to Mealie/.test(document.querySelector("#meals .good-note")?.textContent || "")));
+  await tap("#meals", ".toggle", "Lunch");
+  await tap("#meals", ".toggle", "Meals page");
+  await tap("#meals", ".toggle", "Meals on the calendar");
+  await pick("#meals", "Add a recipe's ingredients to", LIST1);
   await save();
-  ok("mealie: meals can be changed later", JSON.stringify(settings().calendar.sources.find((c) => c.type === "mealie").meals) === '["dinner"]', settings().calendar.sources.find((c) => c.type === "mealie").meals);
+  S = settings();
+  ok("meals: provider, meals chosen, Home card on, calendar on, the shopping list for ingredients; the Meals page is in the pages",
+    S.meals?.provider === "mealie" && JSON.stringify(S.meals.types) === '["lunch","dinner"]' && S.meals.home === true && S.meals.calendar === true &&
+    S.meals.addToList?.id === LIST1 && S.meals.addToList?.name === "Weekly Shop" && S.pages.includes("meals"), [S.meals, S.pages]);
+  await tap("#meals", ".toggle", "Lunch");
+  await tap("#meals", ".toggle", "Meals on the calendar");
+  await tap("#meals", ".toggle", "Dinner tonight on Home");
+  await save();
+  S = settings();
+  ok("meals: changed later — dinner only, not on the calendar, no Home card", JSON.stringify(S.meals.types) === '["dinner"]' && !S.meals.calendar && S.meals.home === false, S.meals);
+  await tap("#meals", ".toggle", "Meals page");
+  ok("meals: the Meals page can be turned off without losing the rest", !(await phone.evaluate(() => [...document.querySelectorAll("#pages .pagerow")].some((r) => r.textContent.includes("Meals") && !r.classList.contains("off")))) && settings().meals.provider === "mealie");
 
   // ---- Colors as codes: a calendar's typed (upper case), a list's from the phone's color picker ----
   await row("#calendars", "Kids");

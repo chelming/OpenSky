@@ -21,7 +21,7 @@ const items = [
   { id: "i4", shoppingListId: "L2", note: "Screws", display: "Screws", checked: false, position: 1 }
 ];
 const plan = [
-  { id: "m1", date: "2026-11-10", entryType: "dinner", title: "", recipe: { name: "Lasagna" } },
+  { id: "m1", date: "2026-11-10", entryType: "dinner", title: "", recipeId: "aaaaaaaa-1111", recipe: { id: "aaaaaaaa-1111", name: "Lasagna", slug: "lasagna", image: "abc", totalTime: "1 hour" } },
   { id: "m2", date: "2026-11-10", entryType: "lunch", title: "Leftovers" },
   { id: "m3", date: "2026-11-11", entryType: "dinner", title: "Takeout" },
   { id: "m4", date: "2026-11-12", entryType: "dinner", title: "", text: "" }
@@ -56,6 +56,15 @@ const server = http.createServer((req, res) => {
       seen.push(`range ${a}..${z}`);
       return send(200, { items: plan });
     }
+    if (req.method === "GET" && p === "/api/recipes/lasagna") return send(200, {
+      id: "aaaaaaaa-1111", name: "Lasagna", slug: "lasagna", image: "abc", description: "  Cheesy\n and good ", recipeYield: "6 servings", prepTime: "20 Minutes", performTime: "", totalTime: "1 hour",
+      recipeIngredient: [{ title: "Sauce", display: "" }, { display: "1 lb ground beef" }, { display: "", note: "Salt" }, { display: "" }],
+      recipeInstructions: [{ title: "", text: "Brown   the beef." }, { title: "Bake", text: "45 min at 375." }] });
+    if (req.method === "GET" && p === "/api/recipes/missing") return send(404, {});
+    m = p.match(/^\/api\/media\/recipes\/([^/]+)\/images\/([^/]+)$/);
+    if (m) { seen.push(`image ${m[2]}`); return m[2] === "original.webp" ? (res.writeHead(200, { "Content-Type": "image/webp" }), res.end("WEBP")) : send(404, {}); }
+    m = p.match(/^\/api\/households\/shopping\/lists\/([^/]+)\/recipe\/([^/]+)$/);
+    if (m && req.method === "POST") { seen.push(`addrecipe ${m[1]} ${m[2]} ${body}`); return send(200, {}); }
     send(404, {});
   });
 });
@@ -101,8 +110,22 @@ const server = http.createServer((req, res) => {
   ok("17 dates are local midnight to midnight", ev[0].startDate === String(new Date(2026, 10, 10).getTime()) && ev[0].endDate === String(new Date(2026, 10, 11).getTime()));
   ok("18 the range asked for is a plain date range", seen.includes("range 2026-11-09..2026-12-09"), seen.filter((s) => s.startsWith("range")));
   ev = await mealie.mealEvents(from, to, ["lunch", "dinner"]);
-  ok("19 several meal types → titles say which", ev.map((e) => e.title).join("|") === "Dinner: Lasagna|Lunch: Leftovers|Dinner: Takeout", ev.map((e) => e.title));
+  ok("19 several meal types → titles say which", ev.map((e) => e.title).join("|") === "Lunch: Leftovers|Dinner: Lasagna|Dinner: Takeout", ev.map((e) => e.title));
   ok("20 no meal types chosen → dinner", (await mealie.mealEvents(from, to, [])).length === 2);
+
+  let pe = await mealie.planEntries(from, to, ["dinner"]);
+  ok("22 plan entries: recipe link, slug, image flag, time; newest day last", pe[0].title === "Lasagna" && pe[0].slug === "lasagna" && pe[0].recipeId === "aaaaaaaa-1111" && pe[0].hasImage === true && pe[0].time === "1 hour" && pe[1].recipeId === null && pe[1].hasImage === false, pe);
+  const rc = await mealie.recipe("lasagna");
+  ok("23 a recipe: tidy text, section heading, note-only ingredient, empty ones dropped, steps", rc.name === "Lasagna" && rc.description === "Cheesy and good" && rc.servings === "6 servings" &&
+    JSON.stringify(rc.times) === '[["Prep","20 Minutes"],["Total","1 hour"]]' &&
+    JSON.stringify(rc.ingredients) === '[{"text":"","heading":"Sauce"},{"text":"1 lb ground beef","heading":""},{"text":"Salt","heading":""}]' &&
+    rc.steps.length === 2 && rc.steps[0].text === "Brown the beef." && rc.steps[1].title === "Bake" && rc.hasImage, rc);
+  ok("24 a recipe that's gone → clear message; a bad slug is refused before asking Mealie", /may have just been changed/.test(await fails(() => mealie.recipe("missing"))) && /Which recipe/.test(await fails(() => mealie.recipe("../../etc"))));
+  const img = await mealie.image("aaaaaaaa-1111");
+  ok("25 the picture (falls back to the original when there is no small one); odd ids are refused", img.body.toString() === "WEBP" && /webp/.test(img.type) && seen.includes("image min-original.webp") && (await mealie.image("../x")) === null);
+  await mealie.addRecipeToList("bbbbbbbb-2222", "aaaaaaaa-1111");
+  ok("26 add a recipe's ingredients to a list", seen.some((x) => x === 'addrecipe bbbbbbbb-2222 aaaaaaaa-1111 {"recipeIncrementQuantity":1}'), seen.filter((x) => x.startsWith("addrecipe")));
+  ok("27 …with bad ids refused", /Which list and recipe/.test(await fails(() => mealie.addRecipeToList("x", "aaaaaaaa-1111"))));
 
   OLD = true;
   ok("21 Mealie 1.x (/api/groups/…) works too", (await mealie.shoppingLists()).length === 2 && (await mealie.mealEvents(from, to, ["dinner"])).length === 2);

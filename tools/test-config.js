@@ -78,6 +78,25 @@ const served = JSON.stringify(c);
 ok("10b mergeShared and a shared-role calendar reach the calendars module", mod(c, "MMM-OpenSky-Calendars").config.mergeShared === true && byName("Family").role === "shared" && byName("Mom").role === undefined);
 ok("11 nothing private in the built config (served to the network)", !/private|246810|192\.168\.1\.9|xyz/.test(served));
 ok("12 security basics: localhost only, webview on", c.address === "localhost" && c.ipWhitelist.includes("127.0.0.1") && c.electronOptions.webPreferences.webviewTag === true);
+// Meals (Mealie's meal plan): the data module, the page, Home's card, a derived calendar, the ingredients list
+const LISTID = "11111111-aaaa-4000-8000-000000000001";
+const mc = build({ pages: ["home", "meals", "timer"], locale: { firstDayOfWeek: 1 }, calendar: { sources: [{ name: "Meals", type: "local" }] },
+  meals: { provider: "mealie", types: ["lunch", "Dinner", "snack", "dinner"], home: true, calendar: true, calendarColor: "teal", addToList: { id: LISTID, name: "Weekly Shop" } } });
+const mm = mod(mc, "MMM-OpenSky-Meals").config, mpages = mod(mc, "MMM-pages").config.modules;
+ok("16 Meals: the data module gets the meal types (unknown dropped, repeats merged) and the ingredients list; the page follows the week start",
+  JSON.stringify(mm.types) === '["lunch","dinner"]' && mm.addToList.id === LISTID && mm.addToList.name === "Weekly Shop" &&
+  JSON.stringify(mpages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-MealsPage"], ["MMM-OpenSky-Timer"]]) &&
+  mod(mc, "MMM-OpenSky-MealsPage").config.firstDayOfWeek === 1, [mm, mpages]);
+const mhome = mod(mc, "MMM-OpenSky-Home").config, mcal = mod(mc, "MMM-OpenSky-Calendars").config.sources.filter((x) => x.name === "Meals");
+ok("17 Meals: Home gets the page's index and the 'Dinner tonight' card; the meals are one calendar source (a user calendar can't take that name)",
+  mhome.mealsPage === 1 && mhome.tonight === true && mcal.length === 1 && mcal[0].type === "mealie" && mcal[0].color === "teal" && JSON.stringify(mcal[0].meals) === '["lunch","dinner"]', [mhome.mealsPage, mhome.tonight, mcal]);
+const mc2 = build({ pages: ["home", "meals"], meals: { provider: "mealie", types: ["lunch"], home: true, addToList: { id: "../x", name: "Hack" } } });
+ok("18 Meals: no dinner → no card; no 'calendar' → no source; a bad list id → no ingredients button",
+  mod(mc2, "MMM-OpenSky-Home").config.tonight === false && !((mod(mc2, "MMM-OpenSky-Calendars") || { config: { sources: [] } }).config.sources.some((x) => x.name === "Meals")) && mod(mc2, "MMM-OpenSky-Meals").config.addToList === null);
+const mc3 = build({ pages: ["home", "meals"], meals: { provider: "mealie", home: false } });
+ok("19 Meals: Home card switched off", mod(mc3, "MMM-OpenSky-Home").config.tonight === false && mod(mc3, "MMM-OpenSky-Meals") && JSON.stringify(mod(mc3, "MMM-OpenSky-Meals").config.types) === '["dinner"]');
+const mc4 = build({ pages: ["home", "meals"] });
+ok("20 Meals: a 'meals' page with Meals not set up is skipped (and no Meals module)", JSON.stringify(mod(mc4, "MMM-pages").config.modules) === '[["MMM-OpenSky-Home"]]' && !mod(mc4, "MMM-OpenSky-Meals") && mod(mc4, "MMM-OpenSky-Home").config.tonight === false);
 const d = build({});
 ok("13 empty settings → a working default (home + timer, no crash)", JSON.stringify(mod(d, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-Timer"]]));
 
