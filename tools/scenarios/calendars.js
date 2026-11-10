@@ -6,13 +6,15 @@ module.exports = async (page, h) => {
   await page.evaluate(() => { const hm = MM.getModules().withClass("MMM-OpenSky-Home")[0], t = new Date(); hm.nowMs = () => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 6).getTime(); hm.renderCalendar(); });
   for (let i = 0; i < 30 && (await page.evaluate(() => document.querySelectorAll(".hd-week .hd-event").length)) < 3; i++) await h.sleep(1000);
   const pills = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-day:not(.hd-nextweek)")].flatMap((t) => [...t.querySelectorAll(".hd-event")].map((p) => ({
-    day: t.querySelector(".hd-day-name").textContent, title: p.querySelector(".hd-event-title").textContent, time: p.querySelector(".hd-event-time").textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor }))));
+    day: t.querySelector(".hd-day-name").textContent, title: p.querySelector(".hd-event-title").textContent, time: (p.querySelector(".hd-event-time") || p.querySelector(".hd-strip-tag")).textContent, bar: getComputedStyle(p.querySelector(".hd-cal-dot")).backgroundColor }))));
   const titles = [...new Set(pills.map((p) => p.title))];
   ok("events from both sources this week", ["Soccer practice", "Family dinner", "Dentist", "School assembly"].every((t) => titles.includes(t)), titles);
   const one = (t) => pills.find((p) => p.title === t) || {};
   ok("recurring weekly event on the right weekdays (Mon + Wed)", pills.filter((p) => p.title === "Soccer practice").every((p) => /Mon|Wed/.test(p.day)) && pills.filter((p) => p.title === "Soccer practice").length >= 1, pills.filter((p) => p.title === "Soccer practice").map((p) => p.day));
   ok("time zone respected (5 PM – 6:30 PM)", one("Soccer practice").time === "5 PM – 6:30 PM", one("Soccer practice").time);
   ok("all-day event", one("Family dinner").time === "All day");
+  const stripped = await page.evaluate(() => [...document.querySelectorAll(".hd-week .hd-event")].filter((p) => p.querySelector(".hd-event-title").textContent === "Family dinner").map((p) => p.classList.contains("hd-strip")));
+  ok("an all-day event is a slim one-line strip, not only on today's tile", stripped.length >= 1 && stripped.every(Boolean), stripped);
   ok("source color: Family → pink", one("Family dinner").bar === "rgb(221, 79, 152)", one("Family dinner").bar);
   ok("private source (link from secrets.json) → teal", one("School assembly").bar === "rgb(17, 153, 142)", one("School assembly").bar);
   ok("keyword rule beats the source color: Dentist → indigo", one("Dentist").bar === "rgb(74, 91, 216)", one("Dentist").bar);
