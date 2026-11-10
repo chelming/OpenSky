@@ -69,6 +69,22 @@ Each screen can pick its **own** size in Settings → Look & extras → Text siz
 above). That choice is remembered by that screen's browser only, so a kitchen screen and a hallway tablet can differ, and it
 isn't saved in `opensky.json`.
 
+`theme`: `"light"` (the default: the look you have today), `"dark"` or `"auto"`. **Auto** switches to dark from sunset to
+sunrise at your `location` (the place from the phone page's "Your family" card; sunrise and sunset are worked out on the
+screen itself, no internet needed) and back to light in the morning; without a location it is dark from 19:00 to 07:00.
+Dark mode darkens every page, popup and the on-screen keyboard; the screensaver stays as it is (it is dark
+already). Photos, and web pages you added (Smart Home, Vault...), are shown as they are, so a light website stays light.
+This is the **default for every screen** (phone: Extras → Dark mode); each screen can pick its **own** (Default / Light /
+Dark / Auto) in Settings → Look & extras → Dark mode, remembered by that screen's browser only (like the text size) and not
+saved in `opensky.json`. It works with "Dim in the evening": dark mode changes the colors, the dim lowers the brightness; use
+both if you like. `lightSensor`: `true` lets an ambient light sensor overrule the sun in Auto (a dark room turns it dark, a bright
+one light), but only on a screen whose browser exposes one; where there is none it is ignored and Auto follows the sun. It is
+never used in Docker (time and sun only).
+
+```json
+"look": { "theme": "auto", "lightSensor": false }
+```
+
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
 default peach. Pick it on the screen (Settings → Look & extras: a chip, or type a code under "Or a color code") or on
@@ -441,7 +457,7 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone) for every screen. **Hide here** hides a page's button on the screen you're holding only (kept in that browser, like the text size) — handy when a tablet and a wall display should show different pages. |
 | Home cards | Show or hide the cards on the right of Home and change their order (grip or arrows); applies after a restart. |
-| Look & extras | Accent color, text size, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Look & extras | Accent color, text size, dark mode (Default / Light / Dark / Auto, this screen only), word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 

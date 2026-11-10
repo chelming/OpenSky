@@ -25,6 +25,7 @@ const backup = require(path.join(global.root_path || process.cwd(), "modules", "
 const screen = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "screen.js"));
 const accent = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "accent.js"));
 const textSize = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "text-size.js"));
+const theme = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "theme.js"));
 
 const DRY = process.env.OPENSKY_DRY_RUN === "1";
 const DOCKER = process.env.OPENSKY_DOCKER === "1";   // in a container: Docker restarts us when we exit; no Pi to update or power off
@@ -121,7 +122,7 @@ module.exports = NodeHelper.create({
       this.sendState();
       // MagicMirror serves the settings it read at start-up, so a page refresh would bring back the old look: say what the file says now
       const s = this.readSettings();
-      this.sendSocketNotification("OS_LOOK", { textSize: textSize.normalize(s.look && s.look.textSize) || "normal", accent: accent.normalize(s.look && s.look.accent) || "peach" });
+      this.sendSocketNotification("OS_LOOK", { theme: theme.normalize(s.look && s.look.theme) || "light", lightSensor: !DOCKER && !!(s.look && s.look.lightSensor === true), textSize: textSize.normalize(s.look && s.look.textSize) || "normal", accent: accent.normalize(s.look && s.look.accent) || "peach" });
     } else if (n === "OS_SET_CHANGE") {
       await this.change(p || {});
     } else if (n === "OS_SET_ASLEEP") {
@@ -301,6 +302,7 @@ module.exports = NodeHelper.create({
       prefs: {
         accent: accent.normalize(s.look && s.look.accent) || "peach",   // (checked: it goes into the panel's HTML)
         textSize: textSize.normalize(s.look && s.look.textSize) || "normal",
+        theme: theme.normalize(s.look && s.look.theme) || "light",
         wordgame: (s.wordgame && s.wordgame.source) === "opensky" ? "opensky" : "nyt",
         photos: !(s.photos && s.photos.enabled === false),
         trashDay: (s.pickup && s.pickup.trashDay) || "",

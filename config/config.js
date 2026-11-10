@@ -44,6 +44,12 @@ function textSizeOf(v) {
   return ["small", "normal", "large", "xlarge"].includes(k) ? k : "normal";
 }
 
+// look.theme: "light" (default) | "dark" | "auto" (by sun); same rule as lib/theme.js
+function themeOf(v) {
+  const s = String(v == null ? "" : v).trim().toLowerCase().replace(/[\s_()-]/g, "");
+  return s === "dark" ? "dark" : (s === "auto" || s === "autobysun") ? "auto" : "light";
+}
+
 const { file: settingsFile, dir: settingsDir, settings: s } = readSettings();
 const locale = s.locale || {};
 
@@ -378,7 +384,11 @@ const fixed = [
       showSettings: true,
       accent: accentOf(s.look && s.look.accent),
       scale: (s.look && s.look.scale) || "auto",
-      textSize: textSizeOf(s.look && s.look.textSize)
+      textSize: textSizeOf(s.look && s.look.textSize),
+      theme: themeOf(s.look && s.look.theme),
+      lightSensor: !!(s.look && s.look.lightSensor === true) && process.env.OPENSKY_DOCKER !== "1",   // no sensor in a container: sun only
+      latitude: Number.isFinite(loc.latitude) ? loc.latitude : null,
+      longitude: Number.isFinite(loc.longitude) ? loc.longitude : null
     }
   }
 ];

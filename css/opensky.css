@@ -107,3 +107,12 @@ html[data-layout="compact"] {
 .os-toast.show { transform: translate(-50%, 0); visibility: visible; transition: transform .25s ease; }
 .os-toast[data-type="success"] { background: #3f9467; }   /* muted sage, matches the palette */
 .os-toast[data-type="error"] { background: #d2604e; }     /* soft coral red */
+
+/* ===== Dark mode (opensky.json → look.theme; the Sidebar sets <html data-os-theme="dark">) =====
+   The whole page is inverted (lightness flips, hue-rotate(180deg) puts every color's hue back), so every page, popup, the
+   keyboard and the toasts are legible without a second stylesheet to keep in step. Photos, video and embedded pages are
+   inverted back so they look as they are; the screensaver is already dark and is turned back as a whole. */
+html[data-os-theme="dark"] { filter: invert(1) hue-rotate(180deg); background: #fff; }
+html[data-os-theme="dark"] :is(img, video, canvas, webview, iframe):not(.ss-root *),
+html[data-os-theme="dark"] .ss-root { filter: invert(1) hue-rotate(180deg); }
+html[data-os-theme="dark"] .ost-dim { background: #fff; }   /* the evening dim layer is black; inverted it has to start out white */
