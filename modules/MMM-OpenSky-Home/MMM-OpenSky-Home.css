@@ -27,16 +27,22 @@
 .hd-notes { flex: 0 0 auto; display: flex; flex-direction: column; gap: 10px; }
 .hd-notes[hidden] { display: none; }
 .hd-note {
-  position: relative; padding: 14px 52px 14px 18px; border-radius: 22px;
-  background: var(--accent-soft, #fff1ea); box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 6px 20px rgba(31, 41, 55, .06);
+  position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 64px 16px 16px; border-radius: 24px;
+  color: #fff; background: linear-gradient(135deg, var(--os-accent-light, #ffb08f), var(--os-accent, #e8663f));   /* the accent: the one loud card on the page */
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--os-accent, #e8663f) 35%, transparent), 0 1px 2px rgba(0, 0, 0, .06);
 }
-.hd-note-text { font-size: 20px; font-weight: 600; line-height: 1.25; color: #1f2937; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.hd-note-from { margin-top: 4px; font-size: 13px; font-weight: 700; color: #6b7280; }
-.hd-note-x { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; padding: 10px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .7); color: #6b7280; cursor: pointer; }
+.hd-note-badge { flex: 0 0 auto; width: 44px; height: 44px; padding: 10px; border-radius: 15px; background: rgba(255, 255, 255, .25); }
+.hd-note-badge .hd-icon { width: 100%; height: 100%; }
+.hd-note-body { flex: 1 1 auto; min-width: 0; }
+.hd-note-text { font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.2px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.hd-note-from { margin-top: 4px; font-size: 14px; font-weight: 700; opacity: .9; }
+.hd-note-x { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); width: 44px; height: 44px; padding: 12px; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .25); color: #fff; cursor: pointer; }
 .hd-note-x .hd-icon { width: 100%; height: 100%; }
 .hd-note-more { text-align: center; font-size: 13px; font-weight: 700; color: #9ca3af; }
-html[data-layout="compact"] .hd-note { padding: 10px 46px 10px 14px; border-radius: 18px; }
-html[data-layout="compact"] .hd-note-text { font-size: 16px; -webkit-line-clamp: 2; }
+html[data-layout="compact"] .hd-note { gap: 10px; padding: 10px 54px 10px 10px; border-radius: 18px; }
+html[data-layout="compact"] .hd-note-badge { width: 34px; height: 34px; padding: 7px; border-radius: 12px; }
+html[data-layout="compact"] .hd-note-text { font-size: 18px; -webkit-line-clamp: 2; }
+html[data-layout="compact"] .hd-note-x { width: 38px; height: 38px; padding: 10px; right: 8px; }
 .hd-photo {
   flex: 0 0 43%;
   position: relative;
