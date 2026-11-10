@@ -547,11 +547,12 @@
           line("Dinner tonight on Home", types.includes("dinner") ? "A card on the Home page, tap it for the recipe" : "Turn on Dinner above to use this", types.includes("dinner") && M.home !== false, (v) => { m.home = v; change(); }),
           line("Meals on the calendar", "Each meal as an all-day entry", !!M.calendar, (v) => { m.calendar = v; if (!v) delete m.calendarColor; change(); render(); }));
         if (M.calendar) body.push(colorField(M.calendarColor || "orange", (c) => { m.calendarColor = c; change(); }));
-        body.push(field("Add a recipe's ingredients to", select([["", "Don't offer this"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
+        body.push(el("p", { class: "label" }, "Recipes"));
+        body.push(field("Shopping list for “Add ingredients”", select([["", "None (no button on recipes)"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
           const x = mealUi.mlists.find((y) => y.id === v);
           if (x) m.addToList = { id: x.id, name: x.name }; else delete m.addToList;
           change();
-        }), "Shows an “Add ingredients” button on every recipe."));
+        }), "When you open a recipe on the screen, an “Add ingredients” button sends everything it needs to this shopping list. Choose None to hide the button."));
       }
     }
     return section("meals", "meals", "Meals", "Tonight's dinner and the week's meal plan, from Mealie", ...body);
