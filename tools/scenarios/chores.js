@@ -8,7 +8,8 @@ const chores = {
   101: [
     { chore_instance_id: "1::t::NO_TIME::WEEKLY", date: today, title: "Make bed", checked: false, enabled: true },
     { chore_instance_id: "2::t::NO_TIME::WEEKLY", date: today, title: "Feed dog", checked: true, enabled: true },
-    { chore_instance_id: "3::t::NO_TIME::WEEKLY", date: today, title: "Empty dishwasher", checked: false, enabled: true }
+    { chore_instance_id: "3::t::NO_TIME::WEEKLY", date: today, title: "Empty dishwasher", checked: false, enabled: true },
+    { chore_instance_id: "4::t::NO_TIME::WEEKLY", date: today, title: "\u{1F9F8} Brush teeth", checked: false, enabled: true }
   ],
   102: []
 };
@@ -43,14 +44,14 @@ module.exports = async (page, h) => {
   }, name);
   await until(async () => ((await card("Reese")) || { items: [] }).items.length);
   const r = await card("Reese");
-  ok("a card per child: progress, streak, open chores first and the done one below", r && r.count === "1 of 3" && r.meta.includes("3 week streak") && JSON.stringify(r.items) === '["Make bed","Empty dishwasher","Feed dog ✓"]', r);
+  ok("a card per child: progress, streak, open chores first A–Z (a leading emoji ignored), the done one below", r && r.count === "1 of 4" && r.meta.includes("3 week streak") && JSON.stringify(r.items) === '["\u{1F9F8} Brush teeth","Empty dishwasher","Make bed","Feed dog ✓"]', r);
   const badge = () => page.evaluate(() => { const b = [...document.querySelectorAll(".hb-profile")].find((x) => x.getAttribute("aria-label") === "Reese"); const n = b && b.querySelector(".hb-count"); return n ? n.textContent : null; });
   await until(async () => (await badge()) !== null);
-  ok("the person's badge shows how many chores they have left", (await badge()) === "2", await badge());
+  ok("the person's badge shows how many chores they have left", (await badge()) === "3", await badge());
   ok("a child with no chores says so", /No chores today/.test(((await card("Quinn")) || {}).text || ""), await card("Quinn"));
   await page.evaluate(() => [...document.querySelectorAll(".ch-item")].find((x) => x.textContent === "Make bed").click());
-  await until(async () => (await badge()) === "1");
-  ok("…and the badge count drops when one is ticked", (await badge()) === "1", await badge());
+  await until(async () => (await badge()) === "2");
+  ok("…and the badge count drops when one is ticked", (await badge()) === "2", await badge());
   await until(async () => posts.length > 0);
   ok("tapping a chore ticks it in Greenlight", posts.length === 1 && posts[0].action === "COMPLETE" && posts[0].chores[0].startsWith("1::"), posts);
   ok("…and it moves to the done ones", ((await card("Reese")).items || []).includes("Make bed ✓"), (await card("Reese")).items);

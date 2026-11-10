@@ -2,6 +2,9 @@
  * Tap a chore to tick it off, tap it again to un-tick it. Chores are added and changed in the Greenlight app.
  * The login and tokens stay in the node helper; this page only gets chore names and done / not done.
  */
+// a chore's name for sorting: without any emoji / symbols / spaces at the start ("🧸 Tidy toys" sorts under T)
+const sortKey = (t) => String(t || "").replace(/^[^\p{L}\p{N}]+/u, "") || String(t || "");
+
 Module.register("MMM-OpenSky-Chores", {
   defaults: {
     kids: [],               // [{ id, name, color }] from opensky.json → chores.kids
@@ -101,8 +104,9 @@ Module.register("MMM-OpenSky-Chores", {
       else if (!total) list.innerHTML = `<div class="ch-empty">No chores today</div>`;
       else {
         if (done === total) { const ok = document.createElement("div"); ok.className = "ch-alldone"; ok.textContent = "All done!"; list.append(ok); }
-        // open chores first, finished ones below (a ticked chore moves down, an un-ticked one comes back up)
-        for (const chore of [...d.chores.filter((x) => !x.done), ...d.chores.filter((x) => x.done)]) {
+        // open chores first, finished ones below (a ticked chore moves down, an un-ticked one comes back up); each group A–Z, ignoring a leading emoji
+        const az = (a, b) => sortKey(a.text).localeCompare(sortKey(b.text), undefined, { sensitivity: "base", numeric: true });
+        for (const chore of [...d.chores.filter((x) => !x.done).sort(az), ...d.chores.filter((x) => x.done).sort(az)]) {
           const row = document.createElement("button");
           row.type = "button";
           row.className = "ch-item" + (chore.done ? " is-done" : "") + (chore.overdue && !chore.done ? " is-overdue" : "");

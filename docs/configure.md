@@ -291,7 +291,7 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
 - **Greenlight chores** have their own page. See [Chores](#chores-greenlight-unofficial).
 
 ## Chores (Greenlight, unofficial)
-A **Chores** page shows each child's chores for today from the [Greenlight](https://greenlight.com) app: open chores first, finished ones struck through
+A **Chores** page shows each child's chores for today from the [Greenlight](https://greenlight.com) app: open chores first, finished ones struck through (each group A–Z, ignoring a leading emoji)
 below, "2 of 3 done", and the streak and allowance Greenlight reports. Tap a chore to tick it off; tap it again to undo. Greenlight has no public
 interface, so this uses the private service its own app talks to and **can stop working whenever Greenlight changes it**. It is off unless you set it up.
 
