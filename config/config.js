@@ -89,16 +89,18 @@ const linkedProfiles = (v) => {   // a calendar's / list's profile names → the
   return [...new Set(names)];
 };
 
-// Meals (Mealie's meal plan): the Meals page, "Dinner tonight" on Home, the meals on the calendar, and a shopping list for a
-// recipe's ingredients. opensky.json → meals: { provider: "mealie", types: ["dinner"], home: true, calendar: false,
-// calendarColor, addToList: { id, name } }. The address and token are in secrets.json → mealie (read by node helpers only).
+// Meals: the Meals page, "Dinner tonight" on Home, the meals on the calendar, and (Mealie) a shopping list for a recipe's
+// ingredients. opensky.json → meals: { provider: "mealie" | "local", types: ["dinner"], home: true, calendar: false,
+// calendarColor, addToList: { id, name } }. "local" = a plan kept on this Pi (config/meals.json), edited on the Meals page;
+// "mealie" = Mealie's meal plan (address and token are in secrets.json → mealie, read by node helpers only).
 const mealSettings = (s.meals && typeof s.meals === "object") ? s.meals : {};
-const mealsOn = mealSettings.provider === "mealie";
+const mealsOn = mealSettings.provider === "mealie" || mealSettings.provider === "local";
+const mealsLocal = mealSettings.provider === "local";
 const mealTypes = (() => {
   const t = (Array.isArray(mealSettings.types) ? mealSettings.types : ["dinner"]).map((x) => String(x).toLowerCase()).filter((x) => ["breakfast", "lunch", "dinner", "side"].includes(x));
   return t.length ? [...new Set(t)] : ["dinner"];
 })();
-const mealList = mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
+const mealList = !mealsLocal && mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
   ? { id: String(mealSettings.addToList.id), name: String(mealSettings.addToList.name || "the shopping list").slice(0, 40) } : null;
 
 // Chores (Greenlight): the children shown on the Chores page. A linked profile gives the color, else the child's own.
@@ -134,7 +136,7 @@ const calendarPeople = calendarSources.filter((c) => c.role !== "shared").map((c
 // CalDAV calendars are read through OpenSky's calendar service on this Pi (the account stays in secrets.json)
 const servicePort = (cal.service && cal.service.port) || 5747;
 calendarSources.filter((c) => c.type === "caldav").forEach((c) => { c.url = `http://127.0.0.1:${servicePort}/${encodeURIComponent(c.name)}/calendar.ics`; });
-if (mealsOn && mealSettings.calendar) calendarSources.push({ name: "Meals", type: "mealie", url: null, meals: mealTypes, color: mealSettings.calendarColor || "orange", fetchMinutes: 5 });
+if (mealsOn && mealSettings.calendar) calendarSources.push({ name: "Meals", type: mealsLocal ? "localmeals" : "mealie", url: null, meals: mealTypes, color: mealSettings.calendarColor || "orange", fetchMinutes: 5 });
 if (cal.holidays === "US") calendarSources.push({ name: "Holidays", url: "https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics", color: "tan", fetchMinutes: 720 });
 else if (/^[A-Za-z]{2}$/.test(cal.holidays || "")) calendarSources.push({ name: "Holidays", type: "holidays", url: null, country: cal.holidays.toUpperCase(), region: cal.holidaysRegion || null, color: "tan", fetchMinutes: 720 });
 
@@ -231,7 +233,7 @@ const PAGES = {
   meals: () => [{
     module: "MMM-OpenSky-MealsPage",
     position: "fullscreen_above",
-    config: { firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0, types: mealTypes }
+    config: { firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0, types: mealTypes, editable: mealsLocal }
   }],
   // the kids' chores from Greenlight (unofficial): opensky.json → chores.kids [{ id, name, profile?, color? }]; the login is secrets.json → greenlight
   chores: () => [{
@@ -293,7 +295,7 @@ for (const [key, e] of Object.entries(embeds)) {
 }
 
 const pages = (Array.isArray(s.pages) && s.pages.length ? s.pages : ["home", "timer"]).filter((p) => {
-  if (p === "meals" && !mealsOn) { console.error(`[OpenSky] the "meals" page needs meals.provider "mealie" in ${settingsFile} — skipped`); return false; }
+  if (p === "meals" && !mealsOn) { console.error(`[OpenSky] the "meals" page needs meals.provider "mealie" or "local" in ${settingsFile} — skipped`); return false; }
   if (PAGES[p]) return true;
   console.error(`[OpenSky] unknown page "${p}" in ${settingsFile} — skipped`);
   return false;
@@ -312,7 +314,7 @@ const fixed = [
   { module: "MMM-OpenSky-Settings", config: {} },
   { module: "MMM-OpenSky-Setup", config: {} },
   ...(s.keyboard && s.keyboard.enabled === false ? [] : [{ module: "MMM-OpenSky-Keyboard", config: { layout: (s.keyboard && s.keyboard.layout) || "en" } }]),
-  ...(mealsOn ? [{ module: "MMM-OpenSky-Meals", config: { types: mealTypes, addToList: mealList } }] : []),
+  ...(mealsOn ? [{ module: "MMM-OpenSky-Meals", config: { types: mealTypes, addToList: mealList, local: mealsLocal } }] : []),
   ...(familyLists.length ? [{ module: "MMM-OpenSky-Lists", config: { lists: familyLists, refreshMinutes: listSettings.refreshMinutes || 2 } }] : []),
   ...(calendarSources.length ? [{ module: "MMM-OpenSky-EventEditor", config: { editable: editableCalendars, servicePort } }] : []),
   ...(saver.enabled === true ? [{

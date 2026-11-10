@@ -101,6 +101,12 @@ const mc3 = build({ pages: ["home", "meals"], meals: { provider: "mealie", home:
 ok("19 Meals: Home card switched off", mod(mc3, "MMM-OpenSky-Home").config.tonight === false && mod(mc3, "MMM-OpenSky-Meals") && JSON.stringify(mod(mc3, "MMM-OpenSky-Meals").config.types) === '["dinner"]');
 const mc4 = build({ pages: ["home", "meals"] });
 ok("20 Meals: a 'meals' page with Meals not set up is skipped (and no Meals module)", JSON.stringify(mod(mc4, "MMM-pages").config.modules) === '[["MMM-OpenSky-Home"]]' && !mod(mc4, "MMM-OpenSky-Meals") && mod(mc4, "MMM-OpenSky-Home").config.tonight === false);
+const ml = build({ pages: ["home", "meals"], meals: { provider: "local", types: ["dinner", "lunch"], home: true, calendar: true, calendarColor: "teal", addToList: { id: LISTID, name: "Weekly Shop" } } });
+const mlcal = mod(ml, "MMM-OpenSky-Calendars").config.sources.filter((x) => x.name === "Meals");
+ok("21 Meals on this screen: the page is editable, the data module is local with no ingredients list, the calendar source is the local plan",
+  mod(ml, "MMM-OpenSky-MealsPage").config.editable === true && mod(ml, "MMM-OpenSky-Meals").config.local === true && mod(ml, "MMM-OpenSky-Meals").config.addToList === null &&
+  mlcal.length === 1 && mlcal[0].type === "localmeals" && mod(ml, "MMM-OpenSky-Home").config.tonight === true, [mod(ml, "MMM-OpenSky-Meals").config, mlcal]);
+ok("22 Meals on Mealie stays read-only", mod(mc, "MMM-OpenSky-MealsPage").config.editable === false && mod(mc, "MMM-OpenSky-Meals").config.local === false);
 const d = build({});
 ok("13 empty settings → a working default (home + timer, no crash)", JSON.stringify(mod(d, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-Timer"]]));
 

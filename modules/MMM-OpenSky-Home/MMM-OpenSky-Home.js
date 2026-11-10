@@ -244,7 +244,7 @@ Module.register("MMM-OpenSky-Home", {
       t.append(name);
       if (e.time) { const m = document.createElement("small"); m.textContent = e.time; t.append(m); }
       r.append(t);
-      if (e.slug) r.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
+      r.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });   // (a note-only entry opens nothing, unless the plan is on-device: then the editor)
       return r;
     });
     card.replaceChildren(head, ...rows);

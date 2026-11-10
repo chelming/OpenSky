@@ -12,6 +12,7 @@ const { secret } = require(path.join(global.root_path, "modules", "opensky-lib",
 const local = require(path.join(global.root_path, "modules", "opensky-lib", "local-calendar.js"));
 const holidays = require(path.join(global.root_path, "modules", "opensky-lib", "holidays.js"));
 const mealie = require(path.join(global.root_path, "modules", "opensky-lib", "mealie.js"));
+const localMeals = require(path.join(global.root_path, "modules", "opensky-lib", "local-meals.js"));
 const google = require(path.join(global.root_path, "modules", "opensky-lib", "google-calendar.js"));
 const Log = require("logger");
 
@@ -68,6 +69,13 @@ module.exports = NodeHelper.create({
     setInterval(load, Math.max(5, src.fetchMinutes || 5) * 60 * 1000);
   },
 
+  // On-device meal plan (lib/local-meals.js): sent again whenever it is edited on the Meals page
+  startLocalMeals(src, days) {
+    const send = () => { const now = Date.now(); this.sendSocketNotification("OS_CAL_EVENTS", { name: src.name, events: localMeals.mealEvents(now - 30 * 86400e3, now + Math.min(days || 400, 120) * 86400e3, src.meals) }); };
+    if (!this.localMealSrc) { this.localMealSrc = true; localMeals.bus.on("change", send); setInterval(send, 60 * 60 * 1000); }
+    send();
+  },
+
   // Google calendars (lib/google-calendar.js): 30 days back to `days` ahead, every fetchMinutes
   startGoogle(src, days) {
     this.googleLoads = this.googleLoads || new Map();
@@ -101,6 +109,7 @@ module.exports = NodeHelper.create({
       if (src.type === "local") { this.localNames.add(src.name); this.sendLocal(src.name); continue; }   // on this Pi
       if (src.type === "holidays") { this.startHolidays(src); continue; }                                // any country
       if (src.type === "mealie") { this.startMealie(src, p.days); continue; }                             // Mealie meal plan
+      if (src.type === "localmeals") { this.startLocalMeals(src, p.days); continue; }                    // meal plan kept on this Pi
       if (src.type === "google") { this.startGoogle(src, p.days); continue; }                             // Google Calendar API
       if (this.fetchers.has(src.name)) { this.fetchers.get(src.name).broadcastEvents(); continue; }   // page reload
       let url = src.url || secret(`calendar.sources.${src.name}`);

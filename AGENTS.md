@@ -26,20 +26,22 @@ MagicMirror². This file is the entry point; read it first, then the docs it poi
 ## Where things are on an installed Pi
 | What | Where |
 |---|---|
-| The user's settings + data (back this up) | `~/OpenSky/config/`: `opensky.json`, `secrets.json` (chmod 600), `device.json` (Settings panel), `local-calendar.json`, `lists.json`, `calendar-cache/` |
+| The user's settings + data (back this up) | `~/OpenSky/config/`: `opensky.json`, `secrets.json` (chmod 600), `device.json` (Settings panel), `local-calendar.json`, `lists.json`, `meals.json`, `calendar-cache/` |
 | Runtime (re-creatable by `./install.sh`) | `~/.local/share/opensky/`: `MagicMirror/` (pinned tag, OpenSky linked in by `tools/link-mm.sh`), `node/` (only if the system Node is too old), `venv/` |
 | Services | systemd **user** units `opensky.service` (Electron) + `opensky-calendar.service` (CalDAV helper); started by `~/.config/autostart/opensky.desktop` |
 | Family share page | `lib/share.js` (server, started by the Setup helper when `share.enabled`), `lib/share/` (the phone page), `lib/notes.js` (`notes.json`); family passcode: scrypt hash in `secrets.json → share.hash`, cookie signing key `share.secret`; port 8091 (`OPENSKY_SHARE_PORT`, `OPENSKY_SHARE_URL` for Docker) |
 | Commands | `opensky status · logs · check · restart · edit · secrets · update` (`tools/opensky`) |
 
 The settings files are found through environment variables set by the services (`OPENSKY_SETTINGS`, `OPENSKY_SECRETS`,
-`OPENSKY_LOCAL_CALENDAR`, `OPENSKY_LOCAL_LISTS`, `OPENSKY_CALENDAR_CACHE`), so nothing personal lives in the runtime.
+`OPENSKY_LOCAL_CALENDAR`, `OPENSKY_LOCAL_LISTS`, `OPENSKY_LOCAL_MEALS`, `OPENSKY_CALENDAR_CACHE`), so nothing personal lives in the runtime.
 
 **In Docker** (`docs/docker.md`): one container runs MagicMirror in server-only mode plus the CalDAV helper, as `PUID:PGID`.
 Everything above lives in the `/config` volume (`./docker-config/` on the host) and the same `OPENSKY_*` variables point at it
 (set in the `Dockerfile`). There is no systemd, display or hardware, so `OPENSKY_DOCKER=1` is set: Settings hides Restart Pi / Shut down, and
 "Restart OpenSky" (and finishing phone setup) exits the process so the compose restart policy starts it again
 (`docker restart opensky` does the same from outside). `OPENSKY_SETUP_URL` is the address phone setup shows in its QR code and accepts as its Host.
+
+**On-device meals** (`lib/local-meals.js`): `meals.provider: "local"` keeps the plan in `meals.json`; the Meals page (`editable`) adds/changes/removes entries through `MMM-OpenSky-Meals` (`OS_MEALS_SAVE`/`OS_MEALS_DELETE`, popup with `osm-edit`), the calendar source type is `localmeals`. Same entry shape as Mealie's (no recipe: `slug` null). Tests: `tools/test-local-meals.js`, `tools/scenarios/local-meals.js`.
 
 **Mealie** (`lib/mealie.js`): list provider `mealie` (shopping lists), calendar source type `mealie` (derived from `meals.calendar`), and the Meals feature: `MMM-OpenSky-Meals` (data, recipe popup, image route), `MMM-OpenSky-MealsPage` (the week), Home's "Dinner tonight" card; settings `meals` in `opensky.json`. Address and token are `secrets.json → mealie.url/.token`, set from phone setup (Meals card or Lists → Mealie → *Connect*, `POST /api/mealie/connect`, which saves them once they work). Recipe text is always put in the page as text. Tests: `tools/test-mealie.js`, `tools/scenarios/mealie.js`.
 

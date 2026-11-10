@@ -61,3 +61,12 @@ html[data-layout="portrait"] .mp-items { flex-direction: row; flex-wrap: wrap; a
 html[data-layout="portrait"] .mp-meal { flex-direction: row; align-items: center; width: auto; max-width: 100%; flex: 1 1 280px; }
 html[data-layout="portrait"] .mp-thumb { width: 84px; aspect-ratio: 1; flex: 0 0 auto; }
 html[data-layout="portrait"] .mp-meal-text b { font-size: 19px; }
+
+/* on-device plan: a "+" on each day to add a meal */
+.mp-day-head { position: relative; }
+.mp-add {
+  position: absolute; top: -4px; right: -2px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; background: #f3f4f6; color: var(--os-accent);
+}
+.mp-add svg { width: 22px; height: 22px; }
+html[data-layout="compact"] .mp-add { width: 36px; height: 36px; }

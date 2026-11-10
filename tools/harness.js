@@ -34,6 +34,8 @@ const WORDGAME = path.join(OUT, "wordgame.test.json");
 fs.rmSync(WORDGAME, { force: true });
 // on-device lists, seeded fresh each run (Groceries: Milk, Apples · Chores: empty)
 const LOCAL_LISTS = path.join(OUT, "lists.test.json");
+const LOCAL_MEALS = path.join(OUT, "meals.test.json");
+fs.writeFileSync(LOCAL_MEALS, JSON.stringify({ version: 1, entries: [] }));
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(LOCAL_LISTS, JSON.stringify({ version: 1, lists: { Groceries: [{ id: "g1", text: "Milk" }, { id: "g2", text: "Apples" }] } }));
 // tools/opensky-start sets LANGUAGE from opensky.json → locale.locale; the harness does the same
@@ -78,6 +80,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       OPENSKY_SECRETS: SECRETS_FILE,
       OPENSKY_LOCAL_CALENDAR: LOCAL_CAL,
       OPENSKY_LOCAL_LISTS: LOCAL_LISTS,
+      OPENSKY_LOCAL_MEALS: LOCAL_MEALS,
       OPENSKY_DEVICE_SETTINGS: DEVICE,
       OPENSKY_WORDGAME: WORDGAME,
       OPENSKY_NOTES: NOTES,

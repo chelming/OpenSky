@@ -6,7 +6,8 @@
 Module.register("MMM-OpenSky-MealsPage", {
   defaults: {
     firstDayOfWeek: 0,            // 0 = Sunday, 1 = Monday (opensky.json → locale)
-    types: ["dinner"]
+    types: ["dinner"],
+    editable: false               // the plan is kept on this Pi: "+" on each day adds a meal, a tap changes or removes it
   },
 
   getStyles() { return ["MMM-OpenSky-MealsPage.css"]; },
@@ -79,7 +80,7 @@ Module.register("MMM-OpenSky-MealsPage", {
     // what to say instead of (or above) the days
     if (st.error && !st.loaded) { msg.textContent = `${st.error}. Check the Mealie settings on your phone (Settings → Set up from your phone → Meals).`; msg.hidden = false; box.hidden = true; return; }
     msg.hidden = !(st.error || nothing || !st.loaded);
-    msg.textContent = st.error ? `Showing the last meal plan Mealie gave us. ${st.error}` : !st.loaded ? "Loading the meal plan…" : "Nothing is planned yet. Plan meals in Mealie and they show up here.";
+    msg.textContent = st.error ? `Showing the last meal plan Mealie gave us. ${st.error}` : !st.loaded ? "Loading the meal plan…" : this.config.editable ? "Nothing is planned yet. Tap + on a day to add a meal." : "Nothing is planned yet. Plan meals in Mealie and they show up here.";
     box.hidden = false;
     const types = this.state.types || this.config.types, label = (t) => t === "side" ? "Side" : t.charAt(0).toUpperCase() + t.slice(1);
     const today = this.key(new Date(this.nowMs()));
@@ -87,11 +88,18 @@ Module.register("MMM-OpenSky-MealsPage", {
       const k = this.key(d), col = this.el("section", `mp-day${k === today ? " mp-today-col" : ""}`);
       const h = this.el("header", "mp-day-head");
       h.append(this.el("b", null, fmt(d, { weekday: "short" })), this.el("span", null, fmt(d, { month: "short", day: "numeric" })));
+      if (this.config.editable) {
+        const a = this.el("button", "mp-add");
+        a.type = "button"; a.setAttribute("aria-label", `Add a meal on ${fmt(d, { weekday: "long", month: "long", day: "numeric" })}`);
+        a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+        a.onclick = () => this.sendNotification("OPENSKY_MEAL_ADD", { date: k });
+        h.append(a);
+      }
       col.append(h);
       const items = this.el("div", "mp-items");
       const entries = st.entries.filter((e) => e.date === k);
       entries.forEach((e) => {
-        const c = this.el("button", `mp-meal${e.slug ? "" : " mp-plain"}`);
+        const c = this.el("button", `mp-meal${e.slug || this.config.editable ? "" : " mp-plain"}`);
         c.type = "button";
         if (e.hasImage && e.recipeId) { const im = this.el("img", "mp-thumb"); im.alt = ""; im.loading = "lazy"; im.src = `/opensky-meal-image/${encodeURIComponent(e.recipeId)}`; im.onerror = () => im.remove(); c.append(im); }
         const t = this.el("span", "mp-meal-text");
@@ -99,7 +107,7 @@ Module.register("MMM-OpenSky-MealsPage", {
         t.append(this.el("b", null, e.title));
         if (e.time) t.append(this.el("small", "mp-time", e.time));
         c.append(t);
-        if (e.slug) c.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
+        if (e.slug || this.config.editable) c.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
         items.append(c);
       });
       if (!entries.length) items.append(this.el("p", "mp-empty", "—"));
