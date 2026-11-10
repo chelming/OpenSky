@@ -117,9 +117,10 @@ else if (/^[A-Za-z]{2}$/.test(cal.holidays || "")) calendarSources.push({ name: 
 // Lists (groceries, to-dos…): on-device by default; Todoist with a token in secrets.json
 const listSettings = s.lists || {};
 const familyLists = (Array.isArray(listSettings.lists) ? listSettings.lists : []).filter((l) => l && l.name)
-  .map((l) => ({ name: String(l.name), color: l.color || null, profiles: linkedProfiles(l.profiles), provider: ["todoist", "homeassistant", "mealie"].includes(l.provider) ? l.provider : "local",
+  .map((l) => ({ name: String(l.name), color: l.color || null, profiles: linkedProfiles(l.profiles), provider: ["todoist", "homeassistant", "mealie", "greenlight"].includes(l.provider) ? l.provider : "local",
     ...(l.project ? { project: String(l.project) } : {}), ...(l.projectId ? { projectId: String(l.projectId) } : {}),
     ...(l.entity ? { entity: String(l.entity) } : {}),
+    ...(l.kid ? { kid: String(l.kid) } : {}),
     ...(l.shoppingList ? { shoppingList: String(l.shoppingList) } : {}), ...(l.shoppingListId ? { shoppingListId: String(l.shoppingListId) } : {}) }));
 // Trash / recycling days from a calendar link (many cities and ReCollect publish one): opensky.json → pickup.url,
 // or a private one in secrets.json → calendar.sources.Pickup (with pickup.url: "secret")

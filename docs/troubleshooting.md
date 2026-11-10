@@ -74,6 +74,7 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
   `secrets.json → homeassistant.token`. **"didn't accept that"** — check the list's `entity` (e.g. `todo.shopping_list`).
 - **Mealie: "refused the API token"** — make a new token (Mealie → your profile → API Tokens) and connect again in phone setup (Lists → Add a list → Mealie).
   **"Can't reach Mealie"** — Mealie must be on and reachable from the Pi at the address you gave; open that address in a browser on the same network. **"No Mealie shopping list called …"** — the list was renamed or deleted in Mealie: remove it in phone setup and add it again.
+- **Greenlight: "didn't accept that phone number and password"** — use the parent's login for the Greenlight app. **"signed OpenSky out" / "wants a new text-message code"** — connect again in phone setup (Lists → Add a list → Greenlight). **Chores stopped showing** — Greenlight is unofficial and may have changed something; check `opensky logs`.
 - **Mealie meal plan is empty** — only the kinds of meal you chose show (Calendars → the Mealie calendar). Entries without a recipe or a title are skipped.
 - **Todoist changes take a minute or two** to show on the screen (`refreshMinutes`). Changes made on the screen show at once.
 
