@@ -9,7 +9,8 @@
 Module.register("MMM-OpenSky-EventEditor", {
   defaults: {
     editable: [],   // [{ name, type: "local" | "caldav" }] — built by config.js from calendar.sources
-    servicePort: 5747
+    servicePort: 5747,
+    quickAdd: { enabled: false, voice: false }   // the "dentist Tuesday 3pm" box (+ mic button) in New Event; needs the AI helper (phone setup)
   },
 
   getStyles() { return ["MMM-OpenSky-EventEditor.css"]; },
@@ -42,6 +43,7 @@ Module.register("MMM-OpenSky-EventEditor", {
       this.host.className = "calendar-editor-host";
       document.body.appendChild(this.host);
     }
+    if (this.mode !== "create") { this.stopListening(true); this.qa = null; this.qaDraft = null; }   // quick add is only for a new event
     this.host.innerHTML = "";
     if (this.mode) this.host.appendChild(this.createModal());
   },
@@ -293,7 +295,9 @@ Module.register("MMM-OpenSky-EventEditor", {
       start.setMinutes(0, 0, 0);
       start.setHours(start.getHours() + 1);
       event = { title: "", startDate: start, endDate: new Date(start.getTime() + 60 * 60 * 1000), allDay: false, description: "" };
+      if (this.mode === "create" && this.qaDraft) event = this.qaEvent(this.qaDraft, this.qa);   // filled in by quick add; the person checks it and taps Add Event
     }
+    if (this.mode === "create" && this.config.quickAdd.enabled) container.appendChild(this.createQuickBar());
     container.appendChild(this.createEventForm(event));
 
     const actions = document.createElement("div");
@@ -331,7 +335,29 @@ Module.register("MMM-OpenSky-EventEditor", {
       group.innerHTML = `<label for="event-calendar">Calendar</label><select id="event-calendar" class="form-input"></select>`;
       const sel = group.querySelector("select");
       this.config.editable.forEach((c) => { const o = document.createElement("option"); o.value = c.name; o.textContent = c.name; sel.appendChild(o); });
+      if (this.qa && this.qa.calendar && this.editableCal(this.qa.calendar)) sel.value = this.qa.calendar;
       form.appendChild(group);
+    }
+
+    // Quick add found people to invite (several people → the family calendar): one tick box each, shown before anything is sent
+    if (this.mode === "create" && this.qa && this.qa.invite && this.qa.invite.length) {
+      const inv = document.createElement("div");
+      inv.className = "form-group qa-invites";
+      inv.innerHTML = `<label>Invite</label>`;
+      this.qa.invite.forEach((name) => {
+        const row = document.createElement("label");
+        row.className = "event-allday-row qa-invite";
+        const span = document.createElement("span"); span.textContent = name;
+        const box = document.createElement("input"); box.type = "checkbox"; box.className = "event-switch qa-invite-box"; box.checked = true; box.value = name;
+        row.appendChild(span); row.appendChild(box); inv.appendChild(row);
+      });
+      form.appendChild(inv);
+    }
+    if (this.mode === "create" && this.qa && this.qa.notes && this.qa.notes.length) {
+      const n = document.createElement("p");
+      n.className = "qa-notes";
+      n.textContent = this.qa.notes.join(" ");
+      form.appendChild(n);
     }
 
     // All-day switch
@@ -408,6 +434,120 @@ Module.register("MMM-OpenSky-EventEditor", {
     return row;
   },
 
+  /* ---------------- quick add: "dentist Tuesday 3pm" typed or spoken → the New Event form, filled in ---------------- */
+
+  // the draft (words → fields, by the AI helper on the Pi's network) as the form's event; nothing is saved until Add Event is tapped
+  qaEvent(d, plan) {
+    const local = (s) => { const [y, m, dd] = s.slice(0, 10).split("-").map(Number); return new Date(y, m - 1, dd); };
+    return d.allDay
+      ? { title: d.title, allDay: true, startDate: local(d.startDate), endDate: local(d.endDate), description: (plan && plan.description) || "" }
+      : { title: d.title, allDay: false, startDate: new Date(d.startDate), endDate: new Date(d.endDate), description: (plan && plan.description) || "" };
+  },
+
+  createQuickBar() {
+    const bar = document.createElement("div");
+    bar.className = "qa-bar";
+    const row = document.createElement("div");
+    row.className = "qa-row";
+    const input = document.createElement("input");
+    input.type = "text"; input.id = "qa-text"; input.className = "form-input qa-input"; input.maxLength = 400;
+    input.placeholder = "Say or type it: dentist Tuesday 3pm";
+    input.value = (this.qaDraft && this.qaDraft.text) || "";
+    const go = document.createElement("button");
+    go.type = "button"; go.className = "event-btn event-btn-secondary qa-go"; go.textContent = "Fill in";
+    const run = () => { const t = input.value.trim(); if (t && !this.qaBusy) this.runQuickAdd({ text: t }); };
+    go.onclick = run;
+    input.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); run(); } };
+    row.appendChild(input); row.appendChild(go);
+    if (this.config.quickAdd.voice && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) {
+      const mic = document.createElement("button");
+      mic.type = "button"; mic.className = "event-btn event-btn-secondary qa-mic"; mic.id = "qa-mic";
+      mic.setAttribute("aria-label", "Speak the event");
+      mic.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>`;
+      mic.onclick = () => this.toggleMic();
+      row.appendChild(mic);
+    }
+    const status = document.createElement("p");
+    status.id = "qa-status"; status.className = "qa-status" + (this.qaStatusError ? " qa-error" : "");
+    status.textContent = this.qaStatus || "";
+    bar.appendChild(row); bar.appendChild(status);
+    return bar;
+  },
+
+  setQaStatus(text, isError) {
+    this.qaStatus = text; this.qaStatusError = !!isError;
+    const el = document.getElementById("qa-status");
+    if (el) { el.textContent = text; el.classList.toggle("qa-error", !!isError); }
+  },
+
+  async runQuickAdd(payload) {
+    this.qaBusy = true;
+    this.setQaStatus(payload.audio ? "Understanding what you said…" : "Working it out…");
+    const id = `qa-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const r = await new Promise((resolve) => {
+      const timer = setTimeout(() => { this.pending.delete(id); resolve({ ok: false, error: "The AI helper took too long. Try again, or fill the form in yourself." }); }, 70000);
+      this.pending.set(id, (x) => { clearTimeout(timer); resolve(x); });
+      this.sendSocketNotification("OS_QA", { id, ...payload });
+    });
+    this.qaBusy = false;
+    if (this.mode !== "create") return;   // closed while waiting
+    if (r.ok) {
+      this.qaDraft = r.draft; this.qa = r.plan;
+      this.qaStatus = `${r.draft.label} — check it, then tap Add Event.`; this.qaStatusError = false;
+      this.render();
+    } else {
+      this.setQaStatus(r.error || "That didn't work. Try again.", true);
+    }
+  },
+
+  /* tap the mic, speak, tap again (it also stops by itself after 12 seconds) */
+  async toggleMic() {
+    if (this.recorder) { this.recorder.stop(); return; }
+    if (this.qaBusy) return;
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { this.setQaStatus("The microphone isn't available. Check it's plugged in and allowed.", true); return; }
+    const chunks = [], rec = new MediaRecorder(stream);
+    this.recorder = rec; this.recStream = stream; this.recDiscard = false;
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = async () => {
+      clearTimeout(this.recTimer);
+      stream.getTracks().forEach((t) => t.stop());
+      this.recorder = null; this.recStream = null;
+      const mic = document.getElementById("qa-mic"); if (mic) mic.classList.remove("qa-recording");
+      if (this.recDiscard || !chunks.length) return;
+      try {
+        const audio = await this.toWavBase64(new Blob(chunks));
+        await this.runQuickAdd({ audio, mime: "audio/wav" });
+      } catch (e) { this.setQaStatus("I couldn't read that recording. Try again.", true); }
+    };
+    rec.start();
+    this.recTimer = setTimeout(() => { if (this.recorder === rec) rec.stop(); }, 12000);
+    const mic = document.getElementById("qa-mic"); if (mic) mic.classList.add("qa-recording");
+    this.setQaStatus("Listening… tap the mic again when you're done.");
+  },
+
+  stopListening(discard) {
+    if (!this.recorder) return;
+    this.recDiscard = !!discard;
+    try { this.recorder.stop(); } catch (e) { /* already stopped */ }
+  },
+
+  // recording → 16 kHz mono 16-bit WAV, base64 (the speech server reads WAV; a 12 s clip is ~380 KB)
+  async toWavBase64(blob) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    let samples;
+    try { samples = (await ctx.decodeAudioData(await blob.arrayBuffer())).getChannelData(0); } finally { ctx.close(); }
+    const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); str(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 0x7fff, true);
+    const bytes = new Uint8Array(buf); let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  },
+
   /* ---------------- backend calls ---------------- */
 
   originalRef() {
@@ -428,7 +568,7 @@ Module.register("MMM-OpenSky-EventEditor", {
   },
 
   socketNotificationReceived(n, p) {
-    if (n === "OS_EV_RESULT" && this.pending.has(p.id)) { const done = this.pending.get(p.id); this.pending.delete(p.id); done(p); }
+    if ((n === "OS_EV_RESULT" || n === "OS_QA_RESULT") && this.pending.has(p.id)) { const done = this.pending.get(p.id); this.pending.delete(p.id); done(p); }
   },
 
   async send(op, calendar, ref, data, button, busyLabel, successMessage) {
@@ -457,7 +597,12 @@ Module.register("MMM-OpenSky-EventEditor", {
   createEvent(button) {
     const formData = this.getFormData();
     const calendar = document.getElementById("event-calendar")?.value || (this.config.editable[0] || {}).name;
-    if (formData) this.send("create", calendar, null, formData, button, "Adding…", "Event added");
+    if (formData) {
+      // only names go to the node helper, which looks up the addresses itself and only invites on a Google calendar
+      const invite = (this.editableCal(calendar) || {}).type !== "google" ? [] : [...document.querySelectorAll(".qa-invite-box")].filter((b) => b.checked).map((b) => b.value);
+      if (invite.length) formData.invite = invite;
+      this.send("create", calendar, null, formData, button, "Adding…", invite.length ? "Event added — invitations sent" : "Event added");
+    }
   },
 
   deleteEvent(button) {

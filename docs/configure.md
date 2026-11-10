@@ -232,6 +232,9 @@ with their initial, in their color; tap a circle to show only that person's cale
   calendar source.
 - A person can have a **photo**: in the add/edit sheet choose "Choose a photo". It is cropped square and shrunk on the
   phone, and the circle shows it instead of the initial.
+- A person can have an **email** (optional): it is only used to invite them to events made with
+  [quick add](#quick-add-type-or-say-an-event-ai-helper). It stays on the Pi: it is never sent to the screen's pages or shown in
+  the top bar.
 - Renaming a person updates everything linked to them; removing a person keeps their calendars and lists, they just
   aren't linked to anyone any more.
 - Tapping a circle filters the **calendar page, Home and the lists** to that person. One person at a time: tapping
@@ -356,6 +359,37 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
 - **Nextcloud**: `"url": "https://your-server/remote.php/dav/"`.
 - Repeating events are shown, but are changed in your calendar app rather than on the screen.
 - The last copy of each calendar is kept on the Pi, so events still show if the internet is down.
+
+## Quick add: type or say an event (AI helper)
+In **New Event** a box at the top takes a sentence like *"dentist Tuesday 3pm"* or *"soccer practice for Mia next Thursday 5 to 6:30"*
+and fills the form in. **Nothing is saved until you tap Add Event**, so you can check (and change) the day, time and calendar first.
+
+It needs a model that understands sentences, running somewhere on **your own network**: llama.cpp's `llama-server`, Ollama, LM Studio or
+anything with an OpenAI-style `/v1/chat/completions`. Nothing is sent to the internet by OpenSky, and no account or key is needed
+(unless your server wants one).
+
+**On the phone:** Settings → Set up from your phone → **AI helper**.
+- **AI helper address**, e.g. `https://llama-cpp.example`: turns the box on. Empty = off, and the box never shows. *Test the connection* checks it first.
+- **Speech helper address** (optional): adds a microphone button. Tap it, say the event, tap it again (it also stops by itself after 12
+  seconds). Any server with an OpenAI-style `/v1/audio/transcriptions` works (llama.cpp with a Qwen3-ASR model, Parakeet, whisper.cpp…).
+  The Pi needs a microphone, and the screen has to be allowed to use it.
+
+What it understands:
+- The day and time (*"Tuesday"*, *"next Friday"*, *"the 3rd"*), how long (*"5 to 6:30"*, default an hour) and all-day things (a birthday). Days are worked out from
+  a calendar OpenSky gives the model, not by the model's own arithmetic, and the form always shows the full date.
+- **People.** Name someone from [People](#people-who-a-calendar-or-list-belongs-to) (*"for Mia"*, *"Mia and Dad"*, *"everyone"*).
+  One person → their own calendar. Several people → the calendar marked **Shared family calendar**
+  (see [One event on several calendars](#one-event-on-several-calendars-kids-who-share-an-activity)), plus an **Invite** row with a switch for each person.
+- **Invitations** are real emails from Google Calendar, sent when you tap Add Event, only on a Google calendar. A person is invited
+  if they have an **email** (People → tap a person) or their own Google calendar is linked to them and is a main calendar (its id is their address).
+  Someone with no address is skipped and the form says so. With *Show shared events once* on, the family calendar's copy and the invited copies show as one event.
+- Not yet: repeating events (*"every Thursday"*: it adds the first one and says so), and photos of flyers.
+
+Privacy: only the sentence (or the recording) and the names of your family go to your own server. Email addresses never do, and never reach the screen's pages.
+Whatever the model returns is checked again in code and only ever fills the form; it can't save, delete or invite anyone by itself.
+
+By hand (`opensky.json`; the phone page writes this): `"ai": { "url": "https://…", "model": "…", "transcribeUrl": "https://…" }` and, per person, `"profiles": [{ "name": "Mia", "email": "mia@example.com" }]`.
+If your server needs a key: `secrets.json → ai.key`.
 
 ## Lists
 ```json

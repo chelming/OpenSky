@@ -56,7 +56,8 @@ Calendars you can only view (shared with you read-only) show their events but ca
 
 ## What OpenSky can do with it
 - It sees the list of your calendars and views, adds, edits and deletes events. It asks for nothing else (no email,
-  no contacts, no Drive).
+  no contacts, no Drive). Events made with [quick add](configure.md#quick-add-type-or-say-an-event-ai-helper) for several people can
+  invite them: Google emails those people the invitation (OpenSky only uses addresses you typed under People, or your own calendars' ids).
 - The sign-in is kept only on the Pi, in `config/secrets.json → google`. The phone and other devices never see it.
 - Repeating events are shown, but are changed in Google Calendar itself.
 - New events from Google appear within a few minutes (`fetchMinutes`, default 5). Changes made on the screen show at once.

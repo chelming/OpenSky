@@ -45,7 +45,7 @@ const server = http.createServer((req, res) => {
       const at = (e) => Date.parse(e.start.dateTime || `${e.start.date}T00:00:00`);
       return send(200, { items: list.filter((e) => at(e) >= from && at(e) < to) });
     }
-    if (req.method === "POST") { const b = JSON.parse(raw); list.push({ id: `e${nextId++}`, ...b }); return send(200, list[list.length - 1]); }
+    if (req.method === "POST") { globalThis.lastSend = u.searchParams.get("sendUpdates"); const b = JSON.parse(raw); list.push({ id: `e${nextId++}`, ...b }); return send(200, list[list.length - 1]); }
     const i = list.findIndex((e) => e.id === decodeURIComponent(m[2] || ""));
     if (i < 0) return send(404, { error: { message: "gone" } });
     if (req.method === "PATCH") { Object.assign(list[i], JSON.parse(raw)); return send(200, list[i]); }
@@ -95,6 +95,12 @@ const server = http.createServer((req, res) => {
   ok("13 delete an all-day event", !store.primary.some((e) => e.summary === "Camping"));
   ok("14 validation + a missing event", /title/.test(await fails(() => g.create("primary", { title: " ", startDate: day(1, 1).toISOString(), endDate: day(1, 2).toISOString() }))) &&
     /not found/.test(await fails(() => g.remove("primary", { originalTitle: "Nope", originalStart: day(1, 1).toISOString() }))));
+  // guests (quick add): valid addresses only, each once; Google is told to email them
+  await g.create("primary", { title: "Dinner", startDate: day(5, 18).toISOString(), endDate: day(5, 19).toISOString(), attendees: ["mia@example.com", "MIA@example.com", "not an email", " dad@example.com "] });
+  const dinner = store.primary.find((e) => e.summary === "Dinner");
+  ok("14b guests: valid + de-duplicated, and sendUpdates=all so Google emails them", dinner.attendees.map((a) => a.email).join() === "mia@example.com,dad@example.com" && globalThis.lastSend === "all", dinner.attendees);
+  await g.create("primary", { title: "Solo", startDate: day(5, 20).toISOString(), endDate: day(5, 21).toISOString() });
+  ok("14c no guests → no attendees field and nobody is emailed", !store.primary.find((e) => e.summary === "Solo").attendees && globalThis.lastSend === null);
   const before = tokenCalls;
   await g.listCalendars(); await g.listCalendars();
   ok("15 the access token is reused (no new sign-in per request)", tokenCalls === before);
