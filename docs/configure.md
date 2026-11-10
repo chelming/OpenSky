@@ -288,6 +288,19 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
   long-lived access token (HA → your profile → Security) in `secrets.json → homeassistant.url / .token`.
 - **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Mealie](#mealie).
 - Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap **Add item** to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
+- **Greenlight chores** (`"provider": "greenlight", "kid": "<Greenlight user id>"`): a child's chores for today. See [Greenlight chores](#greenlight-chores-unofficial).
+
+## Greenlight chores (unofficial)
+Show a child's chores from the [Greenlight](https://greenlight.com) app as a list, and tick them off from the screen. Greenlight has no public
+interface, so this uses the private service its own app talks to and **can stop working whenever Greenlight changes it**. It is off unless you set it up.
+
+1. On the phone: **Lists → Add a list → Greenlight**.
+2. Enter the parent's phone number and Greenlight password and tap **Connect to Greenlight**. If Greenlight texts a code, type it in. They are kept on the Pi (`secrets.json`), never on the screen.
+3. Choose the child (one list per child) and **Add**.
+
+- OpenSky signs in as its own device, so your phone's Greenlight app keeps working; it may show up as another device on the account. Its sign-in details (generated device id and tokens) live in `greenlight-state.json` next to `secrets.json` (chmod 600) and are not part of backups.
+- It shows **today's open chores**. Ticking one off (with Undo time, as in other lists) marks it done in Greenlight. Adding, renaming and removing chores is done in the Greenlight app; OpenSky never deletes a chore.
+- Changes made in the app show within `refreshMinutes`.
 
 ## Mealie
 [Mealie](https://mealie.io) is a self-hosted recipe manager. OpenSky can show its **shopping lists** as lists, and its

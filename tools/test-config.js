@@ -29,7 +29,7 @@ const c = build({
     { name: "Family", type: "local", color: "blue", role: "shared" }, { name: "Shared", type: "caldav", color: "green" },
     { name: "Work", type: "google", calendarId: "primary" }, { name: "Club", type: "google", calendarId: "c@group.calendar.google.com", readOnly: true },
     { name: "Mom", profiles: ["mom", "Zoe", "Nobody"], colorFromProfile: true, color: "red" }, { name: "ZoeCal", profiles: ["zoe"], colorFromProfile: true, color: "red" }, { name: "ZoeOwn", profiles: ["zoe"], color: "red" }, { name: "Dinner", type: "mealie", meals: ["dinner", "lunch"] }, { name: "Holidays", url: "https://x/evil.ics" }], service: { port: 5099 }, mergeShared: true },
-  lists: { lists: [{ name: "Shopping", provider: "homeassistant", entity: "todo.shopping" }, { name: "Chores", profiles: ["Zoe"] }, { name: "Food", provider: "mealie", shoppingList: "Weekly", shoppingListId: "L1" }], columns: 3 },
+  lists: { lists: [{ name: "Shopping", provider: "homeassistant", entity: "todo.shopping" }, { name: "Chores", profiles: ["Zoe"] }, { name: "Food", provider: "mealie", shoppingList: "Weekly", shoppingListId: "L1" }, { name: "Reese chores", provider: "greenlight", kid: "101" }], columns: 3 },
   pickup: { trashDay: "monday", url: "secret" },
   embeds: { smarthome: { title: "Smart Home", url: "http://ha.local:8123" }, money: { title: "Money" } },
   wordgame: { source: "opensky", extraWords: ["emoji"] }, look: { accent: "teal" }, keyboard: { enabled: false }, header: {}
@@ -64,6 +64,8 @@ ok("14 Home gets the calendars as people for the shared-event badges: settings o
 ok("6b Mealie: a meal plan source (meals passed on, not editable) and a Mealie shopping list",
   byName("Dinner").type === "mealie" && JSON.stringify(byName("Dinner").meals) === '["dinner","lunch"]' && !ed.editable.some((e) => e.name === "Dinner") &&
   mod(c, "MMM-OpenSky-Lists").config.lists[2].provider === "mealie" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingList === "Weekly" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingListId === "L1", mod(c, "MMM-OpenSky-Lists").config.lists[2]);
+ok("6c Greenlight chores list: provider and the child kept",
+  mod(c, "MMM-OpenSky-Lists").config.lists[3].provider === "greenlight" && mod(c, "MMM-OpenSky-Lists").config.lists[3].kid === "101", mod(c, "MMM-OpenSky-Lists").config.lists[3]);
 const pages = mod(c, "MMM-pages").config.modules;
 ok("7 pages in order; embed pages told apart by class; an unknown page skipped with a message",
   JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-WordGame"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);

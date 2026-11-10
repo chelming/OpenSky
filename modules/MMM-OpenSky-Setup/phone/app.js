@@ -538,9 +538,38 @@
     return box;
   }
 
+  // Greenlight chores (unofficial): the parent's phone + password (checked, kept on the Pi once they work; a text-message code if Greenlight asks),
+  // then the child picker. `d` holds g, gkids, gbusy, gerr, gphone, gpass, gcode, gneed.
+  function greenlightBox(d, draw) {
+    const box = el("div", { class: "gbox" });
+    const run = async (route, body) => {
+      d.gbusy = true; d.gerr = ""; draw();
+      try {
+        const r = await api("POST", route, body);
+        if (r.needsCode) { d.gneed = r.message || "Greenlight texted a code to the parent's phone"; }
+        else { d.gneed = ""; d.gkids = r.kids || []; d.g = { set: true, signedIn: true }; }
+      } catch (e) { d.gerr = e.message; }
+      d.gbusy = false; draw();
+    };
+    if (!d.g) { box.append(el("p", { class: "hint" }, "Checking Greenlight…")); api("GET", "/api/greenlight").then((g) => { d.g = g; if (g.signedIn) d.gkids = g.kids; draw(); }, (e) => { d.gerr = e.message; d.g = { set: false }; draw(); }); return box; }
+    if (d.gkids) { box.append(el("p", { class: "good-note" }, "Connected to Greenlight ✓")); return box; }
+    box.append(el("p", { class: "hint" }, "Unofficial: this uses the private service the Greenlight app talks to, so it can stop working if Greenlight changes it. OpenSky can only read chores and tick them off."));
+    if (d.gneed) {
+      box.append(field("Text-message code", text(d.gcode, (v) => { d.gcode = v.trim(); }, { placeholder: "6 digits", inputmode: "numeric", autocomplete: "one-time-code" }), d.gneed),
+        el("button", { type: "button", class: "btn primary block", disabled: d.gbusy, onclick: () => run("/api/greenlight/code", { code: d.gcode || "" }) }, d.gbusy ? "Checking…" : "Sign in"));
+    } else {
+      box.append(
+        field("Parent's phone number", text(d.gphone, (v) => { d.gphone = v.trim(); }, { placeholder: d.g.set ? "Saved ✓ — type to replace" : "The number you sign in to Greenlight with", inputmode: "tel", autocapitalize: "off" })),
+        field("Greenlight password", el("input", { type: "password", class: "input", autocomplete: "off", placeholder: d.g.set ? "Saved ✓ — type to replace" : "Password", oninput: (e) => { d.gpass = e.target.value; } })),
+        el("button", { type: "button", class: "btn primary block", disabled: d.gbusy, onclick: () => run("/api/greenlight/connect", { phone: d.gphone || "", password: d.gpass || "" }) }, d.gbusy ? "Connecting…" : "Connect to Greenlight"));
+    }
+    if (d.gerr) box.append(el("p", { class: "err" }, d.gerr));
+    return box;
+  }
+
   function listsCard() {
     const L = S.lists, rows = el("div", { class: "rows" });
-    const where = (l) => l.provider === "todoist" ? `Todoist${l.project && l.project !== l.name ? ` · project “${l.project}”` : ""}` : l.provider === "homeassistant" ? `Home Assistant · ${l.entity || "?"}` : l.provider === "mealie" ? `Mealie · ${l.shoppingList || "shopping list"}` : "On this screen";
+    const where = (l) => l.provider === "todoist" ? `Todoist${l.project && l.project !== l.name ? ` · project “${l.project}”` : ""}` : l.provider === "homeassistant" ? `Home Assistant · ${l.entity || "?"}` : l.provider === "mealie" ? `Mealie · ${l.shoppingList || "shopping list"}` : l.provider === "greenlight" ? "Greenlight chores" : "On this screen";
     L.lists.forEach((l, i) => rows.append(row(hex(l.color || "blue"), l.name, where(l), () => editList(i))));
     if (!L.lists.length) rows.append(el("p", { class: "empty" }, "No lists yet."));
     const usesTodoist = L.lists.some((l) => l.provider === "todoist"), usesHA = L.lists.some((l) => l.provider === "homeassistant");
@@ -560,21 +589,24 @@
       const draw = () => extra.replaceChildren(...(d.provider === "todoist" ? [field("Todoist project", text(d.project, (v) => { d.project = v.trim(); }, { placeholder: "Same as the list's name if empty" }))]
         : d.provider === "homeassistant" ? [field("Home Assistant to-do list", text(d.entity, (v) => { d.entity = v.trim().toLowerCase(); }, { placeholder: "todo.shopping_list", autocapitalize: "off" }), "Its entity ID (Settings → Entities in Home Assistant). Address and token go below the lists.")]
         : d.provider === "mealie" ? [mealieBox(d, draw), ...(d.mlists ? [d.mlists.length ? field("Which shopping list?", select([["", "Choose…"], ...d.mlists.map((x) => [x.id, x.name])], d.mlist, (v) => { d.mlist = v; const x = d.mlists.find((y) => y.id === v); if (x && !d.name) { d.name = x.name.slice(0, 30); nameBox.value = d.name; } })) : el("p", { class: "hint" }, "Mealie has no shopping lists yet — make one in Mealie first (Shopping Lists).")] : [])]
+        : d.provider === "greenlight" ? [greenlightBox(d, draw), ...(d.gkids ? [d.gkids.length ? field("Which child?", select([["", "Choose…"], ...d.gkids.map((x) => [x.id, x.name || `Child ${x.id}`])], d.gkid, (v) => { d.gkid = v; const x = d.gkids.find((y) => y.id === v); if (x && x.name && !d.name) { d.name = `${x.name}'s chores`.slice(0, 30); nameBox.value = d.name; } })) : field("Child's Greenlight user ID", text(d.gkid, (v) => { d.gkid = v.trim(); }, { placeholder: "digits", inputmode: "numeric" }), "Greenlight didn't list the children — type the child's user ID.")] : [])]
         : [el("p", { class: "hint" }, "Kept on the Pi — no account needed.")]));
       const nameBox = text("", (v) => { d.name = v.trim(); }, { placeholder: "e.g. Groceries" });
       b.append(field("Name", nameBox),
         colorField(d.color, (c) => { d.color = c; }), whoField(d.who, (n) => { d.who = n; }),
-        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"], ["mealie", "Mealie"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
+        field("Kept in", seg([["local", "This screen"], ["todoist", "Todoist"], ["homeassistant", "Home Assistant"], ["mealie", "Mealie"], ["greenlight", "Greenlight"]], d.provider, (v) => { d.provider = v; draw(); })), extra, err);
       draw();
     }, [["Cancel", "", () => {}], ["Add", "primary", () => {
       const bad = nameOk(d.name, S.lists.lists.map((l) => l.name)) || (d.provider === "homeassistant" && !/^todo\.[a-z0-9_]+$/.test(d.entity) ? "The list's entity ID looks like todo.shopping_list" : null) ||
-        (d.provider === "mealie" && !d.mlist ? "Connect to Mealie and choose a shopping list" : null);
+        (d.provider === "mealie" && !d.mlist ? "Connect to Mealie and choose a shopping list" : null) ||
+        (d.provider === "greenlight" && !/^\d+$/.test(d.gkid || "") ? "Connect to Greenlight and choose a child" : null);
       if (bad) { err.textContent = bad; return false; }
       const l = { name: d.name, color: d.color };
       setLinks(l, d.who);
       if (d.provider === "todoist") { l.provider = "todoist"; if (d.project && d.project !== d.name) l.project = d.project; }
       if (d.provider === "homeassistant") { l.provider = "homeassistant"; l.entity = d.entity; }
       if (d.provider === "mealie") { const x = d.mlists.find((y) => y.id === d.mlist); l.provider = "mealie"; l.shoppingList = x.name; l.shoppingListId = x.id; }
+      if (d.provider === "greenlight") { l.provider = "greenlight"; l.kid = d.gkid; }
       S.lists.lists.push(l);
       if (!S.pages.includes("lists") && S.lists.lists.length > 3) S.pages.splice(Math.min(3, S.pages.length), 0, "lists");
       change(); render();
@@ -586,7 +618,7 @@
     let color = l.color || "blue", who = linked(l);
     sheet(l.name, (b) => {
       b.append(colorField(color, (v) => { color = v; }), whoField(who, (n) => { who = n; }));
-      if (l.provider !== "todoist" && l.provider !== "mealie") b.append(el("p", { class: "hint" }, "Removing the list takes it off the screen; its items stay saved on the Pi."));
+      if (l.provider !== "todoist" && l.provider !== "mealie" && l.provider !== "greenlight") b.append(el("p", { class: "hint" }, "Removing the list takes it off the screen; its items stay saved on the Pi."));
     }, [["Remove", "danger", () => { S.lists.lists.splice(i, 1); change(); render(); }], ["Done", "primary", () => { l.color = color; setLinks(l, who); change(); render(); }]]);
   }
 

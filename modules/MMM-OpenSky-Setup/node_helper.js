@@ -15,6 +15,8 @@
  *   Google Calendar sign-in: GET /api/google · POST /api/google/start {clientId?, clientSecret?} → {url}
  *     · POST /api/google/finish {address} → {calendars} · GET /api/google/calendars
  *   Mealie: GET /api/mealie → {set, url} · POST /api/mealie/connect {url?, token?} → {shoppingLists} (saves new address/token when they work)
+ *   Greenlight chores (unofficial): GET /api/greenlight → {set, signedIn, kids} · POST /api/greenlight/connect {phone?, password?} → {kids} or {needsCode}
+ *     · POST /api/greenlight/code {code} → {kids}
  *   GET /api/music/speakers → {speakers: [{id, name, state}]} (Home Assistant media players, for the Music page)
  *   Photos in the Pi's folder: GET /api/photos → {folder, photos: [{id, name, size}]} · GET /api/photos/<id> (the image)
  *     · POST /api/photos?name= (the raw image as the body) · POST /api/photos/delete {id}
@@ -33,6 +35,7 @@ const google = require(path.join(global.root_path || process.cwd(), "modules", "
 const backup = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "backup.js"));
 const photos = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "photos.js"));
 const mealie = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "mealie.js"));
+const greenlight = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "greenlight.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
 const share = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "share.js"));
 
@@ -54,7 +57,7 @@ const STATIC = {
 };
 const CODE_MINUTES = 10, IDLE_MINUTES = 30;
 // secrets the phone may set (dotted paths under these)
-const SECRET_ROOTS = ["weather.openweathermap.", "lists.todoist.", "homeassistant.", "mealie.", "photos.immich.", "calendar.sources.", "calendar.caldav.", "embeds."];
+const SECRET_ROOTS = ["weather.openweathermap.", "lists.todoist.", "homeassistant.", "mealie.", "greenlight.", "photos.immich.", "calendar.sources.", "calendar.caldav.", "embeds."];
 
 // the Music add-on's speakers, installed by `opensky addon music` (tests: OPENSKY_MUSIC_INSTALLED=spotify,airplay)
 function musicInstalled() {
@@ -446,6 +449,25 @@ module.exports = NodeHelper.create({
           console.log("[OpenSky] phone setup: connected to Mealie");
         }
         return this.send(res, 200, { ...r, url: creds.url.replace(/\/+$/, "") });
+      } catch (e) { return this.send(res, e.status === 502 ? 502 : 400, { error: e.message }); }   // (never 401: the phone reads that as "not paired")
+    }
+
+    // Greenlight chores: sign in as the parent (saved once Greenlight accepts the password), maybe with a text-message code
+    if (url.pathname === "/api/greenlight" && req.method === "GET") return this.send(res, 200, greenlight.status());
+    if ((url.pathname === "/api/greenlight/connect" || url.pathname === "/api/greenlight/code") && req.method === "POST") {
+      const b = await this.body(req);
+      try {
+        if (url.pathname.endsWith("/code")) return this.send(res, 200, await greenlight.signInCode(b.code));
+        const saved = readJson(SECRETS, {}).greenlight || {};
+        const given = { phone: String(b.phone || saved.phone || "").trim(), password: String(b.password || saved.password || "") };
+        const r = await greenlight.signIn(given);
+        if (b.phone || b.password) {   // Greenlight accepted them (or wants a code, which it only does after a good password): keep them
+          const cur = secretsForChange();
+          applySecret(cur, "greenlight", { phone: given.phone, password: given.password });
+          writeJson(SECRETS, cur, 0o600);
+          console.log("[OpenSky] phone setup: connected to Greenlight");
+        }
+        return this.send(res, 200, r);
       } catch (e) { return this.send(res, e.status === 502 ? 502 : 400, { error: e.message }); }   // (never 401: the phone reads that as "not paired")
     }
 
