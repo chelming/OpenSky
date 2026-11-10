@@ -40,6 +40,10 @@ module.exports = async (page, h, app) => {
   await until(() => admin.evaluate(() => /Change passcode/.test(document.querySelector("#share")?.innerText || "")));
   ok("the passcode is saved, and only as a hash", !secretsText().includes(PASS) && /scrypt\$/.test(secretsText()));
 
+  // close the pairing card on the screen (the connected phone keeps working)
+  await page.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Close")?.click());
+  await until(() => page.evaluate(() => !document.querySelector(".osu-code span")));
+
   // ---- a family phone ----
   const phone = await win(`http://localhost:${PORT}/`, (w) => w.url().includes(`:${PORT}`));
   await until(() => phone.evaluate(() => !!document.querySelector("input[type=password]")));

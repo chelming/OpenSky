@@ -214,9 +214,12 @@ Module.register("MMM-OpenSky-Home", {
     box.replaceChildren(...this.notes.slice(0, 3).map((n) => {
       const el = document.createElement("div");
       el.className = "hd-note";
+      const badge = document.createElement("div"); badge.className = "hd-note-badge"; badge.innerHTML = this.icon("note");
+      const body = document.createElement("div"); body.className = "hd-note-body";
       const t = document.createElement("div"); t.className = "hd-note-text"; t.textContent = n.text;   // (text, never HTML)
-      el.append(t);
-      if (n.from) { const f = document.createElement("div"); f.className = "hd-note-from"; f.textContent = n.from; el.append(f); }
+      body.append(t);
+      if (n.from) { const f = document.createElement("div"); f.className = "hd-note-from"; f.textContent = n.from; body.append(f); }
+      el.append(badge, body);
       const x = document.createElement("button");
       x.className = "hd-note-x"; x.setAttribute("aria-label", "Remove this note"); x.innerHTML = this.icon("x");
       x.onclick = () => { this.notes = this.notes.filter((m) => m.id !== n.id); this.renderNotes(); this.sendSocketNotification("NOTES_DISMISS", { id: n.id }); };
@@ -710,6 +713,7 @@ Module.register("MMM-OpenSky-Home", {
     const p = {
       calendar: `<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>`,
       list: `<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>`,
+      note: `<path d="M5 4h14v12l-5 5H5z"/><path d="M14 21v-5h5"/>`,
       image: `<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>`,
       check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`, x: `<path d="M6 6l12 12M18 6L6 18"/>`,
       left: `<path d="M15 5l-7 7 7 7"/>`, right: `<path d="M9 5l7 7-7 7"/>`, plus: `<path d="M12 5v14M5 12h14"/>`
