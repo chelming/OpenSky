@@ -25,6 +25,12 @@ Environment variables in `docker-compose.yml` (or a `.env` file next to it):
 Edit `docker-config/opensky.json` and `secrets.json` the same way as on a Pi ([configure.md](configure.md)), then
 `docker restart opensky`.
 
+## Per-screen settings and backups
+Brightness, "Dim in the evening" and the night sleep schedule (Settings on the screen) are remembered by each browser, so every
+tablet has its own. There is no Sound or "Sleep turns off by" in Docker (no speaker or screen to control).
+For **Backups**, add a folder to the compose file (e.g. `- /mnt/nas/opensky-backups:/backups`); it shows up in Settings → Backups.
+Without one, backups go into the config folder, which is the same disk as your settings.
+
 ## Phone setup
 **Settings → Set up from your phone** works in the browser too. The page is a separate small server on port 8090
 that only runs while the pairing card is open, and it only answers to its own address. In a container its own address

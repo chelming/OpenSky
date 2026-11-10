@@ -380,14 +380,14 @@ if you use a real keyboard. Dates and times use pickers instead.
 ## The Settings panel (on the screen)
 | Setting | What it does |
 |---|---|
-| Brightness | Uses the display's backlight (Pi touch displays), the monitor's own brightness over HDMI (most monitors; the installer sets this up), or — if neither works — dims the picture. The panel says which. |
+| Brightness | In Docker (no screen hardware) it dims the picture of **this browser only**, and "Dim in the evening" and "Sleep at night" are also kept per browser (in that browser, like the text size), so a tablet and a wall display can differ. On a Pi it uses the display's backlight (Pi touch displays), the monitor's own brightness over HDMI (most monitors; the installer sets this up), or — if neither works — dims the picture. The panel says which. |
 | Dim in the evening | From the time you pick until the morning, brightness goes down to the level you pick. |
-| Sleep turns off by | How the screen goes off: **Automatic** (recommended), **Black screen + dim** (works on every screen), **Turn the signal off** (most monitors), **TV standby (HDMI-CEC**, only offered when a TV answers), **Display backlight off** (Pi displays). **Every screen is different — try them with Test** (back after 10 seconds or at a touch). A monitor that turns itself back on when the signal stops is noticed and switched to Black screen + dim; a screen that doesn't come back after waking is retried, then switched too. If none suits your screen, Black screen + dim always works. (There's deliberately no "monitor power-off over HDMI": on some monitors it switches them fully off, and only their power button brings them back.) |
+| Sleep turns off by | (Pi only.) How the screen goes off: **Automatic** (recommended), **Black screen + dim** (works on every screen), **Turn the signal off** (most monitors), **TV standby (HDMI-CEC**, only offered when a TV answers), **Display backlight off** (Pi displays). **Every screen is different — try them with Test** (back after 10 seconds or at a touch). A monitor that turns itself back on when the signal stops is noticed and switched to Black screen + dim; a screen that doesn't come back after waking is retried, then switched too. If none suits your screen, Black screen + dim always works. (There's deliberately no "monitor power-off over HDMI": on some monitors it switches them fully off, and only their power button brings them back.) |
 | Sleep at night | The screen goes dark at "Off at" and comes back at "On at". A touch wakes it; it sleeps again after 3 quiet minutes. A running timer keeps it on. |
-| Volume / Test | The Pi's speaker volume; Test plays the timer chime. |
+| Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone). |
 | Look & extras | Accent color, text size, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
-| Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now; keep 7–90; passwords included only if you switch it on; **Back up now**. |
+| Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 
 ## Family share page (photos and notes from everyone's phone)
