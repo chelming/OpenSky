@@ -11,6 +11,7 @@ services:
       - "8091:8091"   # family share page (photos + notes from phones; answers only when switched on in setup)
     volumes:
       - ./docker-config:/config   # your settings and data; back this up
+      # - ./backups:/backups       # a place for Settings → Backups (a NAS or USB folder on this computer works best)
     environment:
       TZ: ${TZ:-UTC}
       PUID: ${PUID:-1000}   # the user and group the container runs as (so docker-config/ is yours)

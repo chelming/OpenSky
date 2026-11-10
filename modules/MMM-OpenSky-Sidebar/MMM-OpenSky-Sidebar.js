@@ -75,7 +75,7 @@ Module.register("MMM-OpenSky-Sidebar", {
       // the sidebar becomes a bar along the bottom (css: html[data-layout="portrait"]); the pages keep 40 px at the sides
       st.setProperty("--os-nav-height", "112px");
       st.setProperty("--os-content-left", "40px");
-      const n = this.config.pages.length + 1 + (this.config.showSettings ? 1 : 0);
+      const n = this.visiblePages().length + 1 + (this.config.showSettings ? 1 : 0);
       st.setProperty("--tile-size", "96px");
       st.setProperty("--tile-gap", "0px");
       st.setProperty("--icon-size", "34px");
@@ -86,7 +86,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const compact = layout === "compact", k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`;
     st.setProperty("--os-nav-height", "0px");
     const side = Math.round(ui.width * (compact ? 0.87 : 1));
-    const gap = compact ? 4 : ui.gap, n = this.config.pages.length + 1 + (this.config.showSettings ? 1 : 0);   // pages + Sleep (+ Settings)
+    const gap = compact ? 4 : ui.gap, n = this.visiblePages().length + 1 + (this.config.showSettings ? 1 : 0);   // pages + Sleep (+ Settings)
     // every tile still fits when the page is short (big text on a small screen, or many pages): shrink them, down to 44 px
     const tile = Math.max(44, Math.min(Math.round(ui.tile * k), Math.floor((pageHeight - 26 - (n - 1) * gap) / n)));
     const squeeze = tile < Math.round(ui.tile * k);
@@ -97,6 +97,24 @@ Module.register("MMM-OpenSky-Sidebar", {
     st.setProperty("--icon-size", squeeze ? `${Math.max(20, Math.round(ui.icon * k * tile / (ui.tile * k)))}px` : px(ui.icon));
     st.setProperty("--label-size", compact ? "11px" : `${ui.font}px`);
     document.documentElement.dataset.nav = tile < 52 ? "icons" : "labels";   // too squeezed for a label under the icon: icons only
+  },
+
+  // Pages hidden on THIS screen only (Settings → Pages → "Hide here"): this browser remembers its own list (localStorage, never
+  // sent anywhere); the page list in opensky.json stays the same for every screen. At least one page always stays.
+  deviceHiddenPages() {
+    try { const v = JSON.parse(localStorage.getItem("opensky.hiddenPages") || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch (e) { return this._hiddenFallback || []; }
+  },
+  visiblePages() {
+    const hidden = this.deviceHiddenPages(), shown = this.config.pages.filter((p) => !hidden.includes(p.key));
+    return shown.length ? shown : this.config.pages;
+  },
+  setHiddenPages(keys) {
+    const list = [...new Set(keys.map(String))];
+    try { if (list.length) localStorage.setItem("opensky.hiddenPages", JSON.stringify(list)); else localStorage.removeItem("opensky.hiddenPages"); } catch (e) { this._hiddenFallback = list; /* private window: this visit only */ }
+    const cur = this.config.pages.find((p) => p.index === this.activeIndex);
+    if (cur && !this.visiblePages().includes(cur)) this.goPage(this.visiblePages()[0].index);   // standing on a page that's now hidden here
+    this.updateDom(0);
+    this.applyScale();
   },
 
   // Settings → Text size: apply at once (the choice is saved separately)
@@ -177,7 +195,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     wrap.innerHTML = `<div class="os-side-track"></div><div class="os-side-col"></div>`;
     const col = wrap.querySelector(".os-side-col");
 
-    this.config.pages.forEach((p) => {
+    this.visiblePages().forEach((p) => {
       const icon = p.key === "home" ? `<span class="os-badge">${this.escape(this.config.familyInitial)}</span>` : this.icon(p.icon || p.key);
       col.appendChild(this.tile(`page-${p.key}`, icon, p.label, () => this.goPage(p.index)));
     });
