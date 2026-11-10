@@ -132,6 +132,14 @@ Module.register("MMM-OpenSky-Header", {
         this.sendNotification("OPENSKY_PROFILE_FILTER", { selected: [...this.picked] });
         this.updateDom(0);
       };
+      const left = this.choreCounts && this.choreCounts[p.name];
+      if (left > 0) {   // chores still to do (Chores page → "Show chores left on the badge")
+        const n = document.createElement("span");
+        n.className = "hb-count";
+        n.textContent = left > 9 ? "9+" : String(left);
+        n.setAttribute("aria-label", `${left} chore${left === 1 ? "" : "s"} left`);
+        b.appendChild(n);
+      }
       box.appendChild(b);
     }
     return box;
@@ -139,6 +147,11 @@ Module.register("MMM-OpenSky-Header", {
 
   // Birthdays come from the calendar ("… Birthday" / "Bday" events), broadcast by the calendar module
   notificationReceived(n, payload) {
+    if (n === "OPENSKY_CHORE_COUNTS") {   // { counts: { "<profile name>": chores left today } } from the Chores page
+      const counts = (payload && payload.counts) || {};
+      if (JSON.stringify(counts) !== JSON.stringify(this.choreCounts || {})) { this.choreCounts = counts; this.updateDom(0); }
+      return;
+    }
     if (n !== "CALENDAR_EVENTS" || !Array.isArray(payload)) return;
     // countdown.holidays "calendar" (countries other than the US): the next days of the Holidays calendar
     if (this.config.countdown.holidays === "calendar") {

@@ -213,7 +213,7 @@ const PAGES = {
   chores: () => [{
     module: "MMM-OpenSky-Chores",
     position: "fullscreen_above",
-    config: { kids: choreKids, refreshMinutes: Math.max(1, Number(s.chores && s.chores.refreshMinutes) || 5) }
+    config: { kids: choreKids, refreshMinutes: Math.max(1, Number(s.chores && s.chores.refreshMinutes) || 5), badges: !!(s.chores && s.chores.badges) }
   }],
   wordgame: () => [{
     module: "MMM-OpenSky-WordGame",

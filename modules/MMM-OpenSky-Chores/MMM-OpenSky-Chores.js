@@ -5,7 +5,8 @@
 Module.register("MMM-OpenSky-Chores", {
   defaults: {
     kids: [],               // [{ id, name, color }] from opensky.json → chores.kids
-    refreshMinutes: 5
+    refreshMinutes: 5,
+    badges: false           // tell the header how many chores each linked person has left (shown on their badge)
   },
 
   getStyles() { return ["MMM-OpenSky-Chores.css"]; },
@@ -48,7 +49,19 @@ Module.register("MMM-OpenSky-Chores", {
     this.sendSocketNotification("OS_CHORE_SET", { id: ++this.seq, kid: kid.id, chore: chore.id, done: chore.done });
   },
 
+  // chores left per person (kids linked to a profile), for the badges in the header
+  sendCounts() {
+    if (!this.config.badges) return;
+    const counts = {};
+    for (const kid of this.config.kids) {
+      const d = this.byKid.get(kid.id);
+      if (kid.profile && d && d.loaded) counts[kid.profile] = d.chores.filter((x) => !x.done).length;
+    }
+    this.sendNotification("OPENSKY_CHORE_COUNTS", { counts });
+  },
+
   render() {
+    this.sendCounts();
     if (!this.root) return;
     const box = this.root.querySelector(".ch-kids");
     const scroll = new Map([...box.querySelectorAll(".ch-card")].map((c) => [c.dataset.kid, c.querySelector(".ch-items").scrollTop]));

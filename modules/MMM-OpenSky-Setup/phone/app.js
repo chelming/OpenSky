@@ -591,6 +591,8 @@
     return section("chores", "chores", "Chores", "Kids' chores from Greenlight, on their own page (unofficial — it can stop working if Greenlight changes)",
       greenlightBox(CH, render),
       all.length ? rows : null,
+      kids.length ? el("div", { class: "line" }, el("span", {}, el("b", {}, "Chores left on the badge"), el("small", {}, "Each child's circle at the top shows how many chores they have left today (needs a person with the same name under Family)")),
+        toggle(!!S.chores.badges, (v) => { if (v) S.chores.badges = true; else delete S.chores.badges; change(); render(); }, "Chores left on the badge")) : null,
       CH.gkids && !CH.gkids.length ? el("div", { class: "gbox" }, el("p", { class: "hint" }, "Greenlight didn't list the children — add each one by name and user ID."),
         field("Child's name", text("", (v) => { manual.name = v.trim(); }, { placeholder: "e.g. Reese" })),
         field("Greenlight user ID", text("", (v) => { manual.id = v.trim(); }, { placeholder: "digits", inputmode: "numeric" })),

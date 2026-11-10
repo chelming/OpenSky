@@ -158,3 +158,6 @@ html[data-layout="portrait"] .hb-cd-ico svg { width: 30px; height: 30px; }
 .hb-cd-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .hb-cd-ico, .hb-cd-when { flex: none; }
 .hb-title, .hb-time, .hb-weather, .hb-profiles { flex: none; }
+.hb-profile{ position:relative; }
+.hb-count{ position:absolute; top:-5px; right:-5px; min-width:20px; height:20px; padding:0 5px; box-sizing:border-box; border-radius:10px; background:#1f2937; color:#fff; border:2px solid #fff; font-size:12px; font-weight:800; line-height:16px; text-align:center; pointer-events:none; }
+html[data-layout="compact"] .hb-count{ min-width:18px; height:18px; font-size:11px; line-height:14px; }

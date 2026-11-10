@@ -44,8 +44,13 @@ module.exports = async (page, h) => {
   await until(async () => ((await card("Reese")) || { items: [] }).items.length);
   const r = await card("Reese");
   ok("a card per child: progress, streak, open chores first and the done one below", r && r.count === "1 of 3" && r.meta.includes("3 week streak") && JSON.stringify(r.items) === '["Make bed","Empty dishwasher","Feed dog ✓"]', r);
+  const badge = () => page.evaluate(() => { const b = [...document.querySelectorAll(".hb-profile")].find((x) => x.getAttribute("aria-label") === "Reese"); const n = b && b.querySelector(".hb-count"); return n ? n.textContent : null; });
+  await until(async () => (await badge()) !== null);
+  ok("the person's badge shows how many chores they have left", (await badge()) === "2", await badge());
   ok("a child with no chores says so", /No chores today/.test(((await card("Quinn")) || {}).text || ""), await card("Quinn"));
   await page.evaluate(() => [...document.querySelectorAll(".ch-item")].find((x) => x.textContent === "Make bed").click());
+  await until(async () => (await badge()) === "1");
+  ok("…and the badge count drops when one is ticked", (await badge()) === "1", await badge());
   await until(async () => posts.length > 0);
   ok("tapping a chore ticks it in Greenlight", posts.length === 1 && posts[0].action === "COMPLETE" && posts[0].chores[0].startsWith("1::"), posts);
   ok("…and it moves to the done ones", ((await card("Reese")).items || []).includes("Make bed ✓"), (await card("Reese")).items);
@@ -58,6 +63,7 @@ module.exports = async (page, h) => {
 };
 module.exports.patchSettings = (s) => {
   s.pages = [...(s.pages || ["home"]).filter((p) => p !== "chores"), "chores"];
-  s.chores = { kids: [{ id: "101", name: "Reese", color: "green" }, { id: "102", name: "Quinn", color: "purple" }] };
+  s.profiles = [{ name: "Reese", color: "green" }];
+  s.chores = { badges: true, kids: [{ id: "101", name: "Reese", profile: "Reese" }, { id: "102", name: "Quinn", color: "purple" }] };
 };
 module.exports.patchSecrets = (s) => { s.greenlight = { phone: "5551234567", password: "fake-greenlight-pw" }; };
