@@ -106,7 +106,10 @@ const choreKids = (Array.isArray(s.chores && s.chores.kids) ? s.chores.kids : []
   .map((k) => {
     const p = profiles.find((q) => q.name.toLowerCase() === String(k.profile || "").trim().toLowerCase());
     return { id: String(k.id), name: String(k.name || "").trim().slice(0, 30) || "Chores", ...(p ? { profile: p.name } : {}), color: (p && p.color) || k.color || null };
-  });
+  })
+  // same order as the people circles at the top (children not linked to a person keep their order, after those)
+  .map((k, i) => ({ k, at: k.profile ? profiles.findIndex((q) => q.name === k.profile) : profiles.length, i }))
+  .sort((a, b) => a.at - b.at || a.i - b.i).map((x) => x.k);
 
 // Calendar sources (a module with no screen of its own; any page can use the events)
 const cal = s.calendar || {};
