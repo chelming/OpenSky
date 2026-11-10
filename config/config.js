@@ -163,6 +163,10 @@ function quickMinutes(v) {
   return list.length ? list : [5, 10, 15, 30, 45, 60];
 }
 
+// Home's right-hand cards: which show and in what order (home.cards; unknown names dropped, repeats ignored; none given = all, as before)
+const HOME_CARDS = ["notes", "tonight", "lists", "photos"];
+const homeCards = Array.isArray(s.home && s.home.cards) ? [...new Set(s.home.cards.filter((c) => HOME_CARDS.includes(c)))] : HOME_CARDS;
+
 // Each page = the modules that appear on it.
 // The photo source settings (Home's photo card and the screensaver share them; only the change interval differs)
 const photosConfig = (defaultSeconds) => ({
@@ -216,12 +220,13 @@ const PAGES = {
     config: {
       listsPage: pages.indexOf("lists") >= 0 ? pages.indexOf("lists") : null,
       mealsPage: pages.indexOf("meals") >= 0 ? pages.indexOf("meals") : null,
-      tonight: mealsOn && mealSettings.home !== false && mealTypes.includes("dinner"),
+      tonight: mealsOn && mealSettings.home !== false && mealTypes.includes("dinner") && homeCards.includes("tonight"),
+      cards: homeCards,
       canAddEvents,
       maxEventsPerDay: 4,
       eventColors,
       calendarPeople,
-      photos: photosConfig(30),
+      photos: { ...photosConfig(30), enabled: photosConfig(30).enabled && homeCards.includes("photos") },
       pickup: pickupSchedule(s.pickup)
     }
   }],

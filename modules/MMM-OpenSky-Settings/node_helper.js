@@ -49,6 +49,8 @@ const isTime = (t) => typeof t === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(
 const toMin = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
 const inWindow = (mins, from, until) => (from > until ? mins >= from || mins < until : mins >= from && mins < until);
 
+const HOME_CARDS = ["notes", "tonight", "lists", "photos"];   // Home's right-hand cards (config/config.js has the same list)
+
 module.exports = NodeHelper.create({
   start() {
     this.settings = this.load();
@@ -291,6 +293,11 @@ module.exports = NodeHelper.create({
     const pages = Array.isArray(s.pages) ? s.pages.filter((p) => names[p]) : ["home", "timer"];
     this.sendSocketNotification("OS_SET_PREFS", {
       pages, names,
+      homeCards: {
+        order: Array.isArray(s.home && s.home.cards) ? s.home.cards.filter((c) => HOME_CARDS.includes(c)) : [...HOME_CARDS],
+        names: { notes: "Family notes", ...(s.meals && (s.meals.provider === "mealie" || s.meals.provider === "local") ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" },
+        photosOff: !!(s.photos && s.photos.enabled === false)
+      },
       prefs: {
         accent: accent.normalize(s.look && s.look.accent) || "peach",   // (checked: it goes into the panel's HTML)
         textSize: textSize.normalize(s.look && s.look.textSize) || "normal",
@@ -373,6 +380,11 @@ module.exports = NodeHelper.create({
       catch (e) { return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: e.message }); }
     }
     if (Array.isArray(patch.pages) && patch.pages.length) { s.pages = patch.pages.map(String).filter((p) => /^[a-z][a-z0-9-]{0,30}$/.test(p)); restartNeeded = true; }
+    if (Array.isArray(patch.homeCards)) {
+      s.home = { ...(s.home && typeof s.home === "object" ? s.home : {}), cards: [...new Set(patch.homeCards.map(String).filter((c) => HOME_CARDS.includes(c)))] };
+      if (s.home.cards.includes("photos") && s.photos && s.photos.enabled === false) s.photos.enabled = true;
+      restartNeeded = true;
+    }
     if ("accent" in patch) {
       // a palette color or a color code (#rgb / #rrggbb, stored as #rrggbb); peach is the default, so it's left out
       const a = accent.normalize(patch.accent);

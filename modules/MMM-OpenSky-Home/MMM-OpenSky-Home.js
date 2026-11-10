@@ -27,6 +27,7 @@ Module.register("MMM-OpenSky-Home", {
     maxEventsPerDay: 4,
     eventColors: null,           // calendar.colors from opensky.json
     calendarPeople: [],          // [{ name, color }] the calendars in settings order (badge letters + colors for shared events)
+    cards: ["notes", "tonight", "lists", "photos"],   // the right-hand cards that show, top to bottom (opensky.json → home.cards)
     photos: { enabled: true, provider: "folder", folder: null, usb: true, url: null, intervalSeconds: 30 },
     pickup: null                 // resolved pickup schedule (see lib/client/pickup.js); null = no icons
   },
@@ -189,6 +190,30 @@ Module.register("MMM-OpenSky-Home", {
     return root;
   },
 
+  cardOn(k) { return Array.isArray(this.config.cards) ? this.config.cards.includes(k) : true; },
+
+  // The right-hand cards in the chosen order. Landscape / compact: flex order. Portrait: the grid rows are rebuilt from the
+  // cards that are actually showing (Today and the week stay on top; Next Week sits beside Lists, or alone without them).
+  applyOrder() {
+    if (!this.root) return;
+    const order = Array.isArray(this.config.cards) ? this.config.cards : ["notes", "tonight", "lists", "photos"];
+    const sel = { notes: ".hd-notes", tonight: ".hd-tonight", lists: ".hd-lists", photos: ".hd-photo" };
+    for (const [k, q] of Object.entries(sel)) {
+      const el = this.root.querySelector(q);
+      if (!el) continue;
+      el.classList.toggle("hd-off", !this.cardOn(k));
+      el.style.order = this.cardOn(k) ? String(order.indexOf(k)) : "";
+    }
+    if (!this.portrait()) { this.root.style.gridTemplateAreas = ""; this.root.style.gridTemplateRows = ""; return; }
+    const showing = { notes: this.notes.length > 0, tonight: this.root.classList.contains("hd-has-tonight"), lists: true, photos: !!this.root.querySelector(".hd-photo") };
+    const rows = [];
+    const area = { notes: '"notes notes"', tonight: '"tonight tonight"', lists: '"lists nw"', photos: '"photo photo"' };
+    for (const k of order) if (this.cardOn(k) && showing[k]) rows.push(area[k]);
+    if (!rows.includes(area.lists)) rows.unshift('"nw nw"');
+    this.root.style.gridTemplateAreas = ['"today today"', '"cal cal"', ...rows].join(" ");
+    this.root.style.gridTemplateRows = `auto minmax(0, 1fr) ${rows.map(() => "auto").join(" ")}`;
+  },
+
   render() { this.renderCalendar(); this.renderLists(); this._notesKey = null; this.renderNotes(); this._tonightKey = null; this.renderTonight(); },
 
   /* ======================= photos ======================= */
@@ -248,6 +273,7 @@ Module.register("MMM-OpenSky-Home", {
       return r;
     });
     card.replaceChildren(head, ...rows);
+    this.applyOrder();
   },
 
   /* ======================= notes (posted from the family's phones: lib/share.js) ======================= */
@@ -258,6 +284,7 @@ Module.register("MMM-OpenSky-Home", {
     if (key === this._notesKey) return;   // (unchanged: don't redraw every poll)
     this._notesKey = key;
     box.hidden = !this.notes.length;
+    this.applyOrder();
     box.replaceChildren(...this.notes.slice(0, 3).map((n) => {
       const el = document.createElement("div");
       el.className = "hd-note";
@@ -376,6 +403,7 @@ Module.register("MMM-OpenSky-Home", {
 
   renderCalendar() {
     if (!this.root) return;
+    this.applyOrder();
     const week = this.root.querySelector(".hd-week");
     const events = this.allEvents();
     const first = this.dayStart(new Date(this.nowMs()));
@@ -713,7 +741,7 @@ Module.register("MMM-OpenSky-Home", {
     const all = [...this.lists.entries()].flatMap(([source, lists]) => lists.map((l) => ({ ...l, source })));
     const card = this.root.querySelector(".hd-lists");
     card.hidden = !all.length;
-    this.root.classList.toggle("hd-no-lists", !all.length);
+    this.root.classList.toggle("hd-no-lists", !all.length || !this.cardOn("lists"));
     const cols = card.querySelector(".hd-list-columns");
     cols.style.setProperty("--list-count", Math.min(this.portrait() ? 4 : 3, Math.max(1, all.length)));
     card.classList.toggle("hd-many", all.length > 2);

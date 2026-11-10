@@ -288,6 +288,61 @@ Module.register("MMM-OpenSky-Settings", {
 
   savePrefs(patch) { this.sendSocketNotification("OS_SET_PREFS_SAVE", { patch }); },
 
+  // Home's right-hand cards (opensky.json → home.cards): turn on / off, drag by the grip (or the arrows); needs a restart like Pages
+  homeCardsList(P) {
+    const H = P.homeCards || { order: [], names: {} };
+    const shown = (k) => H.order.includes(k) && (k !== "photos" || !H.photosOff);
+    return { H, shown, all: [...H.order.filter((k) => H.names[k]), ...Object.keys(H.names).filter((k) => !H.order.includes(k))] };
+  },
+
+  homeCardsHtml(P, esc) {
+    if (!P.homeCards) return "";
+    const { H, shown, all } = this.homeCardsList(P);
+    return `<section class="ost-section ost-homecards">
+        <h3>Home cards</h3>
+        <div class="ost-note">The cards on the right of the Home page, top to bottom. The week stays on the left.</div>
+        ${all.map((k) => { const on = shown(k), i = H.order.indexOf(k); return `
+          <div class="ost-row ost-hc${on ? "" : " off"}" data-card="${esc(k)}">
+            ${on ? `<span class="ost-grip" aria-label="Drag to reorder" title="Drag to reorder"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg></span>` : ""}
+            <span class="ost-label">${esc(H.names[k])}</span>
+            <span class="ost-order">${on ? `<button class="ost-mini" data-move="-1" ${i <= 0 ? "disabled" : ""} aria-label="Up">▲</button><button class="ost-mini" data-move="1" ${i < 0 || i === H.order.length - 1 ? "disabled" : ""} aria-label="Down">▼</button>` : ""}</span>
+            ${this.toggle(`card-${k}`, on)}
+          </div>`; }).join("")}
+      </section>`;
+  },
+
+  bindHomeCards(box, P) {
+    if (!P.homeCards) return;
+    const { H } = this.homeCardsList(P);
+    const save = (order) => this.savePrefs({ homeCards: order });
+    box.querySelectorAll(".ost-hc").forEach((row) => {
+      const k = row.dataset.card;
+      row.querySelector(".ost-toggle").onclick = () => save(H.order.includes(k) && !(k === "photos" && H.photosOff) ? H.order.filter((x) => x !== k) : [...H.order.filter((x) => x !== k), k]);
+      row.querySelectorAll("[data-move]").forEach((b) => { b.onclick = () => { const o = [...H.order], i = o.indexOf(k), j = i + Number(b.dataset.move); [o[i], o[j]] = [o[j], o[i]]; save(o); }; });
+    });
+    box.querySelectorAll(".ost-hc .ost-grip").forEach((grip) => {
+      grip.onpointerdown = (ev) => {
+        const row = grip.closest(".ost-hc"), rows = () => [...box.querySelectorAll(".ost-hc:not(.off)")];
+        ev.preventDefault();
+        grip.setPointerCapture(ev.pointerId);
+        row.classList.add("ost-dragging");
+        const mid = (r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; };
+        const place = (y) => {
+          for (let q; (q = row.previousElementSibling) && q.classList.contains("ost-hc") && y < mid(q);) row.after(q);
+          for (let q; (q = row.nextElementSibling) && q.classList.contains("ost-hc") && !q.classList.contains("off") && y > mid(q);) row.before(q);
+        };
+        grip.onpointermove = (e) => place(e.clientY);
+        grip.onpointerup = grip.onpointercancel = (e) => {
+          if (e.type === "pointerup") place(e.clientY);
+          grip.onpointermove = grip.onpointerup = grip.onpointercancel = null;
+          row.classList.remove("ost-dragging");
+          const order = rows().map((r) => r.dataset.card);
+          if (order.join() !== H.order.join()) save([...order, ...H.order.filter((c) => !order.includes(c))]);
+        };
+      };
+    });
+  },
+
   renderPrefs() {
     const box = this.panel && this.panel.querySelector(".ost-prefs");
     if (!box) return;
@@ -323,6 +378,7 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-buttons"><button class="ost-btn ost-add-web">+ Add a web page</button></div>
         <div class="ost-note">A web page gets its own button down the side — a Home Assistant dashboard, a camera, a school portal, any website.</div>
       </section>
+      ${this.homeCardsHtml(P, esc)}
       <section class="ost-section">
         <h3>Look &amp; extras</h3>
         <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips">${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === P.prefs.accent ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
@@ -386,6 +442,7 @@ Module.register("MMM-OpenSky-Settings", {
         };
       };
     });
+    this.bindHomeCards(box, P);
     box.querySelector(".ost-add-web").onclick =() => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.renderPrefs(); this.focusWebForm(); };
     box.querySelectorAll(".ost-edit-web").forEach((b) => { b.onclick = () => { const e = P.embeds.find((x) => x.key === b.dataset.key); this.webForm = { key: e.key, title: e.title, url: e.url || "", icon: e.icon, locked: e.locked, pin: null }; this.renderPrefs(); this.focusWebForm(); }; });
     if (this.webForm) this.bindWebForm(box);

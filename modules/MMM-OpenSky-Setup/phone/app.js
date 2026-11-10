@@ -191,8 +191,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["homecards", "Home cards"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), homeCardsCard(), webCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -817,6 +817,59 @@
       };
     });
     return section("pages", "pages", "Pages", "The buttons down the left side, top to bottom. Drag a page by its grip to move it. The first is where the screen goes back to when idle.", box);
+  }
+
+  // Home's right-hand cards: which show and in what order (opensky.json → home.cards; not set = all four, as before)
+  const HOME_CARDS = ["notes", "tonight", "lists", "photos"];
+  function homeCardsCard() {
+    const mealsOn = !!(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local"));
+    const names = { notes: "Family notes", ...(mealsOn ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" };
+    const H = { get cards() { return (S.home || {}).cards; }, set cards(v) { S.home = { ...(S.home || {}), cards: v }; } };
+    const cards = Array.isArray(H.cards) ? H.cards.filter((c) => HOME_CARDS.includes(c)) : [...HOME_CARDS];
+    const shown = (k) => cards.includes(k) && (k !== "photos" || !(S.photos && S.photos.enabled === false));
+    const all = [...cards.filter((c) => names[c]), ...Object.keys(names).filter((k) => !cards.includes(k))];
+    const box = el("div", { class: "rows" });
+    all.forEach((k) => {
+      const on = shown(k), i = cards.indexOf(k);
+      box.append(el("div", { class: `pagerow${on ? "" : " off"}`, "data-page": k },
+        on ? el("span", { class: "grip", "aria-label": "Drag to reorder", html: ICON.grip }) : null,
+        el("span", { class: "row-main" }, el("b", {}, names[k])),
+        on ? el("span", { class: "order" },
+          el("button", { type: "button", class: "mini", "aria-label": "Up", disabled: i <= 0, onclick: () => { cards.splice(i, 1); cards.splice(i - 1, 0, k); H.cards = cards; change(); render(); }, html: ICON.up }),
+          el("button", { type: "button", class: "mini", "aria-label": "Down", disabled: i < 0 || i === cards.length - 1, onclick: () => { cards.splice(i, 1); cards.splice(i + 1, 0, k); H.cards = cards; change(); render(); }, html: ICON.down })) : null,
+        toggle(on, (v) => {
+          if (v) { if (!cards.includes(k)) cards.push(k); if (k === "photos" && S.photos) S.photos.enabled = true; }
+          else if (cards.includes(k)) cards.splice(cards.indexOf(k), 1);
+          H.cards = cards; change(); render();
+        }, names[k])));
+    });
+    dragRows(box, (order) => { H.cards = [...order, ...cards.filter((c) => !order.includes(c))]; change(); });
+    return section("homecards", "pages", "Home cards", "The cards on the right of the Home page, top to bottom. Turn one off to hide it; drag by the grip to move it. The week stays on the left.", box);
+  }
+
+  // drag a row by its grip: the rows move as you drag, onDrop(order of the turned-on rows) on release
+  function dragRows(box, onDrop) {
+    box.querySelectorAll(".grip").forEach((grip) => {
+      grip.onpointerdown = (ev) => {
+        const rowEl = grip.closest(".pagerow"), rows = () => [...box.querySelectorAll(".pagerow:not(.off)")];
+        ev.preventDefault();
+        grip.setPointerCapture(ev.pointerId);
+        rowEl.classList.add("dragging");
+        const mid = (r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; };
+        const place = (y) => {
+          for (let q; (q = rowEl.previousElementSibling) && q.classList.contains("pagerow") && y < mid(q);) rowEl.after(q);
+          for (let q; (q = rowEl.nextElementSibling) && q.classList.contains("pagerow") && !q.classList.contains("off") && y > mid(q);) rowEl.before(q);
+        };
+        grip.onpointermove = (e) => place(e.clientY);
+        grip.onpointerup = grip.onpointercancel = (e) => {
+          if (e.type === "pointerup") place(e.clientY);
+          grip.onpointermove = grip.onpointerup = grip.onpointercancel = null;
+          rowEl.classList.remove("dragging");
+          onDrop(rows().map((r) => r.dataset.page));
+          render();
+        };
+      };
+    });
   }
 
   function webRow(k, e, sub, onclick, extra) {

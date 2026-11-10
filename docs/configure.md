@@ -97,6 +97,17 @@ You can also add your own **web pages** as pages (next section).
 tried again until someone guesses. For OpenSky's own words only: `"wordgame": { "source": "opensky" }`.
 A word you know is real but isn't accepted? Add it: `"wordgame": { "extraWords": ["emoji"] }`.
 
+### Home cards
+```json
+"home": { "cards": ["notes", "tonight", "lists", "photos"] }
+```
+The cards on the right of the Home page, top to bottom (the week on the left always stays). Leave a card out to hide it:
+`notes` (notes posted from the family's phones), `tonight` ("Dinner tonight", needs Meals), `lists`, `photos`. Not set means
+all four in this order, so nothing changes until you choose. Set it from the phone page (**Home cards**: switch a card on or
+off, drag it by the grip or use the arrows) or from the screen's Settings panel (**Home cards**); a restart applies it.
+Works in the landscape, compact and portrait layouts. Photos also need `photos.enabled` (turning the card on from the
+phone or Settings switches that on too).
+
 ## Web pages on the screen (Smart Home, cameras…)
 Any web page can be a page of its own — a Home Assistant dashboard, a camera, a school portal, a recipe site.
 **Easiest:** Settings → Pages → **+ Add a web page** (or the phone page → Web pages): type a name and the address,
@@ -414,6 +425,7 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Sleep at night | The screen goes dark at "Off at" and comes back at "On at". A touch wakes it; it sleeps again after 3 quiet minutes. A running timer keeps it on. |
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone) for every screen. **Hide here** hides a page's button on the screen you're holding only (kept in that browser, like the text size) — handy when a tablet and a wall display should show different pages. |
+| Home cards | Show or hide the cards on the right of Home and change their order (grip or arrows); applies after a restart. |
 | Look & extras | Accent color, text size, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
