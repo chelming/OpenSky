@@ -150,6 +150,7 @@ const calendarSources = (Array.isArray(cal.sources) ? cal.sources : []).filter((
   .map((c) => ({ name: String(c.name), type: ["local", "caldav", "google", "mealie"].includes(c.type) ? c.type : "link", url: c.url || null, color: profileColor(c) || c.color || null, fetchMinutes: c.fetchMinutes || 5,
     ...(c.role === "shared" ? { role: "shared" } : {}),
     ...(titlePattern(c.only) ? { only: titlePattern(c.only) } : {}),
+    ...(c.header === true ? { header: true } : {}),
     profiles: linkedProfiles(c.profiles),
     ...(c.type === "mealie" ? { meals: Array.isArray(c.meals) ? c.meals.map(String) : ["dinner"] } : {}),
     ...(c.type === "google" ? { calendarId: String(c.calendarId || "primary"), readOnly: !!c.readOnly } : {}) }));
@@ -435,6 +436,8 @@ const fixed = [
         custom: Array.isArray(header.occasions) ? header.occasions : [],
         birthdays: header.birthdaysFromCalendar !== false
       },
+      // calendars whose events of today go in the header as a pill (phone setup → Calendars → tap one → "Show today's event in the header")
+      todayPills: calendarSources.filter((c) => c.header).map((c) => c.name),
       sports: header.sports && header.sports.team ? { league: header.sports.league || "nfl", team: header.sports.team } : null
     }
   },

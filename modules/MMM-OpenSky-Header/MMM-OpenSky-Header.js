@@ -12,6 +12,7 @@ Module.register("MMM-OpenSky-Header", {
     weather: { provider: "open-meteo", latitude: null, longitude: null, units: "imperial", refreshMinutes: 15 },
     countdown: { holidays: "US", custom: [], birthdays: true },  // custom: [{ name, month (1-12), day, icon? }]
     profiles: [],                                                  // [{ name, color, photo? }] — circles that filter calendars and lists
+    todayPills: [],                                              // calendar names whose events of today show as a pill
     sports: null                                                 // e.g. { league: "nfl", team: "NE" }
   },
 
@@ -76,6 +77,10 @@ Module.register("MMM-OpenSky-Header", {
     // Sports game-day pill (only on the day of a game, gone at midnight)
     const g = this.gameToday();
     if (g) row.appendChild(this._gamePill(g));
+
+    // Today's event(s) of the calendars set to show here (e.g. the school's "Day 3")
+    const sd = this._todayPill();
+    if (sd) row.appendChild(sd);
 
     // Top-right: quiet countdown to the next big holiday or family birthday
     const next = this._nextOccasion(this.now || new Date());
@@ -154,11 +159,33 @@ Module.register("MMM-OpenSky-Header", {
     return box;
   },
 
+  // OPENSKY_HEADER_EVENTS: events of the calendars with "Show today's event in the header", before any person filter.
+  // Shows the titles of today's all-day events (up to two) in the calendar's color.
+  _todayPill() {
+    const now = this.now || new Date(), a = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(), b = a + 86400000;
+    const evs = (this.headerEvents || []).filter((e) => {
+      const s = Number(e.startDate), en = Number(e.endDate);
+      return s < b && (en || s + 86400000) > a;   // overlaps today (an all-day event ends at midnight after its last day)
+    });
+    const titles = [...new Set(evs.map((e) => String(e.title || "").trim()).filter(Boolean))].slice(0, 2);
+    if (!titles.length) return null;
+    const el = document.createElement("div");
+    el.className = "hb-school";
+    if (evs[0].color) el.style.setProperty("--hb-sc", evs[0].color);
+    el.textContent = titles.join(" · ");
+    return el;
+  },
+
   // Birthdays come from the calendar ("… Birthday" / "Bday" events), broadcast by the calendar module
   notificationReceived(n, payload) {
     if (n === "OPENSKY_CHORE_COUNTS") {   // { counts: { "<profile name>": chores left today } } from the Chores page
       const counts = (payload && payload.counts) || {};
       if (JSON.stringify(counts) !== JSON.stringify(this.choreCounts || {})) { this.choreCounts = counts; this.updateDom(0); }
+      return;
+    }
+    if (n === "OPENSKY_HEADER_EVENTS" && Array.isArray(payload)) {
+      const k = JSON.stringify(payload);
+      if (k !== this._hevKey) { this._hevKey = k; this.headerEvents = payload; this.updateDom(0); }
       return;
     }
     if (n !== "CALENDAR_EVENTS" || !Array.isArray(payload)) return;

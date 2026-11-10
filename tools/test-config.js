@@ -29,7 +29,7 @@ const c = build({
   calendar: { holidays: "GB", holidaysRegion: "GB-SCT", sources: [
     { name: "Family", type: "local", color: "blue", role: "shared" }, { name: "Shared", type: "caldav", color: "green" },
     { name: "Work", type: "google", calendarId: "primary" }, { name: "Club", type: "google", calendarId: "c@group.calendar.google.com", readOnly: true },
-    { name: "Mom", profiles: ["mom", "Zoe", "Nobody"], colorFromProfile: true, color: "red" }, { name: "ZoeCal", only: "(unclosed", profiles: ["zoe"], colorFromProfile: true, color: "red" }, { name: "ZoeOwn", profiles: ["zoe"], color: "red", only: " ^Day [1-6]$ " }, { name: "Dinner", type: "mealie", meals: ["dinner", "lunch"] }, { name: "Holidays", url: "https://x/evil.ics" }], service: { port: 5099 }, mergeShared: true },
+    { name: "Mom", profiles: ["mom", "Zoe", "Nobody"], colorFromProfile: true, color: "red" }, { name: "ZoeCal", only: "(unclosed", profiles: ["zoe"], colorFromProfile: true, color: "red" }, { name: "ZoeOwn", profiles: ["zoe"], color: "red", only: " ^Day [1-6]$ ", header: true }, { name: "Dinner", type: "mealie", meals: ["dinner", "lunch"] }, { name: "Holidays", url: "https://x/evil.ics" }], service: { port: 5099 }, mergeShared: true },
   lists: { lists: [{ name: "Shopping", provider: "homeassistant", entity: "todo.shopping" }, { name: "Chores", profiles: ["Zoe"] }, { name: "Food", provider: "mealie", shoppingList: "Weekly", shoppingListId: "L1" }, { name: "Reese chores", provider: "greenlight", kid: "101" }], columns: 3 },
   pickup: { trashDay: "monday", url: "secret" },
   chores: { kids: [{ id: "101", name: "Zoe", profile: "zoe" }, { id: "102", name: "Max", color: "green" }, { id: "103", name: "Mama", profile: "mom" }, { id: "x", name: "Bad" }] },
@@ -48,6 +48,7 @@ ok("4 a private pickup link → a pickup-role source with no url in the config",
 const ed = mod(c, "MMM-OpenSky-EventEditor").config;
 ok("5 editable: on-screen, CalDAV, Google (not the read-only one, not links); service port", JSON.stringify(ed.editable.map((e) => e.name)) === '["Family","Shared","Work"]' && ed.servicePort === 5099, ed.editable);
 ok("5b a calendar can keep only events whose title matches (trimmed); an invalid pattern is dropped", byName("ZoeOwn").only === "^Day [1-6]$" && byName("ZoeCal").only === undefined && byName("Family").only === undefined, [byName("ZoeOwn").only, byName("ZoeCal").only]);
+ok("5c a calendar can show today's event in the header: the Header module gets those calendar names", byName("ZoeOwn").header === true && byName("Family").header === undefined && JSON.stringify(mod(c, "MMM-OpenSky-Header").config.todayPills) === '["ZoeOwn"]', mod(c, "MMM-OpenSky-Header").config.todayPills);
 ok("6 lists: Home Assistant entity passed on; Lists page columns", mod(c, "MMM-OpenSky-Lists").config.lists[0].entity === "todo.shopping" && mod(c, "MMM-OpenSky-ListsPage").config.columns === 3);
 const hdr = mod(c, "MMM-OpenSky-Header").config;
 ok("8 profiles: trimmed, blank and repeated names dropped; the top bar gets name + color",

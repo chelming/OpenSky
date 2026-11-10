@@ -40,6 +40,7 @@ Module.register("MMM-OpenSky-Calendars", {
   broadcast() {
     let list = [];
     const pickup = [];
+    const headerEvents = [];
     for (const src of this.config.sources) {
       let evs = this.events.get(src.name) || [];
       // "only show events titled…" (set per calendar in phone setup): a regular expression, any case
@@ -51,6 +52,7 @@ Module.register("MMM-OpenSky-Calendars", {
       // the color set for the calendar in the settings (colors.calendars), else the source's own: a palette name or a color code
       const set = EC ? (EC.colorOf((EC.calendars || {})[src.name]) || EC.colorOf(src.color)) : null;
       const color = set ? EC.pair(set)[1] : "";
+      if (src.header) for (const ev of evs) headerEvents.push({ title: ev.title, startDate: ev.startDate, endDate: ev.endDate, fullDayEvent: ev.fullDayEvent, calendarName: src.name, color });
       // symbol: [] — MagicMirror's calendar always sets it and CalendarExt3 requires it (calls symbol.join)
       for (const ev of evs) list.push({ ...ev, calendarName: src.name, color, colorName: set || src.color || null, symbol: [] });
     }
@@ -58,6 +60,7 @@ Module.register("MMM-OpenSky-Calendars", {
     out.sort((a, b) => Number(a.startDate) - Number(b.startDate));
     this.sendNotification("CALENDAR_EVENTS", out);
     if (this.config.sources.some((src) => src.role === "pickup")) this.sendNotification("OPENSKY_PICKUP_EVENTS", pickup);
+    if (this.config.sources.some((src) => src.header)) this.sendNotification("OPENSKY_HEADER_EVENTS", headerEvents);
     this.sendNotification("OPENSKY_CALENDAR_STATUS", { ...this.status });
   },
 
