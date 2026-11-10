@@ -168,6 +168,14 @@ const ss = ssOf({ enabled: true, afterMinutes: 3, upNext: false, photoSeconds: 8
 ok("22 screensaver: settings reach the module; bad numbers → defaults (10 min, 20 s)", ss && ss.config.afterMinutes === 3 && ss.config.upNext === false && ss.config.photos.intervalSeconds === 8 &&
   ss.config.hour12 === false && ssd.config.afterMinutes === 10 && ssd.config.photos.intervalSeconds === 20 && ssd.config.upNext === true, ss && ss.config);
 
+// screen profiles: named presets; unknown pages / people / colors are dropped, repeats and a missing name ignored
+const scr = (v) => mod(build({ profiles: [{ name: "Mom" }, { name: "Kid" }], pages: ["home", "calendar", "lists", "timer"], ...(v === undefined ? {} : { screens: v }) }), "MMM-OpenSky-Sidebar").config.screens;
+const sc = scr([{ name: " Kitchen ", pages: ["home", "lists", "lists", "nope"], person: "mom", textSize: "Extra large", accent: "Teal" },
+  { name: "Kids room", pages: ["timer"], person: "Nobody", textSize: "huge", accent: "#3B82F6" }, { name: "kitchen" }, { name: "" }, null, { pages: ["home"] }]);
+ok("23 screen profiles: none by default; names trimmed, pages/person/size/accent checked, repeats and nameless dropped",
+  Array.isArray(scr()) && scr().length === 0 && sc.length === 2 && sc[0].name === "Kitchen" && sc[0].pages.join() === "home,lists" && sc[0].person === "Mom" && sc[0].textSize === "xlarge" && sc[0].accent === "teal" &&
+  sc[1].person === null && sc[1].textSize === null && sc[1].accent === "#3b82f6", sc);
+
 delete global.window; delete global.document;
 
 

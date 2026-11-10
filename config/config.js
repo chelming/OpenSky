@@ -300,6 +300,22 @@ const pages = (Array.isArray(s.pages) && s.pages.length ? s.pages : ["home", "ti
   console.error(`[OpenSky] unknown page "${p}" in ${settingsFile} — skipped`);
   return false;
 });
+// Screen profiles: named presets a screen picks in Settings (which pages it shows, whose calendars, text size, accent). opensky.json →
+// screens: [{ name, pages?: [page keys], person?: profile name, textSize?, accent? }]. Each screen remembers its pick in its own browser.
+const screenProfiles = (Array.isArray(s.screens) ? s.screens : []).filter((x) => x && String(x.name || "").trim())
+  .map((x) => {
+    const person = linkedProfiles([x.person])[0] || null;
+    return {
+      name: String(x.name).trim().slice(0, 30),
+      pages: (Array.isArray(x.pages) ? x.pages : []).map(String).filter((k, i, a) => pages.includes(k) && a.indexOf(k) === i),
+      person,
+      textSize: ((t) => (t !== "normal" || /^normal$/i.test(String(x.textSize || "").trim()) ? t : null))(textSizeOf(x.textSize)),   // an unknown size = follow the default
+      accent: x.accent ? accentOf(x.accent) : null
+    };
+  })
+  .filter((x, i, all) => all.findIndex((y) => y.name.toLowerCase() === x.name.toLowerCase()) === i)
+  .slice(0, 12);
+
 const pageModules = pages.map((p) => PAGES[p]());
 const familyName = String((s.family && s.family.name) || "").trim();
 
@@ -360,7 +376,8 @@ const fixed = [
       showSettings: true,
       accent: accentOf(s.look && s.look.accent),
       scale: (s.look && s.look.scale) || "auto",
-      textSize: textSizeOf(s.look && s.look.textSize)
+      textSize: textSizeOf(s.look && s.look.textSize),
+      screens: screenProfiles
     }
   }
 ];

@@ -98,6 +98,29 @@ You can also add your own **web pages** as pages (next section).
 tried again until someone guesses. For OpenSky's own words only: `"wordgame": { "source": "opensky" }`.
 A word you know is real but isn't accepted? Add it: `"wordgame": { "extraWords": ["emoji"] }`.
 
+## Several screens (screen profiles)
+A kitchen display, a tablet in a kid's room, a few browsers in Docker: the settings in this file are the same for all of them, but
+each screen can have its own look. **Per screen** (remembered by that screen's browser, never in `opensky.json`): text size,
+accent color, pages hidden with **Hide here** (Settings on the screen) and, in Docker, brightness and the sleep schedule.
+
+A **screen profile** is a named set of these, so you don't repeat the choices on every screen:
+```json
+"screens": [
+  { "name": "Kitchen", "pages": ["home", "calendar", "lists", "timer"], "person": "Mom", "textSize": "large", "accent": "teal" },
+  { "name": "Kids' room", "pages": ["home", "chores"], "person": "Zoe" }
+]
+```
+- `name`: shown in Settings on the screen. Up to 12 profiles.
+- `pages` (optional): the pages this screen shows; the rest are hidden **on that screen**. Left out = all pages. The page list
+  (`pages` above) stays the same for everyone; this only hides buttons. The first shown page is where the screen starts and returns to when idle.
+- `person` (optional): a person from `profiles`; their circle is on when the screen starts, so it shows only their calendars and lists (tap it to change).
+- `textSize`, `accent` (optional): as under Accent color and size.
+
+Make them on the phone: Set up from your phone, **Screens**. Then on each screen: Settings, Look & extras, **Screen profile**,
+and pick one (it is remembered by that screen only). Order of precedence for every setting: what you pick on that screen
+(Text size, Accent color, Hide here) beats its screen profile, which beats the default for every screen. Choosing a screen
+profile drops that screen's own page, text size and color choices so the profile applies as it is; **None** goes back to the defaults.
+
 ## Web pages on the screen (Smart Home, cameras…)
 Any web page can be a page of its own — a Home Assistant dashboard, a camera, a school portal, a recipe site.
 **Easiest:** Settings → Pages → **+ Add a web page** (or the phone page → Web pages): type a name and the address,
@@ -415,7 +438,7 @@ if you use a real keyboard. Dates and times use pickers instead.
 | Sleep at night | The screen goes dark at "Off at" and comes back at "On at". A touch wakes it; it sleeps again after 3 quiet minutes. A running timer keeps it on. |
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone) for every screen. **Hide here** hides a page's button on the screen you're holding only (kept in that browser, like the text size) — handy when a tablet and a wall display should show different pages. |
-| Look & extras | Accent color, text size, word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Look & extras | **Screen profile** (a saved set of pages, person, text size and color, see [Several screens](#several-screens-screen-profiles)), accent color, text size (both for this screen only), word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 

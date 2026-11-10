@@ -294,7 +294,8 @@ Module.register("MMM-OpenSky-Settings", {
     const P = this.prefs;
     if (!P) { box.innerHTML = ""; return; }
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-    const sbar = this.sidebar(), hidden = sbar && sbar.deviceHiddenPages ? sbar.deviceHiddenPages() : [];   // pages hidden on this screen only
+    const sbar = this.sidebar(), hidden = sbar && sbar.effectiveHiddenPages ? sbar.effectiveHiddenPages() : [];   // pages hidden on this screen only (its own list, or its screen profile's)
+    const profiles = (sbar && sbar.config.screens) || [], curProfile = sbar && sbar.screenPreset ? sbar.screenPreset() : null;
     const all = [...P.pages, ...Object.keys(P.names).filter((k) => !P.pages.includes(k))];
     const pal = (window.OpenSkyEventColors && window.OpenSkyEventColors.PALETTE) || {};
     const accents = ["peach", ...Object.keys(pal).filter((c) => c !== "gray")];
@@ -326,12 +327,14 @@ Module.register("MMM-OpenSky-Settings", {
       </section>
       <section class="ost-section">
         <h3>Look &amp; extras</h3>
+        <div class="ost-row"><span class="ost-label">Screen profile</span>${profiles.length ? `<span class="ost-seg ost-profiles" data-seg="screenProfile"><button data-v="" class="${curProfile ? "" : "on"}">None</button>${profiles.map((x) => `<button data-v="${esc(x.name)}" class="${curProfile && curProfile.name === x.name ? "on" : ""}">${esc(x.name)}</button>`).join("")}</span>` : `<span class="ost-note">None made yet</span>`}</div>
+        <div class="ost-note">${profiles.length ? "A saved set of pages, person, text size and color for this screen. Choosing one drops this screen's own page, text size and color choices below." : "A screen profile is a saved set of pages, person, text size and color (a kitchen screen, a bedroom screen). Make them from your phone: Set up from your phone, Screens."}</div>
         <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips"><button class="ost-btn ost-small ost-accent-default${mine ? "" : " on"}" data-accent-default="1">Default</button>${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === mine ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
-        <div class="ost-note">This screen only; other screens keep their own. Default follows the phone setting (now ${esc(P.prefs.accent)}).</div>
+        <div class="ost-note">This screen only; other screens keep their own. Default follows ${curProfile && curProfile.accent ? `the screen profile (${esc(curProfile.accent)})` : `the phone setting (now ${esc(P.prefs.accent)})`}.</div>
         <div class="ost-row"><span class="ost-label">Or a color code</span><span class="ost-swatch"></span><input class="ost-input ost-hex" maxlength="7" data-okb-caps="off" autocomplete="off" spellcheck="false" placeholder="#3b82f6" value="${esc(this.hexDraft)}"><button class="ost-btn ost-hex-use">Use</button></div>
         <div class="ost-note ost-hex-note">Any color as a code, e.g. your team's color (the # is optional).</div>
         <div class="ost-row"><span class="ost-label">Text size</span><span class="ost-seg" data-seg="textSize">${[["default", "Default"], ...Object.entries(window.OpenSkyTextSize.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceSize() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
-        <div class="ost-note">This screen only; other screens keep their own. Default follows the setting from the phone page (now ${window.OpenSkyTextSize.LABELS[P.prefs.textSize] || "Normal"}).</div>
+        <div class="ost-note">This screen only; other screens keep their own. Default follows ${curProfile && curProfile.textSize ? `the screen profile (${window.OpenSkyTextSize.LABELS[curProfile.textSize]})` : `the setting from the phone page (now ${window.OpenSkyTextSize.LABELS[P.prefs.textSize] || "Normal"})`}.</div>
         <div class="ost-row"><span class="ost-label">Word game</span><span class="ost-seg" data-seg="wordgame"><button data-v="nyt" class="${P.prefs.wordgame === "nyt" ? "on" : ""}">NYT's daily word</button><button data-v="opensky" class="${P.prefs.wordgame === "opensky" ? "on" : ""}">OpenSky's words</button></span></div>
         <div class="ost-row">${this.toggle("photos", P.prefs.photos)}<span class="ost-label">Photo slideshow on Home</span></div>
         <div class="ost-row"><span class="ost-label">Trash day</span><select class="ost-select" data-pref="trashDay">${[["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]].map(([v, l]) => `<option value="${v}" ${v === P.prefs.trashDay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
@@ -357,7 +360,7 @@ Module.register("MMM-OpenSky-Settings", {
       };
       const here = row.querySelector("[data-here]");
       if (here) here.onclick = () => {
-        const sb = this.sidebar(), now = sb.deviceHiddenPages();
+        const sb = this.sidebar(), now = sb.effectiveHiddenPages();
         const next = now.includes(k) ? now.filter((x) => x !== k) : [...now, k];
         if (P.pages.every((x) => next.includes(x))) return window.OpenSkyToast("Keep at least one page on this screen", "error");
         sb.setHiddenPages(next);
@@ -419,6 +422,9 @@ Module.register("MMM-OpenSky-Settings", {
     hexIn.onkeydown = (e) => { if (e.key === "Enter") useHex(); };
     box.querySelector(".ost-hex-use").onclick = useHex;
     preview();
+    box.querySelectorAll('[data-seg="screenProfile"] button').forEach((b) => {
+      b.onclick = () => { const sb = this.sidebar(); if (sb) sb.setScreenProfile(b.dataset.v); this.hexDraft = null; this.renderPrefs(); };   // this screen only
+    });
     box.querySelectorAll('[data-seg="textSize"] button').forEach((b) => {
       b.onclick = () => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.setTextSize(b.dataset.v); this.renderPrefs(); };   // this screen only: nothing is saved on the Pi
     });

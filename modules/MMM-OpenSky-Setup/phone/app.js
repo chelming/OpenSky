@@ -59,6 +59,7 @@
     check: `<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
     lock: `<svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>`,
     chevron: `<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`,
+    screens: `<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>`,
     backup: `<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>`
   };
   const icon = (n, cls = "ic") => el("span", { class: cls, html: ICON[n] });
@@ -180,6 +181,7 @@
       for (const k of ["family", "locale", "location", "weather", "header", "calendar", "lists", "photos", "share", "pickup", "wordgame", "embeds"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
       if (!Array.isArray(S.pages)) S.pages = ["home", "calendar", "lists", "timer"];
       if (!Array.isArray(S.profiles)) S.profiles = [];
+      if (!Array.isArray(S.screens)) S.screens = [];
       if (!Array.isArray(S.calendar.sources)) S.calendar.sources = [];
       if (!Array.isArray(S.lists.lists)) S.lists.lists = [];
       render();
@@ -191,8 +193,8 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), extrasCard(), backupCard(),
+      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["web", "Web pages"], ["screens", "Screens"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
+      familyCard(), calendarsCard(), listsCard(), mealsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), webCard(), screensCard(), extrasCard(), backupCard(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
     renderBar();
@@ -358,6 +360,7 @@
     sheet(p.name, (b) => b.append(field("Name", text(p.name, (v) => { name = v.trim(); }, { maxlength: "20" })), colorField(color, (c) => { color = c; }), photoField(photo, (v) => { photo = v; }), err),
       [["Remove", "danger", () => {   // their calendars and lists stay; they just aren't linked to this person any more
         S.profiles.splice(i, 1);
+        S.screens.forEach((x) => { if (x.person === was) delete x.person; });
         [...S.calendar.sources, ...S.lists.lists].forEach((x) => { setLinks(x, linked(x).filter((n) => n !== was)); if (linked(x).length !== 1) delete x.colorFromProfile; });
         change(); render();
       }], ["Done", "primary", () => {
@@ -365,6 +368,7 @@
         if (bad) { err.textContent = bad; return false; }
         p.name = name; p.color = color;
         if (photo) p.photo = photo; else delete p.photo;
+        if (name !== was) S.screens.forEach((x) => { if (x.person === was) x.person = name; });
         if (name !== was) [...S.calendar.sources, ...S.lists.lists].forEach((x) => setLinks(x, linked(x).map((n) => (n === was ? name : n))));
         change(); render();
       }]]);
@@ -777,9 +781,14 @@
         toggle(!!Sh.enabled, (v) => { Sh.enabled = v; change(); draw(); }, "Family share page")), body);
   }
 
-  function pagesCard() {
+  function pageNames() {
     const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
+    return names;
+  }
+
+  function pagesCard() {
+    const names = pageNames();
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });
     all.forEach((k) => {
@@ -824,6 +833,47 @@
     const ic = el("span", { class: "row-icon", html: window.OpenSkyIcons ? window.OpenSkyIcons.svg((e && e.icon) || (k === "smarthome" ? "smarthome" : "embed")) : "" });
     r.querySelector(".dot").replaceWith(ic);
     return r;
+  }
+
+  /* ---------------- screen profiles: a named preset a screen picks in its own Settings ---------------- */
+  // opensky.json → screens: [{ name, pages?: [keys], person?, textSize?, accent? }]. Which profile a screen uses is remembered by that screen only.
+  function screensCard() {
+    const names = pageNames(), sizes = window.OpenSkyTextSize.LABELS;
+    const summary = (x) => [x.pages && x.pages.length ? plural(x.pages.length, "page") : "all pages", x.person || null, x.textSize ? sizes[x.textSize] : null, x.accent ? x.accent : null].filter(Boolean).join(" · ");
+    const rows = el("div", { class: "rows" });
+    S.screens.forEach((x, i) => rows.append(row(hex(x.accent && x.accent !== "peach" ? x.accent : "orange"), x.name, summary(x), () => editScreen(i))));
+    if (!S.screens.length) rows.append(el("p", { class: "empty" }, "None yet."));
+    return section("screens", "screens", "Screens", "Saved looks for different screens: a kitchen screen, a bedroom tablet. Each screen picks its own in Settings on that screen.",
+      rows, el("button", { type: "button", class: "add", onclick: () => editScreen(-1) }, icon("plus"), "Add a screen profile"),
+      el("span", { class: "hint" }, "A screen profile sets which pages show, whose calendars start picked, the text size and the color. The list of pages above stays the same for everyone."));
+  }
+
+  function editScreen(i) {
+    const names = pageNames(), old = i >= 0 ? S.screens[i] : null;
+    const d = { name: old ? old.name : "", pages: new Set(old && old.pages && old.pages.length ? old.pages : S.pages), person: old ? old.person || "" : "", textSize: old ? old.textSize || "" : "", accent: old ? old.accent || "" : "" };
+    const err = el("p", { class: "err" });
+    const pageBox = el("div", { class: "rows" });
+    S.pages.filter((k) => names[k]).forEach((k) => pageBox.append(el("div", { class: "line" }, el("span", {}, el("b", {}, names[k])), toggle(d.pages.has(k), (v) => { if (v) d.pages.add(k); else d.pages.delete(k); }, names[k]))));
+    const pal = ["peach", ...COLORS.filter((c) => c !== "gray")];
+    sheet(old ? old.name : "Add a screen profile", (b) => b.append(
+      field("Name", text(d.name, (v) => { d.name = v.trim(); }, { placeholder: "e.g. Kitchen, Kids' room", maxlength: "30" })),
+      el("div", { class: "field" }, el("span", { class: "label" }, "Pages this screen shows"), pageBox),
+      S.profiles.length ? field("Starts with", select([["", "Everyone"], ...S.profiles.map((p) => [p.name, p.name])], d.person, (v) => { d.person = v; }), "Whose calendars and lists are shown when the screen starts. A tap on a circle still changes it.") : document.createDocumentFragment(),
+      field("Text size", select([["", "Same as the other screens"], ...Object.entries(window.OpenSkyTextSize.LABELS)], d.textSize, (v) => { d.textSize = v; })),
+      field("Accent color", select([["", "Same as the other screens"], ...pal.map((c) => [c, c[0].toUpperCase() + c.slice(1)])], d.accent, (v) => { d.accent = v; })),
+      err),
+      [...(old ? [["Remove", "danger", () => { S.screens.splice(i, 1); change(); render(); }]] : [["Cancel", "", () => {}]]), ["Done", "primary", () => {
+        const bad = nameOk(d.name, S.screens.filter((_, j) => j !== i).map((q) => q.name));
+        if (bad) { err.textContent = bad; return false; }
+        if (!d.pages.size) { err.textContent = "Keep at least one page"; return false; }
+        const x = { name: d.name };
+        if (d.pages.size < S.pages.filter((k) => names[k]).length) x.pages = S.pages.filter((k) => d.pages.has(k));   // all pages = no list
+        if (d.person) x.person = d.person;
+        if (d.textSize) x.textSize = d.textSize;
+        if (d.accent) x.accent = d.accent;
+        if (i >= 0) S.screens[i] = x; else S.screens.push(x);
+        change(); render();
+      }]]);
   }
 
   function webCard() {

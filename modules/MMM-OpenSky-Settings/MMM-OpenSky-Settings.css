@@ -112,3 +112,4 @@
 .ost-grip svg { width: 20px; height: 20px; }
 .ost-page.ost-dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
 .ost-page.ost-dragging .ost-grip { cursor: grabbing; }
+.ost-profiles { flex-wrap: wrap; }

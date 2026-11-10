@@ -172,13 +172,13 @@ module.exports = async (page, h, app) => {
     sec.mealie.token === "mealie-phone-token" && !JSON.stringify(S).includes("mealie-phone-token"), S.lists.lists.at(-1));
 
   // ---- Meals card: the meal plan as a page, a Home card, the calendar, and recipe ingredients → a shopping list ----
-  await tap("#meals", ".toggle", "Use my Mealie meal plan");
+  await tap("#meals", ".seg button", "Mealie");
   await until(() => phone.evaluate(() => !!document.querySelector("#meals .good-note")));
   ok("meals: already connected (the saved Mealie is checked without typing anything)", await phone.evaluate(() => /Connected to Mealie/.test(document.querySelector("#meals .good-note")?.textContent || "")));
   await tap("#meals", ".toggle", "Lunch");
   await tap("#meals", ".toggle", "Meals page");
   await tap("#meals", ".toggle", "Meals on the calendar");
-  await pick("#meals", "Add a recipe's ingredients to", LIST1);
+  await pick("#meals", "Shopping list for “Add ingredients”", LIST1);
   await save();
   S = settings();
   ok("meals: provider, meals chosen, Home card on, calendar on, the shopping list for ingredients; the Meals page is in the pages",
@@ -425,6 +425,24 @@ module.exports = async (page, h, app) => {
   await until(() => phone.evaluate(() => /Backed up/.test(document.querySelector(".toast")?.textContent || "")));
   const made = fs.existsSync(path.join(DEST, "OpenSky-backups")) ? fs.readdirSync(path.join(DEST, "OpenSky-backups")) : [];
   ok("Back up now: a backup file in the chosen place", made.length === 1 && /^opensky-backup-\d{4}-\d\d-\d\d\.json$/.test(made[0]), made);
+
+  // ---- Screens: a screen profile (pages, text size, accent) ----
+  await tap("#screens", ".add", null);
+  await type(".sheet input.input[type=text]", "Kitchen");
+  const pageLabels = await phone.evaluate(() => [...document.querySelectorAll(".sheet .toggle")].map((t) => t.getAttribute("aria-label")));
+  await tap(".sheet", ".toggle", pageLabels[pageLabels.length - 1]);   // leave out the last page
+  const sheetSelects = await phone.evaluate(() => [...document.querySelectorAll(".sheet .field")].map((f) => f.querySelector(".label")?.textContent.trim()).filter(Boolean));
+  await phone.evaluate(() => { const sel = (l, v) => { const f = [...document.querySelectorAll(".sheet .field")].find((x) => x.querySelector(".label")?.textContent.trim() === l); const e = f.querySelector("select"); e.value = v; e.dispatchEvent(new Event("change", { bubbles: true })); }; sel("Text size", "large"); sel("Accent color", "teal"); });
+  await sheetButton("Done");
+  ok("Screens: the new profile shows as a row with its summary", await phone.evaluate(() => /Kitchen/.test(document.querySelector("#screens .row")?.textContent || "") && /Large/.test(document.querySelector("#screens .row")?.textContent || "")), sheetSelects);
+  ok("save (screens)", await save());
+  S = settings();
+  ok("Screens: saved in opensky.json -> screens (one page left out, Large, teal)", S.screens && S.screens.length === 1 && S.screens[0].name === "Kitchen" && S.screens[0].textSize === "large" && S.screens[0].accent === "teal" &&
+    S.screens[0].pages.length === pageLabels.length - 1 && S.screens[0].pages.every((k) => S.pages.includes(k)), S.screens);
+  await row("#screens", "Kitchen");
+  await sheetButton("Remove");
+  await save();
+  ok("Screens: Remove deletes it", (settings().screens || []).length === 0);
 
   // ---- nothing lost along the way: everything from the earlier saves is still there ----
   S = settings(); sec = secrets();
