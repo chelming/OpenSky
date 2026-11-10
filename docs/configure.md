@@ -196,7 +196,7 @@ OpenSky can show any number of calendars, each with its own color. Some can also
 |---|---|---|
 | **On the Pi** | `"type": "local"`. Nothing to set up; events are kept on the Pi. | ✅ |
 | **A calendar link** (Google, Outlook, iCloud, school or team calendars…) | `"url": "…"` in opensky.json if it's public, or no url and the link in `secrets.json → calendar.sources.<name>` if it's private | read-only |
-| **Mealie meal plan** | `"type": "mealie", "meals": ["dinner"]` — set up on the phone: Calendars → Add a calendar → **Mealie** (see [Mealie](#mealie)) | read-only |
+| **Mealie meal plan** | the **Meals** card on the phone: *Meals on the calendar* (see [Meals](#meals-mealie)) | read-only |
 | **Google, with editing** | `"type": "google", "calendarId": "primary"` — a one-time Google key + sign-in, guided on the phone: [Google Calendar](google-calendar.md) | ✅ |
 | **iCloud, Fastmail, Nextcloud (CalDAV)** | `"type": "caldav"` and the account in `secrets.json` (below) | ✅ |
 
@@ -286,7 +286,7 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
 - **Home Assistant** (`"provider": "homeassistant", "entity": "todo.shopping_list"`): any Home Assistant to-do list
   (the built-in Shopping List, Local To-do, Google Tasks or others connected to HA). Put your HA address and a
   long-lived access token (HA → your profile → Security) in `secrets.json → homeassistant.url / .token`.
-- **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Mealie](#mealie).
+- **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Meals (Mealie)](#meals-mealie).
 - Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap **Add item** to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
 - **Greenlight chores** (`"provider": "greenlight", "kid": "<Greenlight user id>"`): a child's chores for today. See [Greenlight chores](#greenlight-chores-unofficial).
 
@@ -302,24 +302,39 @@ interface, so this uses the private service its own app talks to and **can stop 
 - It shows **today's open chores**. Ticking one off (with Undo time, as in other lists) marks it done in Greenlight. Adding, renaming and removing chores is done in the Greenlight app; OpenSky never deletes a chore.
 - Changes made in the app show within `refreshMinutes`.
 
-## Mealie
-[Mealie](https://mealie.io) is a self-hosted recipe manager. OpenSky can show its **shopping lists** as lists, and its
-**meal plan** as a calendar (the dinners show on Home and the Calendar page). Everything is set up on the phone, with no file editing:
+## Meals (Mealie)
+[Mealie](https://mealie.io) is a self-hosted recipe manager. OpenSky can show its **meal plan** and **recipes**, and use its
+**shopping lists**. Everything is set up on the phone, with no file editing: Settings → *Set up from your phone* → **Meals**.
 
-1. Settings → *Set up from your phone*.
-2. Create an API token in Mealie: your profile (top left) → **API Tokens** → give it a name → *Create*, then copy it.
-3. **Lists → Add a list → Mealie** (or **Calendars → Add a calendar → Mealie**). Type Mealie's address (for example
-   `http://mealie.local:9925`) and paste the token, then tap **Connect to Mealie**. It is checked straight away; if it
-   works, the address and token are kept on the Pi (in `secrets.json`, never in the screen's config) and you don't need to enter them again.
-4. For a list, pick the **shopping list**. For the meal plan, choose which meals show (breakfast, lunch, dinner, sides).
-   With one meal chosen an entry reads "Lasagna"; with several, "Dinner: Lasagna".
+1. In Mealie, make an API token: your profile (top left) → **API Tokens** → give it a name → *Create*, then copy it.
+2. In phone setup, turn on **Use my Mealie meal plan**, type Mealie's address (for example `http://mealie:9000` or
+   `http://mealie.local:9925`) and paste the token, then tap **Connect to Mealie**. It is checked straight away; if it works the
+   address and token are kept on the Pi (in `secrets.json`, never in the screen's config), so you don't need to Save first.
+3. Choose what you want:
 
-What to expect:
-- Shopping list: add, edit, check off (with Undo) and delete from the screen; it changes in Mealie and the Mealie app too. Changes made in Mealie show within `refreshMinutes`. Checked items disappear from the screen, as with the other lists.
-- Meal plan: read-only on the screen (plan meals in Mealie). It refreshes every 5 minutes and shows 30 days back and about 4 months ahead.
-- Works with Mealie 1.x, 2.x and later. Use an address the Pi can reach (the one you open Mealie at on a phone on the same Wi-Fi).
-- In `opensky.json` (if you ever look): a list is `{ "name": "Food", "provider": "mealie", "shoppingList": "Weekly Shop", "shoppingListId": "…" }`,
-  a calendar `{ "name": "Dinner", "type": "mealie", "meals": ["dinner"] }`. The address and token live in `secrets.json → mealie.url / .token`.
+| Setting | What it does |
+|---|---|
+| **Meals to show** | Breakfast, lunch, dinner, sides. One is enough. |
+| **Meals page** | A page in the sidebar with the whole week, one column per day (a row per day on a portrait screen), with a picture for every dish. Previous / next week go a week back and five weeks ahead. |
+| **Dinner tonight on Home** | A card on Home with tonight's dinner (needs *Dinner* above). Hidden when nothing is planned. |
+| **Meals on the calendar** | Each meal as an all-day entry on the week, the Calendar page and Home, in a color you pick. With one meal chosen an entry reads "Lasagna"; with several, "Dinner: Lasagna". |
+| **Add a recipe's ingredients to** | Pick one of your Mealie shopping lists, and every recipe gets an **Add ingredients** button that puts its ingredients on that list (Mealie merges what is already there). |
+
+Tap a dish (on Home or the Meals page) to open its recipe: picture, servings and times, ingredients and steps. Entries that are
+just a note in Mealie ("Pizza night") show, but have no recipe to open. The meal plan is read-only on the screen: plan meals in Mealie.
+It refreshes every 10 minutes (and when you open the page).
+
+**Mealie shopping lists** are separate: Lists → Add a list → **Mealie**, then pick the shopping list. Add, edit, check off (with Undo) and
+delete from the screen; changes show in Mealie and its app, and Mealie's changes show here within `refreshMinutes`. It uses the same
+connection as the Meals card.
+
+Notes:
+- Works with Mealie 1.x, 2.x and later (checked against 3.30). Use an address the Pi (or the Docker container) can reach. In Docker, a
+  Mealie on the same Docker network is reachable by its container name, e.g. `http://mealie:9000`; `localhost` would be OpenSky itself.
+- In `opensky.json` (if you ever look): `"meals": { "provider": "mealie", "types": ["dinner"], "home": true, "calendar": false, "calendarColor": "orange", "addToList": { "id": "…", "name": "…" } }`,
+  `"meals"` in `pages`, and for a shopping list `{ "name": "Food", "provider": "mealie", "shoppingList": "Weekly Shop", "shoppingListId": "…" }`.
+  The address and token live in `secrets.json → mealie.url / .token`. (A calendar source `{ "type": "mealie", "meals": ["dinner"] }`
+  also works if you want to name the meal calendar yourself.)
 
 ## Photos
 ```json

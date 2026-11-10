@@ -12,12 +12,16 @@
  *   (an item with done: true is shown checked — e.g. while its Undo is offered).
  *   "Add item" → OPENSKY_LIST_ADD {source, listId}; circle → OPENSKY_LIST_CHECK {source, listId, item, el};
  *   text → OPENSKY_LIST_EDIT {source, listId, item}. No lists → the photo card takes the whole right side.
+ * Dinner card: "Dinner tonight" from the Meals module (OPENSKY_MEALS, Mealie's meal plan); tap a dish → OPENSKY_MEAL_OPEN (its recipe).
+ *   Only when meals.home is on and tonight has a dinner planned; "See week" opens the Meals page (mealsPage).
  * Photo card: a folder / USB stick (default) or Immich, via the node helper (/opensky-photo/<id>).
  *   Crossfades every photos.intervalSeconds, tap = next, pauses while another page is shown.
  */
 Module.register("MMM-OpenSky-Home", {
   defaults: {
     listsPage: null,
+    mealsPage: null,             // MMM-pages index of the Meals page ("See week"); null = no button
+    tonight: false,              // show "Dinner tonight" (needs the Meals module)
     calendarAlertAfter: 2 * 60 * 1000,   // show "<calendar> isn't loading" after this long             // MMM-pages index of the Lists page ("See all"); null = no button
     canAddEvents: false,         // true when an event editor module is installed
     maxEventsPerDay: 4,
@@ -37,6 +41,7 @@ Module.register("MMM-OpenSky-Home", {
     this.forecast = {};          // "YYYY-MM-DD" → { high, id }
     this.doneOpen = false;       // today's "N done" list is expanded (always back to tidy at midnight / idle / wake)
     this.lastDay = new Date(this.nowMs()).toDateString();
+    this.meals = null;           // the meal plan (OPENSKY_MEALS)
     this.notes = [];             // posted from the family's phones (lib/share.js), see renderNotes
     setInterval(() => this.sendSocketNotification("NOTES_GET"), 20 * 1000);   // (a small file read)
     this.armTick();
@@ -99,6 +104,9 @@ Module.register("MMM-OpenSky-Home", {
     } else if (n === "OPENSKY_WEATHER" && payload) {
       this.forecast = payload.daily || {};
       this.renderCalendar();
+    } else if (n === "OPENSKY_MEALS" && payload) {
+      this.meals = payload;
+      this.renderTonight();
     } else if (n === "OPENSKY_LISTS" && payload && payload.source) {
       this.lists.set(payload.source, Array.isArray(payload.lists) ? payload.lists : []);
       this.renderLists();
@@ -108,6 +116,7 @@ Module.register("MMM-OpenSky-Home", {
       this.startPhotos();
       this.sendSocketNotification("NOTES_GET");
       this.sendNotification("OPENSKY_LISTS_REFRESH");
+      if (this.config.tonight) this.sendNotification("OPENSKY_MEALS_REFRESH");
     } else if (n === "OPENSKY_IDLE_RESET") {
       if (this.weekOffset !== 0 || this.doneOpen) { this.weekOffset = 0; this.doneOpen = false; this.renderCalendar(); }
     } else if (n === "OPENSKY_LAYOUT_CHANGED") {   // the screen size, text size or orientation changed (Sidebar)
@@ -154,6 +163,7 @@ Module.register("MMM-OpenSky-Home", {
       <div class="hd-nw-slot"></div>
       <div class="hd-right">
         <section class="hd-notes" aria-label="Notes" hidden></section>
+        ${this.config.tonight ? `<section class="hd-card hd-tonight" aria-label="Dinner tonight" hidden></section>` : ""}
         <section class="hd-card hd-lists" hidden>
           <header class="hd-card-head">
             <span class="hd-card-label">${this.icon("list")} Lists</span>
@@ -179,7 +189,7 @@ Module.register("MMM-OpenSky-Home", {
     return root;
   },
 
-  render() { this.renderCalendar(); this.renderLists(); this._notesKey = null; this.renderNotes(); },
+  render() { this.renderCalendar(); this.renderLists(); this._notesKey = null; this.renderNotes(); this._tonightKey = null; this.renderTonight(); },
 
   /* ======================= photos ======================= */
   photosOn() { return !!(this.config.photos && this.config.photos.enabled !== false); },
@@ -201,6 +211,43 @@ Module.register("MMM-OpenSky-Home", {
     if (this.photoPending && Date.now() - this.photoPending < 20000) return;   // one request at a time
     this.photoPending = Date.now();
     this.sendSocketNotification("PHOTO_NEXT", { wide: this.portrait() });
+  },
+
+  /* ======================= dinner tonight (Mealie's meal plan, via MMM-OpenSky-Meals) ======================= */
+  renderTonight() {
+    const card = this.root && this.root.querySelector(".hd-tonight");
+    if (!card) return;
+    const d = new Date(this.nowMs());
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dinners = ((this.meals && this.meals.entries) || []).filter((e) => e.date === today && e.type === "dinner").slice(0, 2);
+    const key = JSON.stringify([dinners.map((e) => [e.id, e.title, e.hasImage]), Number.isInteger(this.config.mealsPage)]);
+    if (key === this._tonightKey) return;   // (unchanged: don't redraw, the pictures would flicker)
+    this._tonightKey = key;
+    card.hidden = !dinners.length;
+    this.root.classList.toggle("hd-has-tonight", dinners.length > 0);
+    const head = document.createElement("header");
+    head.className = "hd-card-head";
+    const label = document.createElement("span"); label.className = "hd-card-label"; label.innerHTML = this.icon("food");
+    label.append(document.createTextNode(" Dinner tonight"));
+    head.append(label);
+    if (Number.isInteger(this.config.mealsPage)) {
+      const b = document.createElement("button"); b.className = "hd-see-all"; b.innerHTML = `See week ${this.icon("right")}`;
+      b.onclick = () => this.sendNotification("PAGE_CHANGED", this.config.mealsPage);
+      head.append(b);
+    }
+    const rows = dinners.map((e) => {
+      const r = document.createElement("button");
+      r.type = "button"; r.className = `hd-tn-row${e.slug ? "" : " hd-tn-plain"}`;
+      if (e.hasImage && e.recipeId) { const im = document.createElement("img"); im.className = "hd-tn-img"; im.alt = ""; im.src = `/opensky-meal-image/${encodeURIComponent(e.recipeId)}`; im.onerror = () => im.remove(); r.append(im); }
+      const t = document.createElement("span"); t.className = "hd-tn-text";
+      const name = document.createElement("b"); name.textContent = e.title;   // (text, never HTML)
+      t.append(name);
+      if (e.time) { const m = document.createElement("small"); m.textContent = e.time; t.append(m); }
+      r.append(t);
+      if (e.slug) r.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
+      return r;
+    });
+    card.replaceChildren(head, ...rows);
   },
 
   /* ======================= notes (posted from the family's phones: lib/share.js) ======================= */
@@ -721,6 +768,7 @@ Module.register("MMM-OpenSky-Home", {
       calendar: `<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>`,
       list: `<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>`,
       note: `<path d="M5 4h14v12l-5 5H5z"/><path d="M14 21v-5h5"/>`,
+      food: `<path d="M5 3v7a2 2 0 0 0 2 2h1v9M10 3v7M7.5 3v6"/><path d="M18 21V3c-2.2 0-4 2.2-4 6v4h4"/>`,
       image: `<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>`,
       check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`, x: `<path d="M6 6l12 12M18 6L6 18"/>`,
       left: `<path d="M15 5l-7 7 7 7"/>`, right: `<path d="M9 5l7 7-7 7"/>`, plus: `<path d="M12 5v14M5 12h14"/>`
