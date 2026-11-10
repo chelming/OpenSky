@@ -72,6 +72,7 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
 - **"No Todoist project called …"**: the list's `project` (or its `name`) must match a Todoist project. Letter case doesn't matter.
 - **Home Assistant: "refused the token"** — make a new long-lived access token (HA → profile → Security) for
   `secrets.json → homeassistant.token`. **"didn't accept that"** — check the list's `entity` (e.g. `todo.shopping_list`).
+- **Devices page: "Can't show your devices right now"** — Home Assistant must be on and reachable from the Pi at `homeassistant.url`; "refused the token" means making a new long-lived token (HA → profile → Security) in phone setup. A tile that says **Not found in Home Assistant** was renamed or removed there: remove it in phone setup and add it again.
 - **Mealie: "refused the API token"** — make a new token (Mealie → your profile → API Tokens) and connect again in phone setup (Lists → Add a list → Mealie).
   **"Can't reach Mealie"** — Mealie must be on and reachable from the Pi at the address you gave; open that address in a browser on the same network. **"No Mealie shopping list called …"** — the list was renamed or deleted in Mealie: remove it in phone setup and add it again.
 - **Greenlight: "didn't accept that phone number and password"** — use the parent's login for the Greenlight app. **"signed OpenSky out" / "wants a new text-message code"** — connect again in phone setup (Chores). **Chores stopped showing** — Greenlight is unofficial and may have changed something; check `opensky logs`.

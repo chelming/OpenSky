@@ -18,6 +18,7 @@
  *   Greenlight chores (unofficial): GET /api/greenlight → {set, signedIn, kids} · POST /api/greenlight/connect {phone?, password?} → {kids} or {needsCode}
  *     · POST /api/greenlight/code {code} → {kids}
  *   GET /api/music/speakers → {speakers: [{id, name, state}]} (Home Assistant media players, for the Music page)
+ *   GET /api/devices/entities → {entities: [{id, name, kind, state}]} (Home Assistant lights, switches, locks, sensors, for the Devices page)
  *   Photos in the Pi's folder: GET /api/photos → {folder, photos: [{id, name, size}]} · GET /api/photos/<id> (the image)
  *     · POST /api/photos?name= (the raw image as the body) · POST /api/photos/delete {id}
  *   The family share page (lib/share.js, always on when share.enabled): GET /api/share → {running, passcodeSet, addresses}
@@ -37,6 +38,7 @@ const photos = require(path.join(global.root_path || process.cwd(), "modules", "
 const mealie = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "mealie.js"));
 const greenlight = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "greenlight.js"));
 const music = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "music.js"));
+const haTiles = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "ha-tiles.js"));
 const share = require(path.join(global.root_path || process.cwd(), "modules", "opensky-lib", "share.js"));
 
 const DRY = process.env.OPENSKY_DRY_RUN === "1";
@@ -490,6 +492,12 @@ module.exports = NodeHelper.create({
     // the Music page's other speakers: every media player Home Assistant has (address + token from secrets.json)
     if (url.pathname === "/api/music/speakers" && req.method === "GET") {
       try { return this.send(res, 200, { speakers: await music.listSpeakers() }); }
+      catch (e) { return this.send(res, 502, { error: e.message }); }
+    }
+
+    // the Devices page: every light, switch, lock and sensor Home Assistant has (address + token from secrets.json)
+    if (url.pathname === "/api/devices/entities" && req.method === "GET") {
+      try { return this.send(res, 200, { entities: await haTiles.listEntities() }); }
       catch (e) { return this.send(res, 502, { error: e.message }); }
     }
 

@@ -100,6 +100,8 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
   PhotoPrism / Nextcloud photos, NWS / Met.no weather.
 - Presence: screen on/off from Home Assistant (nobody home → off), settings migrations between versions.
 - Add-ons: **Food** (nearby restaurants), others from the community; a ready-to-flash SD-card image.
+- **Devices page:** ✅ native Home Assistant tiles — lights and switches toggle, locks need a confirm tap, sensors read-only
+  (`MMM-OpenSky-Devices`, `lib/ha-tiles.js`, docs/configure.md → Devices). Maybe later: dimmers, covers, climate, scenes.
 - **Music add-on** (asked for by a user): ✅ step 1 — the screen as an AirPlay + Spotify Connect speaker with a Music
   page (`opensky addon music`, docs/music.md). ✅ Step 2 — the same page as a remote for other speakers through Home
   Assistant media players (Sonos, HomePod, Echo, Google, Spotify…). Maybe later: Spotify's Web API directly (each

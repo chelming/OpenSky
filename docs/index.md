@@ -27,5 +27,6 @@ timers, photos, weather and smart-home controls on one screen. Built on [MagicMi
 - **Lists:** to-dos and groceries — kept on the Pi, or in Todoist, Home Assistant or Mealie, plus kids' chores from Greenlight (unofficial). Check off with Undo.
 - **Meals:** a meal plan on a Meals page, "Dinner tonight" on Home and the calendar — planned right on the screen, or from Mealie with recipes and one-tap "add ingredients to my shopping list".
 - **Timer**, holiday & birthday countdown, your team's game day, sleep button, photos from a folder, USB stick or Immich.
+- **Devices:** Home Assistant lights, switches, locks and sensors as tappable tiles (a lock asks twice) — pick them on your phone.
 - **Add-on — Music:** the screen becomes an AirPlay and Spotify speaker, with a Music page
   ([details](music.md)): `opensky addon music`.

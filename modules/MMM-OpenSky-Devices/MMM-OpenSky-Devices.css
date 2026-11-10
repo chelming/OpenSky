@@ -1,0 +1,50 @@
+/* MMM-OpenSky-Devices — the Devices page: tiles in the dashboard's event-pill look (--evc-bg / --evc-bar) */
+.dv-root {
+  position: fixed;
+  top: var(--os-content-top, 92px); bottom: var(--os-content-bottom, 22px);
+  left: var(--os-content-left, 112px); right: var(--os-content-right, 24px);
+  display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; padding: 18px 20px 20px;
+  border-radius: 26px; background: #fff; color: #1f2937; font-family: inherit; user-select: none; text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 28px rgba(31, 41, 55, .07);
+}
+.dv-head { display: flex; align-items: center; gap: 14px; min-height: 40px; padding-bottom: 10px; border-bottom: 1px solid #374151; }
+.dv-title { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; }
+.dv-title svg { width: 26px; height: 26px; color: var(--os-accent); }
+.dv-msg { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border-radius: 14px; background: #f3f4f6; color: #4b5563; font-size: 17px; }
+.dv-msg b { color: #1f2937; }
+
+.dv-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.dv-stale { opacity: .5; }
+.dv-tile {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+  min-height: 100px; padding: 14px 18px; border: 0; border-left: 6px solid var(--evc-bar, #9ca3af); border-radius: 16px;
+  background: var(--evc-bg, #e5e7eb); color: #1f2937; font: inherit; text-align: left; cursor: pointer;
+}
+.dv-tile:disabled { cursor: default; }
+.dv-tile:not(:disabled):active { filter: brightness(.95); }
+.dv-ic { grid-row: 1 / 3; display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; background: rgba(255, 255, 255, .7); color: var(--evc-bar, #6b7280); }
+.dv-ic svg { width: 26px; height: 26px; }
+.dv-name { align-self: end; font-size: 21px; font-weight: 800; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.dv-state { align-self: start; font-size: 16px; font-weight: 700; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-tile.asking { box-shadow: inset 0 0 0 3px var(--os-accent); }
+.dv-tile.asking .dv-state { color: #1f2937; }
+.dv-tile.off-line { opacity: .6; }
+.dv-sensor .dv-state { font-size: 22px; font-weight: 800; color: #1f2937; }
+
+.dv-empty { margin: auto; max-width: 520px; text-align: center; color: #6b7280; }
+.dv-empty svg { width: 64px; height: 64px; color: #c4c9d1; }
+.dv-empty h2 { margin: 8px 0; font-size: 26px; color: #1f2937; }
+.dv-empty p { margin: 0; font-size: 18px; line-height: 1.4; }
+.dv-toast { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); max-width: 80%; padding: 12px 20px; border-radius: 999px; background: #1f2937; color: #fff; font-size: 17px; font-weight: 700; }
+
+/* compact screens: smaller tiles */
+html[data-layout="compact"] .dv-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+html[data-layout="compact"] .dv-tile { min-height: 64px; padding: 8px 10px; column-gap: 8px; }
+html[data-layout="compact"] .dv-ic { width: 34px; height: 34px; }
+html[data-layout="compact"] .dv-ic svg { width: 20px; height: 20px; }
+html[data-layout="compact"] .dv-name { font-size: 16px; }
+html[data-layout="compact"] .dv-state { font-size: 13px; }
+/* portrait: two big tiles across, easy to hit */
+html[data-layout="portrait"] .dv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-layout="portrait"] .dv-tile { min-height: 104px; }

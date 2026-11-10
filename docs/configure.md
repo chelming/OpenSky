@@ -88,6 +88,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `wordgame` | a daily five-letter word puzzle for the whole family (one shared board a day, family stats) |
 | `timer` | kitchen timers with a chime |
+| `devices` | Home Assistant **lights, switches, locks and sensors** as tappable tiles — see [Devices](#devices-home-assistant-tiles) |
 | `music` | **add-on**: what's playing on the screen's speakers, with play / pause / skip and the volume — see [Music add-on](music.md) |
 
 You can also add your own **web pages** as pages (next section).
@@ -289,6 +290,31 @@ In `opensky.json`: `{ "name": "Shared", "type": "caldav", "color": "green" }`. T
 - **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Meals (Mealie)](#meals-on-this-screen-or-mealie).
 - Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap **Add item** to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
 - **Greenlight chores** have their own page. See [Chores](#chores-greenlight-unofficial).
+
+## Devices (Home Assistant tiles)
+The `devices` page shows Home Assistant lights, switches, locks and sensors as tiles in OpenSky's own look, so the family
+doesn't need a full Home Assistant page on the wall. Tap a **light or switch** to turn it on or off. A **lock** asks for a
+second tap ("Tap again to unlock") so a stray touch can't open the door; a lone tap times out after 4 seconds. **Sensors**
+(temperature, a door that is open, power…) are read-only. If Home Assistant can't be reached the page says so and keeps the
+last tiles faded until it answers again.
+
+Easiest from the phone page: **Pages → Devices** on, then **Extras → Devices → Find my devices**, tap **Add** on what you
+want, type a shorter name if you like, and use the arrows to put them in order.
+
+By hand, in `opensky.json`:
+```json
+"pages": ["home", "calendar", "devices", "timer"],
+"devices": { "tiles": [
+  { "entity": "light.hall", "name": "Hall" },
+  { "entity": "lock.front_door" },
+  { "entity": "sensor.living_room_temperature" }
+] }
+```
+- `entity` is a Home Assistant entity id starting `light.`, `switch.`, `lock.`, `sensor.` or `binary_sensor.` (up to 48).
+- `name` is optional; Home Assistant's own name is used without it.
+- The address and a long-lived access token (HA → your profile → Security) go in `secrets.json → homeassistant.url / .token`
+  — the same ones the Home Assistant lists and Music speakers use. They are read by the Pi, never sent to the screen's page.
+  Only the tiles you picked can be changed from the screen.
 
 ## Chores (Greenlight, unofficial)
 A **Chores** page shows each child's chores for today from the [Greenlight](https://greenlight.com) app: open chores first, finished ones struck through (each group A–Z, ignoring a leading emoji)

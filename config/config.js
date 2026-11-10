@@ -57,7 +57,8 @@ const PAGE_INFO = {
   chores: { label: "Chores" },
   wordgame: { label: "Word Game" },
   timer: { label: "Timer" },
-  music: { label: "Music" }
+  music: { label: "Music" },
+  devices: { label: "Devices" }
 };
 
 // Curbside pickup: trash day + an optional city preset (lib/pickup-presets/<name>.json) + the family's own overrides
@@ -268,6 +269,17 @@ const PAGES = {
       airplay: !(s.music && s.music.airplay === false),
       // other speakers to control: Home Assistant media players (address + token stay in secrets.json)
       speakers: (s.music && Array.isArray(s.music.speakers) ? s.music.speakers : []).filter((e) => /^media_player\.[a-z0-9_]+$/.test(e)).slice(0, 8)
+    }
+  }],
+  // Home Assistant lights, switches, locks and sensors as tiles: opensky.json → devices.tiles [{ entity, name? }];
+  // the address + token stay in secrets.json → homeassistant (read by the node helper)
+  devices: () => [{
+    module: "MMM-OpenSky-Devices",
+    position: "fullscreen_above",
+    config: {
+      tiles: (s.devices && Array.isArray(s.devices.tiles) ? s.devices.tiles : [])
+        .filter((t) => t && /^(light|switch|lock|sensor|binary_sensor)\.[a-z0-9_]+$/.test(t.entity))
+        .map((t) => ({ entity: t.entity, name: t.name ? String(t.name).slice(0, 40) : undefined })).slice(0, 48)
     }
   }]
 };
