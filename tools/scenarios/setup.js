@@ -60,7 +60,7 @@ module.exports = async (page, h, app) => {
   ok("phone: a wrong code is refused kindly", await phone.evaluate(() => /not the code/.test(document.querySelector(".pair-msg").textContent)));
   await phone.fill(".code-input", card.code);
   await until(() => phone.evaluate(() => !!document.querySelector("#family")));
-  ok("phone: the right code opens the settings; the screen says the phone is connected", await phone.evaluate(() => document.querySelectorAll("section.card").length === 8) && /Phone connected/.test(await status()));
+  ok("phone: the right code opens the settings; the screen says the phone is connected", await phone.evaluate(() => ["family", "calendars", "lists", "photos", "pages", "web", "extras", "backup"].every((id) => document.querySelector(`section.card#${id}`))) && /Phone connected/.test(await status()));
   await phone.screenshot({ path: path.join(OUT, "setup-phone-main.png"), fullPage: true });
 
   // edit: family name, a list, a private calendar link
@@ -84,20 +84,20 @@ module.exports = async (page, h, app) => {
   // Google Calendar: key → sign in → paste the address → pick a calendar
   await phone.click("#calendars .add"); await h.sleep(400);
   await phone.click(".sheet .seg button:nth-child(2)");
-  await until(() => phone.evaluate(() => !!document.querySelector(".gbox input")));
-  await phone.fill(".gbox input[placeholder$='googleusercontent.com']", CLIENT);
-  await phone.fill(".gbox input[type=password]", "test-secret");
-  await phone.click(".gbox .btn.primary");
-  await until(() => phone.evaluate(() => !!document.querySelector(".gbox a.btn")));
-  const signIn = await phone.evaluate(() => document.querySelector(".gbox a.btn").href);
+  await until(() => phone.evaluate(() => !!document.querySelector(".sheet .gbox input")));
+  await phone.fill(".sheet .gbox input[placeholder$='googleusercontent.com']", CLIENT);
+  await phone.fill(".sheet .gbox input[type=password]", "test-secret");
+  await phone.click(".sheet .gbox .btn.primary");
+  await until(() => phone.evaluate(() => !!document.querySelector(".sheet .gbox a.btn")));
+  const signIn = await phone.evaluate(() => document.querySelector(".sheet .gbox a.btn").href);
   const landed = await new Promise((r) => http.get(signIn, (res) => { r(res.headers.location); res.resume(); }));   // where Google sends the browser
   await phone.screenshot({ path: path.join(OUT, "setup-phone-google.png") });
-  await phone.fill(".gbox textarea", landed);
-  await phone.click(".gbox button.btn.primary");
-  await until(() => phone.evaluate(() => /Signed in to Google/.test(document.querySelector(".gbox")?.textContent || "")));
-  const gsel = await phone.evaluate(() => [...document.querySelectorAll(".gbox select option")].map((o) => o.textContent));
+  await phone.fill(".sheet .gbox textarea", landed);
+  await phone.click(".sheet .gbox button.btn.primary");
+  await until(() => phone.evaluate(() => /Signed in to Google/.test(document.querySelector(".sheet .gbox")?.textContent || "")));
+  const gsel = await phone.evaluate(() => [...document.querySelectorAll(".sheet .gbox select option")].map((o) => o.textContent));
   ok("Google: sign in from the phone, then pick from the account's calendars", gsel.join("|") === "Main calendar|Soccer club (view only)", gsel);
-  await phone.selectOption(".gbox select", "club@group.calendar.google.com"); await h.sleep(200);
+  await phone.selectOption(".sheet .gbox select", "club@group.calendar.google.com"); await h.sleep(200);
   await phone.click(".sheet .btn.primary"); await h.sleep(400);
 
   await phone.click(".bar .btn.primary");
