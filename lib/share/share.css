@@ -53,3 +53,5 @@ input[type=file] { display: none; }
 .login input { text-align: center; }
 .login .row { margin-top: 14px; }
 .login .msg { text-align: center; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 15px; color: var(--ink); }
+.check input { width: 22px; min-height: 22px; height: 22px; flex: 0 0 22px; padding: 0; border-radius: 6px; accent-color: var(--accent); -webkit-appearance: checkbox; appearance: auto; }

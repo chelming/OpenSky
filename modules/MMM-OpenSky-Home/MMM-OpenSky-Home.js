@@ -46,6 +46,7 @@ Module.register("MMM-OpenSky-Home", {
     this.doneOpen = false;       // today's "N done" list is expanded (always back to tidy at midnight / idle / wake)
     this.lastDay = new Date(this.nowMs()).toDateString();
     this.meals = null;           // the meal plan (OPENSKY_MEALS)
+    this.familyCountdowns = [];  // added from the family's phones (lib/family-countdowns.js)
     this.notes = [];             // posted from the family's phones (lib/share.js), see renderNotes
     setInterval(() => this.sendSocketNotification("NOTES_GET"), 20 * 1000);   // (a small file read)
     this.armTick();
@@ -251,7 +252,7 @@ Module.register("MMM-OpenSky-Home", {
     if (!card) return;
     const cfg = this.config.countdowns || {}, C = window.OpenSkyCountdowns, E = window.OpenSkyEventColors;
     const now = new Date(this.nowMs());
-    const all = C.visible(cfg.items || [], now, cfg.keepDays), shown = all.slice(0, this.portrait() ? 3 : 2);
+    const all = C.visible([...(cfg.items || []), ...this.familyCountdowns], now, cfg.keepDays), shown = all.slice(0, this.portrait() ? 3 : 2);
     const page = Number.isInteger(cfg.page) ? cfg.page : null;
     const key = JSON.stringify([shown.map((c) => [c.id, c.title, c.days, c.photo, c.color]), all.length, page, this.portrait()]);
     if (key === this._cdKey) return;   // (unchanged: don't redraw, the pictures would flicker)
@@ -361,7 +362,12 @@ Module.register("MMM-OpenSky-Home", {
   },
 
   socketNotificationReceived(n, p) {
-    if (n === "NOTES") { this.notes = (p && Array.isArray(p.notes)) ? p.notes : []; this.renderNotes(); }
+    if (n === "NOTES") {
+      this.notes = (p && Array.isArray(p.notes)) ? p.notes : []; this.renderNotes();
+      this.familyCountdowns = (p && Array.isArray(p.countdowns)) ? p.countdowns : [];
+      this.renderCountdowns();
+      this.sendNotification("OPENSKY_FAMILY_COUNTDOWNS", { items: this.familyCountdowns });   // (the Countdowns page adds them too)
+    }
     else if (n === "PHOTO") this.showPhoto(p);
     else if (n === "PHOTO_ERROR") {
       this.photoPending = 0;

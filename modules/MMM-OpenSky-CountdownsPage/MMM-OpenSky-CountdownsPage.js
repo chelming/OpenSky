@@ -13,6 +13,7 @@ Module.register("MMM-OpenSky-CountdownsPage", {
   getScripts() { return ["modules/opensky-lib/client/opensky-client.js", "modules/opensky-lib/client/countdowns.js"]; },
 
   start() {
+    this.family = [];   // added from the family's phones, sent by Home (OPENSKY_FAMILY_COUNTDOWNS)
     this.lastDay = new Date(this.nowMs()).toDateString();
     setInterval(() => { const d = new Date(this.nowMs()).toDateString(); if (d !== this.lastDay) { this.lastDay = d; this.render(); } }, 60 * 1000);
   },
@@ -38,6 +39,14 @@ Module.register("MMM-OpenSky-CountdownsPage", {
 
   resume() { this.render(); },
 
+  notificationReceived(n, payload) {
+    if (n !== "OPENSKY_FAMILY_COUNTDOWNS") return;
+    const items = payload && Array.isArray(payload.items) ? payload.items : [];
+    const key = JSON.stringify(items.map((c) => [c.id, c.title, c.date, c.yearly]));
+    if (key === this._familyKey) return;
+    this._familyKey = key; this.family = items; this.render();
+  },
+
   el(tag, cls, text) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -48,10 +57,11 @@ Module.register("MMM-OpenSky-CountdownsPage", {
   render() {
     if (!this.root) return;
     const C = window.OpenSkyCountdowns, E = window.OpenSkyEventColors, now = new Date(this.nowMs());
-    const list = C.visible(this.config.items, now, this.config.keepDays);
+    const every = [...this.config.items, ...this.family];
+    const list = C.visible(every, now, this.config.keepDays);
     const msg = this.root.querySelector(".cp-msg"), grid = this.root.querySelector(".cp-grid");
     msg.hidden = list.length > 0;
-    msg.textContent = this.config.items.length
+    msg.textContent = every.length
       ? "Nothing to count down to right now. Past dates hide by themselves; add a new one on your phone (Settings → Set up from your phone → Countdowns)."
       : "No countdowns yet. Add a trip, a birthday or a big day on your phone (Settings → Set up from your phone → Countdowns).";
     grid.dataset.count = String(Math.min(list.length, 6));

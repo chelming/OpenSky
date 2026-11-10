@@ -544,7 +544,7 @@
     CD.items.forEach((c, i) => body.push(row(hex(c.color || "orange"), c.title || "Countdown",
       `${prettyDate(c.date)}${c.yearly ? " · every year" : ""}${c.home === false ? " · not on Home" : ""}${c.photo ? " · photo" : ""}`, () => editCountdown(i))));
     if (!CD.items.length) body.push(el("p", { class: "hint" }, "Nothing yet. Add a trip, a birthday or a big day and the screen counts the days down."));
-    body.push(el("button", { type: "button", class: "btn block", onclick: () => editCountdown(-1) }, icon("plus"), " Add a countdown"));
+    body.push(el("button", { type: "button", class: "add", onclick: () => editCountdown(-1) }, icon("plus"), "Add a countdown"));
     if (CD.items.length || hasPage) {
       body.push(
         line("Countdowns page", "A page with every countdown, large", hasPage, (v) => {
