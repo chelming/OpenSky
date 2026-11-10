@@ -221,8 +221,8 @@ Module.register("MMM-OpenSky-Settings", {
             <h3>Screen</h3>
             <div class="ost-row"><span class="ost-label">Brightness</span>${this.slider("brightness", s.brightness, 10, 100)}</div>
             <div class="ost-note">${methodText}</div>
-            ${docker ? "" : `<div class="ost-row"><span class="ost-label">Sleep turns off by</span><select class="ost-select ost-wide" data-screenoff>\${Object.entries(st.screen.labels).map(([m, l]) => \`<option value="\${m}" \${m === st.screen.method ? "selected" : ""} \${st.screen.available[m] ? "" : "disabled"}>\${l}\${st.screen.available[m] ? "" : " — not found on this Pi"}</option>\`).join("")}</select><button class="ost-btn ost-test-screen">Test</button></div>
-            <div class="ost-note">Every screen is different: try the options with Test (it comes back after 10 seconds, or at a touch). If one doesn't suit your screen, use Black screen + dim.\${st.screen.method === "auto" ? \` Now: \${st.screen.labels[st.screen.resolved].replace(/ \(.*/, "")}.\` : ""}</div>`}
+            ${docker ? "" : `<div class="ost-row"><span class="ost-label">Sleep turns off by</span><select class="ost-select ost-wide" data-screenoff>${Object.entries(st.screen.labels).map(([m, l]) => `<option value="${m}" ${m === st.screen.method ? "selected" : ""} ${st.screen.available[m] ? "" : "disabled"}>${l}${st.screen.available[m] ? "" : " — not found on this Pi"}</option>`).join("")}</select><button class="ost-btn ost-test-screen">Test</button></div>
+            <div class="ost-note">Every screen is different: try the options with Test (it comes back after 10 seconds, or at a touch). If one doesn't suit your screen, use Black screen + dim.${st.screen.method === "auto" ? ` Now: ${st.screen.labels[st.screen.resolved].replace(/ \(.*/, "")}.` : ""}</div>`}
             <div class="ost-row">${this.toggle("dim", s.eveningDim.enabled)}<span class="ost-label">Dim in the evening</span></div>
             <div class="ost-sub" ${s.eveningDim.enabled ? "" : "hidden"}>
               <div class="ost-row"><span class="ost-label">From</span>${this.stepper("dimFrom", s.eveningDim.from)}</div>
@@ -294,6 +294,7 @@ Module.register("MMM-OpenSky-Settings", {
     const P = this.prefs;
     if (!P) { box.innerHTML = ""; return; }
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const sbar = this.sidebar(), hidden = sbar && sbar.deviceHiddenPages ? sbar.deviceHiddenPages() : [];   // pages hidden on this screen only
     const all = [...P.pages, ...Object.keys(P.names).filter((k) => !P.pages.includes(k))];
     const pal = (window.OpenSkyEventColors && window.OpenSkyEventColors.PALETTE) || {};
     const accents = ["peach", ...Object.keys(pal).filter((c) => c !== "gray")];
@@ -309,12 +310,13 @@ Module.register("MMM-OpenSky-Settings", {
       ${this.webForm ? this.webFormHtml(P, esc) : ""}
       <section class="ost-section">
         <h3>Pages</h3>
-        <div class="ost-note">The buttons down the left side, top to bottom.</div>
+        <div class="ost-note">The buttons down the left side, top to bottom, on every screen. <b>Hide here</b> hides a button on this screen only.</div>
         ${all.map((k) => { const on = P.pages.includes(k), i = P.pages.indexOf(k); return `
           <div class="ost-row ost-page${on ? "" : " off"}" data-page="${esc(k)}">
             <span class="ost-label">${(P.embeds || []).some((e) => e.key === k) ? `<span class="ost-page-ic">${window.OpenSkyIcons.svg(P.embeds.find((e) => e.key === k).icon)}</span>` : ""}${esc(P.names[k])}</span>
             ${(P.embeds || []).some((e) => e.key === k) ? `<button class="ost-btn ost-small ost-edit-web" data-key="${esc(k)}">Edit</button>` : ""}
             <span class="ost-order">${on ? `<button class="ost-mini" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="Up">▲</button><button class="ost-mini" data-move="1" ${i === P.pages.length - 1 ? "disabled" : ""} aria-label="Down">▼</button>` : ""}</span>
+            ${on && P.pages.length > 1 ? `<button class="ost-btn ost-small ost-here" data-here="${esc(k)}">${hidden.includes(k) ? "Hidden here" : "Hide here"}</button>` : ""}
             ${this.toggle(`page-${k}`, on)}
           </div>`; }).join("")}
         <div class="ost-buttons"><button class="ost-btn ost-add-web">+ Add a web page</button></div>
@@ -349,6 +351,14 @@ Module.register("MMM-OpenSky-Settings", {
         const pages = P.pages.includes(k) ? P.pages.filter((x) => x !== k) : [...P.pages, k];
         if (!pages.length) return window.OpenSkyToast("Keep at least one page", "error");
         this.savePrefs({ pages });
+      };
+      const here = row.querySelector("[data-here]");
+      if (here) here.onclick = () => {
+        const sb = this.sidebar(), now = sb.deviceHiddenPages();
+        const next = now.includes(k) ? now.filter((x) => x !== k) : [...now, k];
+        if (P.pages.every((x) => next.includes(x))) return window.OpenSkyToast("Keep at least one page on this screen", "error");
+        sb.setHiddenPages(next);
+        this.renderPrefs();
       };
       row.querySelectorAll("[data-move]").forEach((b) => { b.onclick = () => { const pages = [...P.pages], i = pages.indexOf(k), j = i + Number(b.dataset.move); [pages[i], pages[j]] = [pages[j], pages[i]]; this.savePrefs({ pages }); }; });
     });

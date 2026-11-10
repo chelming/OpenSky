@@ -28,7 +28,8 @@ Edit `docker-config/opensky.json` and `secrets.json` the same way as on a Pi ([c
 ## Per-screen settings and backups
 Brightness, "Dim in the evening" and the night sleep schedule (Settings on the screen) are remembered by each browser, so every
 tablet has its own. There is no Sound or "Sleep turns off by" in Docker (no speaker or screen to control).
-For **Backups**, add a folder to the compose file (e.g. `- /mnt/nas/opensky-backups:/backups`); it shows up in Settings → Backups.
+Settings → Pages → **Hide here** also hides a page's button on one tablet only.
+For **Backups**, add a folder to the compose file (e.g. `- /mnt/nas/opensky-backups:/backups`, a commented example is in `docker-compose.yml`); it shows up in Settings → Backups.
 Without one, backups go into the config folder, which is the same disk as your settings.
 
 ## Phone setup

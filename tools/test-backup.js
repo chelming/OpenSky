@@ -36,5 +36,9 @@ const restored = b.restore({ ...full, settings: { family: { name: "Restored" } }
 ok("8 restore: settings, data and passwords back (old copies kept)", JSON.parse(fs.readFileSync(P("cfg", "opensky.json"))).family.name === "Restored" && restored.includes("secrets") && fs.existsSync(P("cfg", "secrets.json.bak")) && (fs.statSync(P("cfg", "secrets.json")).mode & 0o777) === 0o600);
 let err = null; try { b.restore({ hello: 1 }); } catch (e) { err = e; }
 ok("9 a file that isn't a backup is refused", err && err.status === 400);
+// in Docker: no "Pi" wording, and the config folder is offered (a real backup needs a mounted folder)
+const dock = JSON.parse(require("child_process").execFileSync(process.execPath, ["-e", `console.log(JSON.stringify(require(${JSON.stringify(path.join(__dirname, "..", "lib", "backup.js"))}).destinations().map((p) => p.label)))`],
+  { env: { ...process.env, OPENSKY_DOCKER: "1", OPENSKY_BACKUP_HOME: "" } }).toString());
+ok("10 in Docker: the config folder is offered, never 'This Pi'", dock.some((l) => /config folder/.test(l)) && !dock.some((l) => /This Pi/.test(l)), dock);
 fs.rmSync(T, { recursive: true, force: true });
 console.log(`SUMMARY pass=${passed} fail=${failed}`);
