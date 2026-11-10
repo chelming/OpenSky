@@ -24,7 +24,8 @@ const errs = []; const origErr = console.error; console.error = (...a) => errs.p
 const c = build({
   family: { name: "The Testers" }, locale: { timeFormat: 24, units: "metric", locale: "en-GB" },
   profiles: [{ name: "Mom", color: "pink" }, { name: " Zoe ", color: "#3b82f6" }, { name: "mom" }, { name: "Pic", photo: "data:image/jpeg;base64,AAAA" }, { name: "Bad", photo: "javascript:alert(1)" }, { name: "" }],
-  pages: ["home", "calendar", "lists", "smarthome", "money", "chores", "wordgame", "timer", "nope"],
+  pages: ["home", "calendar", "lists", "smarthome", "money", "chores", "devices", "wordgame", "timer", "nope"],
+  devices: { tiles: [{ entity: "light.hall", name: "Hall" }, { entity: "lock.front" }, { entity: "media_player.tv" }, { entity: "switch.x/../y" }, { entity: "sensor.temp", name: "T" }] },
   calendar: { holidays: "GB", holidaysRegion: "GB-SCT", sources: [
     { name: "Family", type: "local", color: "blue", role: "shared" }, { name: "Shared", type: "caldav", color: "green" },
     { name: "Work", type: "google", calendarId: "primary" }, { name: "Club", type: "google", calendarId: "c@group.calendar.google.com", readOnly: true },
@@ -65,6 +66,10 @@ ok("14 Home gets the calendars as people for the shared-event badges: settings o
 ok("6b Mealie: a meal plan source (meals passed on, not editable) and a Mealie shopping list",
   byName("Dinner").type === "mealie" && JSON.stringify(byName("Dinner").meals) === '["dinner","lunch"]' && !ed.editable.some((e) => e.name === "Dinner") &&
   mod(c, "MMM-OpenSky-Lists").config.lists[2].provider === "mealie" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingList === "Weekly" && mod(c, "MMM-OpenSky-Lists").config.lists[2].shoppingListId === "L1", mod(c, "MMM-OpenSky-Lists").config.lists[2]);
+const dev = mod(c, "MMM-OpenSky-Devices").config;
+ok("6e Devices page: Home Assistant tiles (light, lock, sensor) with chosen names; non-device and malformed entities dropped; sidebar entry; no token in the config",
+  JSON.stringify(dev.tiles.map((t) => [t.entity, t.name])) === JSON.stringify([["light.hall", "Hall"], ["lock.front", undefined], ["sensor.temp", "T"]]) &&
+  mod(c, "MMM-OpenSky-Sidebar").config.pages.some((p) => p.key === "devices" && p.label === "Devices") && !JSON.stringify(dev).includes("token"), dev);
 ok("6c Greenlight chores list: provider and the child kept",
   mod(c, "MMM-OpenSky-Lists").config.lists[3].provider === "greenlight" && mod(c, "MMM-OpenSky-Lists").config.lists[3].kid === "101", mod(c, "MMM-OpenSky-Lists").config.lists[3]);
 const chores = mod(c, "MMM-OpenSky-Chores").config;
@@ -72,7 +77,7 @@ ok("6d Chores page: in the order of the people circles at the top (unlinked last
   JSON.stringify(chores.kids.map((k) => [k.id, k.name, k.color])) === JSON.stringify([["103", "Mama", "pink"], ["101", "Zoe", "#3b82f6"], ["102", "Max", "green"]]) && mod(c, "MMM-OpenSky-Sidebar").config.pages.some((p) => p.key === "chores" && p.label === "Chores"), chores.kids);
 const pages = mod(c, "MMM-pages").config.modules;
 ok("7 pages in order; embed pages told apart by class; an unknown page skipped with a message",
-  JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-Chores"], ["MMM-OpenSky-WordGame"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);
+  JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-Chores"], ["MMM-OpenSky-Devices"], ["MMM-OpenSky-WordGame"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);
 const money = c.modules.find((m) => m.classes === "opensky-embed-money").config;
 ok("8 a PIN page: locked, PIN length only, no address", money.locked === true && money.pinLength === 6 && money.url === null);
 ok("9 word game source + extra words; accent; keyboard off; 24 h / metric", mod(c, "MMM-OpenSky-WordGame").config.source === "opensky" && mod(c, "MMM-OpenSky-WordGame").config.extraWords[0] === "emoji" &&

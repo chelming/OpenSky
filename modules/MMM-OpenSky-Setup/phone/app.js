@@ -778,7 +778,7 @@
   }
 
   function pagesCard() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music", devices: "Devices" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     const all = [...S.pages.filter((p) => names[p]), ...Object.keys(names).filter((k) => !S.pages.includes(k))];
     const box = el("div", { class: "rows" });
@@ -988,6 +988,7 @@
         field("Team code", text(hd.sports.team, (v) => { hd.sports.team = v.trim().toUpperCase(); change(); }, { placeholder: "e.g. NE", maxlength: "5", autocapitalize: "characters" }), "Game-day pill. Empty = off.")),
       field("Word game", seg([["nyt", "NYT's daily word"], ["opensky", "OpenSky's words"]], wg.source === "opensky" ? "opensky" : "nyt", (v) => { wg.source = v; change(); })),
       ...musicFields(),
+      ...devicesFields(),
       field("Weather from", seg([["open-meteo", "Open-Meteo (free)"], ["openweathermap", "OpenWeatherMap"]], w.provider || "open-meteo", (v) => { w.provider = v; change(); drawWeather(v); })),
       weatherKey);
   }
@@ -1030,6 +1031,54 @@
       ...(haSet ? [] : [field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
         field("Home Assistant token", secretInput("homeassistant.token", "Paste a long-lived access token"), "In Home Assistant: your profile → Security → Long-lived access tokens → Create token. Save, then Find my speakers.")]),
       others, find
+    ];
+  }
+
+  // Devices page: Home Assistant lights, switches, locks and sensors as tiles. Pick which ones, name them, put them in order.
+  // Shown once the Devices page is on or tiles are set. The address + token are the same ones the Music speakers use.
+  function devicesFields() {
+    if (!S.pages.includes("devices") && !(S.devices && S.devices.tiles && S.devices.tiles.length)) return [];
+    if (!S.devices || typeof S.devices !== "object") S.devices = {};
+    if (!Array.isArray(S.devices.tiles)) S.devices.tiles = [];
+    const T = S.devices.tiles;
+    let found = null, query = "";   // [{ id, name, kind, state }] once looked up
+    const mine = el("div", { class: "rows" }), others = el("div", { class: "rows" });
+    const KIND = { light: "Light", switch: "Switch", lock: "Lock", sensor: "Sensor" };
+    const kindOf = (id) => KIND[id.startsWith("binary_sensor.") ? "sensor" : id.split(".")[0]] || "";
+    const nameOf = (id) => (found && (found.find((f) => f.id === id) || {}).name) || id;
+    const move = (i, d) => { const j = i + d; if (j < 0 || j >= T.length) return; [T[i], T[j]] = [T[j], T[i]]; change(); draw(); };
+    const draw = () => {
+      mine.replaceChildren(...T.map((t, i) => el("div", { class: "line" },
+        el("span", { style: "flex:1;min-width:0" }, text(t.name || "", (v) => { if (v.trim()) t.name = v.trim().slice(0, 40); else delete t.name; change(); }, { placeholder: nameOf(t.entity), maxlength: "40", "aria-label": `Name for ${t.entity}` }), el("small", {}, `${kindOf(t.entity)} · ${t.entity}`)),
+        el("button", { type: "button", class: "mini", "aria-label": "Move up", disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
+        el("button", { type: "button", class: "mini", "aria-label": "Move down", disabled: i === T.length - 1, onclick: () => move(i, 1) }, "↓"),
+        el("button", { type: "button", class: "mini", "aria-label": "Remove", onclick: () => { T.splice(i, 1); change(); draw(); } }, "✕"))));
+      if (!T.length) mine.append(el("p", { class: "hint" }, "No tiles yet. Save the address and token, then Find my devices."));
+      const q = query.trim().toLowerCase();
+      const avail = (found || []).filter((f) => !T.some((t) => t.entity === f.id) && (!q || `${f.name} ${f.id}`.toLowerCase().includes(q)));
+      others.replaceChildren(...avail.slice(0, 60).map((f) => el("div", { class: "line" },
+        el("span", {}, el("b", {}, f.name), el("small", {}, `${kindOf(f.id)} · ${f.id} · ${f.state}`)),
+        el("button", { type: "button", class: "btn", "aria-label": `Add ${f.name}`, onclick: () => { T.push({ entity: f.id }); change(); draw(); } }, "Add"))));
+      if (found && !avail.length) others.append(el("p", { class: "hint" }, q ? "Nothing matches." : "Every device is already a tile."));
+      if (avail.length > 60) others.append(el("p", { class: "hint" }, "Type in the box to narrow the list."));
+    };
+    draw();
+    const haSet = isSet("homeassistant.url") && isSet("homeassistant.token");
+    const find = el("button", { type: "button", class: "btn block", onclick: async (e) => {
+      if (Object.keys(pending).some((k) => k.startsWith("homeassistant."))) return toast("Save first, then look for devices", "bad");
+      const b = e.currentTarget; b.disabled = true; b.textContent = "Looking…";
+      try { found = (await api("GET", "/api/devices/entities")).entities; draw(); }
+      catch (x) { toast(x.message, "bad"); }
+      b.disabled = false; b.textContent = "Find my devices";
+    } }, "Find my devices");
+    return [
+      el("h4", { class: "sub-title" }, "Devices"),
+      el("p", { class: "hint" }, "Lights, switches, locks and sensors from Home Assistant, as tiles on the Devices page. Tap a light or switch to turn it on or off; a lock asks for a second tap."),
+      ...(haSet ? [] : [field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
+        field("Home Assistant token", secretInput("homeassistant.token", "Paste a long-lived access token"), "In Home Assistant: your profile → Security → Long-lived access tokens → Create token. Save, then Find my devices.")]),
+      mine, find,
+      text("", (v) => { query = v; draw(); }, { placeholder: "Search the devices found", "aria-label": "Search the devices found" }),
+      others
     ];
   }
 
