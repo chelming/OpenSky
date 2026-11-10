@@ -104,6 +104,7 @@ Module.register("MMM-OpenSky-Sidebar", {
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {
+    if (accent === "peach") { ["", "-mid", "-light", "-soft", "-tint", "-dark"].forEach((k) => document.documentElement.style.removeProperty(`--os-accent${k}`)); return; }   // back to the css defaults
     const pal = window.OpenSkyEventColors && window.OpenSkyEventColors.PALETTE;
     const a = /^#[0-9a-f]{6}$/i.test(accent || "") ? accent : (pal && pal[accent] ? pal[accent][1] : null);
     if (!a) return;

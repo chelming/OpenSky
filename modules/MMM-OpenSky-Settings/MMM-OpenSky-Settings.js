@@ -47,6 +47,9 @@ Module.register("MMM-OpenSky-Settings", {
         if (this.shape(p) !== this.drawnShape) this.render();
         else this.syncControls();
       }
+    } else if (n === "OS_LOOK") {   // the saved look, after a page refresh (the screen's config is from the last restart)
+      const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0];
+      if (sb && p) { sb.setTextSize(p.textSize); sb.applyAccent(p.accent); }
     } else if (n === "OS_SET_STATUS") {
       this.status = p;
       if (this.isOpen()) this.renderStatus();
