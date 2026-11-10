@@ -504,6 +504,7 @@
     const st = { color: c.color || "blue", who: linked(c), sync: !!c.colorFromProfile };
     let shared = c.role === "shared";
     let only = c.only || "";
+    let inHeader = c.header === true;
     const meals = Object.fromEntries((c.meals || ["dinner"]).map((m) => [m, true]));
     sheet(c.name, (b) => {
       b.append(whoColor(st));
@@ -511,6 +512,8 @@
         toggle(shared, (v) => { shared = v; }, "Shared family calendar")));
       b.append(field("Only show events titled…", el("input", { type: "text", class: "input", value: only, placeholder: "e.g. ^Day [1-6]$", autocapitalize: "off", autocorrect: "off", spellcheck: "false", oninput: (e) => { only = e.target.value; } }),
         "Leave empty to show everything. Otherwise only events whose title matches are shown (a pattern, upper or lower case): ^Day [1-6]$ keeps just Day 1 to Day 6; soccer|practice keeps either word."));
+      b.append(el("div", { class: "line" }, el("span", {}, el("b", {}, "Show today's event in the header"), el("small", {}, "A pill by the holiday countdown with today's all-day event from this calendar, e.g. the school's \"Day 3\"")),
+        toggle(inHeader, (v) => { inHeader = v; }, "Show today's event in the header")));
       if (c.type === "mealie") b.append(el("p", { class: "hint" }, "Which meals show:"), ...mealToggles(meals));
       if (c.type !== "local" && c.type !== "caldav" && c.type !== "google" && c.type !== "mealie") b.append(field("Replace the link", el("textarea", { class: "input", rows: "2", placeholder: isSet(`calendar.sources.${c.name}`) ? "Saved ✓ — paste a new link to replace it" : "https://… or webcal://…", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.sources.${c.name}`] = e.target.value.trim(); } })));
       if (c.type === "caldav") b.append(field("New password", el("input", { type: "password", class: "input", placeholder: "Saved ✓ — type to replace", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.caldav.${c.name}`] = { password: e.target.value.trim() }; } })));
@@ -520,7 +523,7 @@
       if (isSet(`calendar.sources.${c.name}`)) pending[`calendar.sources.${c.name}`] = null;
       if (isSet(`calendar.caldav.${c.name}`)) pending[`calendar.caldav.${c.name}`] = null;
       change(); render();
-    }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (c.type === "mealie" && Object.values(meals).some(Boolean)) c.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => meals[m]); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; if (only.trim()) c.only = only.trim(); else delete c.only; change(); render(); }]]);
+    }], ["Done", "primary", () => { c.color = st.color; setLinks(c, st.who); if (c.type === "mealie" && Object.values(meals).some(Boolean)) c.meals = ["breakfast", "lunch", "dinner", "side"].filter((m) => meals[m]); if (st.sync && st.who.length === 1) c.colorFromProfile = true; else delete c.colorFromProfile; if (shared) c.role = "shared"; else delete c.role; if (only.trim()) c.only = only.trim(); else delete c.only; if (inHeader) c.header = true; else delete c.header; change(); render(); }]]);
   }
 
   // Countdowns: a trip, a birthday or a big day with days to go, a title and a photo. Home shows them as a card (a banner on a

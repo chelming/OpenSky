@@ -98,6 +98,17 @@
   font-size:20px; font-weight:800; white-space:nowrap;
 }
 .hb-game + .hb-countdown{ margin-left:0; }
+
+/* Today's event of a calendar set to show in the header (e.g. the school's "Day 3"), in that calendar's color */
+.hb-school{
+  --hb-sc:#4a5bd8;
+  margin-left:auto;
+  display:inline-flex; align-items:center; height:46px; padding:0 20px; border-radius:999px;
+  background:color-mix(in srgb, var(--hb-sc) 16%, #fff);
+  color:color-mix(in srgb, var(--hb-sc) 70%, #000);
+  font-size:20px; font-weight:800; white-space:nowrap;
+}
+.hb-game + .hb-school, .hb-school + .hb-countdown{ margin-left:12px; }
 .hb-game-logo{ width:30px; height:30px; object-fit:contain; display:block; }
 .hb-game-vs{ font-size:15px; font-weight:800; color:#6b7280; }
 .hb-game-team{ color:#1f2937; }

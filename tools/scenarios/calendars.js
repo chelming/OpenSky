@@ -47,6 +47,16 @@ module.exports = async (page, h) => {
   });
   ok("a source with 'only' keeps just the matching titles (Day 1-6, any case)", JSON.stringify(only) === '["Day 3","day 1"]', only);
 
+  // "Show today's event in the header": the Header shows today's matching all-day event, in a pill, whatever the person filter says
+  const pill = await page.evaluate(() => {
+    const hm = MM.getModules().withClass("MMM-OpenSky-Header")[0], t = new Date(), d0 = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+    hm.notificationReceived("OPENSKY_HEADER_EVENTS", [{ title: "Day 4", startDate: String(d0), endDate: String(d0 + 86400000), fullDayEvent: true, calendarName: "District", color: "#4a5bd8" },
+      { title: "Day 5", startDate: String(d0 + 86400000), endDate: String(d0 + 2 * 86400000), fullDayEvent: true, calendarName: "District", color: "#4a5bd8" }]);
+    return new Promise((r) => setTimeout(() => { const e = document.querySelector(".hb-school"); r(e && e.textContent); }, 500));
+  });
+  ok("the header shows today's event of a header calendar (not tomorrow's)", pill === "Day 4", pill);
+  await h.shot("header-school-day");
+
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };
