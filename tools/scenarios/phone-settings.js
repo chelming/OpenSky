@@ -119,6 +119,14 @@ module.exports = async (page, h, app) => {
   await row("#calendars", "Family");
   await tap(".sheet", ".chip", "teal");
   await tap(".sheet", ".toggle", "Shared family calendar");
+  // the settings in this sheet look alike: "Only show events titled…" has the same black bold title and a divider above, like the switches
+  const look = await phone.evaluate(() => {
+    const c = (el) => getComputedStyle(el), s = document.querySelector(".sheet .setting"), l = document.querySelector(".sheet .line");
+    return { title: s && s.querySelector("b").textContent, color: s && c(s.querySelector("b")).color, switchColor: l && c(l.querySelector("b")).color, divider: s && c(s).borderTopWidth, size: s && c(s.querySelector("b")).fontSize, switchSize: l && c(l.querySelector("b")).fontSize };
+  });
+  ok("calendar sheet: 'Only show events titled…' is laid out like the switches (same black title and size, a divider above)", look.title === "Only show events titled…" && look.color === look.switchColor && look.color !== "rgb(107, 114, 128)" && look.size === look.switchSize && look.divider === "1px", look);
+  await phone.evaluate(() => { document.querySelector(".sheet-body").scrollTop = 1e5; }); await h.sleep(200);   // down to the last settings
+  await phone.screenshot({ path: path.join(__dirname, "..", "out", "calendar-sheet-phone.png") });   // (h.shot is the main screen, this is the phone)
   await sheetButton("Done");
   await row("#calendars", "School");
   await sheetButton("Remove");

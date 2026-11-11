@@ -110,6 +110,11 @@ select.input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://ww
 .line { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .line b { display: block; font-size: 15.5px; }
 .line small { display: block; color: var(--muted); font-size: 13px; }
+/* a setting that needs a box, laid out like a .line: divider above, black title, explanation, then the input */
+.setting { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.setting b { display: block; font-size: 15.5px; }
+.setting small { display: block; color: var(--muted); font-size: 13px; margin: 2px 0 10px; }
+.setting > b + .input { margin-top: 8px; }
 .card > .field:last-child { margin-bottom: 0; }
 
 .place { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 16px; background: #faf7f5; }
