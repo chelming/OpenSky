@@ -48,7 +48,7 @@ Module.register("MMM-OpenSky-Home", {
     this.meals = null;           // the meal plan (OPENSKY_MEALS)
     this.familyCountdowns = [];  // added from the family's phones (lib/family-countdowns.js)
     this.notes = [];             // posted from the family's phones (lib/share.js), see renderNotes
-    setInterval(() => this.sendSocketNotification("NOTES_GET"), 20 * 1000);   // (a small file read)
+    setInterval(() => this.sendSocketNotification("NOTES_GET"), 5 * 60 * 1000);   // (changes are pushed; this drops expired notes and catches a missed push)
     this.armTick();
     let shape = this.portrait();
     window.addEventListener("resize", () => { clearTimeout(this.reshapeTimer); this.reshapeTimer = setTimeout(() => { if (this.portrait() !== shape) { shape = this.portrait(); this.renderCalendar(); this.nextPhoto(); } }, 300); });

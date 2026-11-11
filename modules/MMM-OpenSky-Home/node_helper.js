@@ -15,6 +15,11 @@ const countdownPhotos = lib("countdowns.js");
 module.exports = NodeHelper.create({
   start() {
     this.source = null;
+    // a note or countdown added from a family phone (or taken away on another screen) shows on every screen at once
+    // (screens still ask now and then, see MMM-OpenSky-Home.js, to drop expired notes and catch a missed push)
+    const push = () => this.sendSocketNotification("NOTES", { notes: notes.list(), countdowns: familyCountdowns.list() });
+    notes.bus.on("change", push);
+    familyCountdowns.bus.on("change", push);
     // a countdown's picture (Home's card and the Countdowns page): GET /opensky-countdown/<id>
     this.expressApp.get("/opensky-countdown/:id", (req, res) => {
       const img = countdownPhotos.read(req.params.id);

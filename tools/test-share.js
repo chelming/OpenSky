@@ -26,6 +26,10 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   fs.writeFileSync(process.env.OPENSKY_NOTES, "{ broken");
   ok("7 a damaged notes.json → empty list, a copy is kept", notes.list().length === 0 && fs.readdirSync(tmp).some((f) => f.startsWith("notes.json.damaged-")));
   fs.rmSync(process.env.OPENSKY_NOTES, { force: true });
+  let pushes = 0; notes.bus.on("change", () => pushes++);
+  const pn = notes.add("push me", "", 0); notes.remove(pn.id);
+  ok("7b adding or removing a note announces a change (Home pushes it to every screen)", pushes === 2, pushes);
+  fs.rmSync(process.env.OPENSKY_NOTES, { force: true });
 
   // ---- the passcode ----
   const PASS = "family-pass-9";
