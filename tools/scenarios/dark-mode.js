@@ -83,6 +83,14 @@ module.exports = async (page, h) => {
   ok("Auto + light sensor: a bright room (200 lux) at midnight → Light", (await auto(lons.midnight, 200)) === "light");
   ok("Auto + stale or missing sensor reading → follows the sun again", (await auto(lons.midnight, null)) === "dark");
   ok("no light sensor in this browser: starting it is harmless", await page.evaluate(() => { const m = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; m._sensorTried = false; m.config.lightSensor = true; try { m.startLightSensor(); return true; } catch (e) { return false; } }));
+  // System: follows the browser's own prefers-color-scheme, live
+  await page.emulateMedia({ colorScheme: "dark" }); await sb("setTheme", "system"); await h.sleep(300);
+  ok("System + the device is dark -> Dark", (await theme()) === "dark");
+  await page.emulateMedia({ colorScheme: "light" }); await h.sleep(500);
+  ok("System: the device switches to light -> the page follows at once", (await theme()) === "light");
+  await page.emulateMedia({ colorScheme: "dark" }); await h.sleep(500);
+  ok("System: the device switches back to dark -> Dark again", (await theme()) === "dark");
+  await page.emulateMedia({ colorScheme: null });
   await sb("setTheme", "default");
 
   const fs = require("fs"), path = require("path");

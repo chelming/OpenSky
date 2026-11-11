@@ -72,13 +72,13 @@ Each screen can pick its **own** size in Settings → Look & extras → Text siz
 above). That choice is remembered by that screen's browser only, so a kitchen screen and a hallway tablet can differ, and it
 isn't saved in `opensky.json`.
 
-`theme`: `"light"` (the default: the look you have today), `"dark"` or `"auto"`. **Auto** switches to dark from sunset to
+`theme`: `"light"` (the default: the look you have today), `"dark"`, `"auto"` or `"system"`. **System** follows the light/dark setting of the device showing the screen (a tablet's or computer's dark mode, including its own schedule) and changes the moment that does; it needs nothing else. **Auto** switches to dark from sunset to
 sunrise at your `location` (the place from the phone page's "Your family" card; sunrise and sunset are worked out on the
 screen itself, no internet needed) and back to light in the morning; without a location it is dark from 19:00 to 07:00.
 Dark mode darkens every page, popup and the on-screen keyboard; the screensaver stays as it is (it is dark
 already). Photos, and web pages you added (Smart Home, Vault...), are shown as they are, so a light website stays light.
 This is the **default for every screen** (phone: Extras → Dark mode); each screen can pick its **own** (Default / Light /
-Dark / Auto) in Settings → Look & extras → Dark mode, remembered by that screen's browser only (like the text size) and not
+Dark / Auto / System) in Settings → Look & extras → Dark mode, remembered by that screen's browser only (like the text size) and not
 saved in `opensky.json`. It works with "Dim in the evening": dark mode changes the colors, the dim lowers the brightness; use
 both if you like. `lightSensor`: `true` lets an ambient light sensor overrule the sun in Auto (a dark room turns it dark, a bright
 one light), but only on a screen whose browser exposes one; where there is none it is ignored and Auto follows the sun. It is

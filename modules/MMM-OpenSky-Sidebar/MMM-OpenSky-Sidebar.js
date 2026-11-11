@@ -182,7 +182,7 @@ Module.register("MMM-OpenSky-Sidebar", {
   deviceTheme() {
     try { return window.OpenSkyTheme.normalize(localStorage.getItem("opensky.theme")); } catch (e) { return this._themeFallback || null; }
   },
-  setTheme(mode) {   // "light" | "dark" | "auto", or null / "default" = follow the default
+  setTheme(mode) {   // "light" | "dark" | "auto" | "system", or null / "default" = follow the default
     const v = window.OpenSkyTheme.normalize(mode);
     try { if (v) localStorage.setItem("opensky.theme", v); else localStorage.removeItem("opensky.theme"); } catch (e) { this._themeFallback = v; }
     this.applyTheme();
@@ -192,10 +192,21 @@ Module.register("MMM-OpenSky-Sidebar", {
   applyTheme() {
     const T = window.OpenSkyTheme, mode = this.deviceTheme() || this.config.theme;
     const fresh = this._lux && Date.now() - this._lux.at < 15 * 60000 ? this._lux.v : null;   // a sensor reading from the last quarter hour
-    const dark = T.isDark(mode, new Date(), this.config.latitude, this.config.longitude, this.config.lightSensor ? fresh : null, this.isDark());
+    const dark = T.isDark(mode, new Date(), this.config.latitude, this.config.longitude, this.config.lightSensor ? fresh : null, this.isDark(), this.systemDark());
     document.documentElement.dataset.osTheme = dark ? "dark" : "light";
     if (!this._themeTimer) this._themeTimer = setInterval(() => this.applyTheme(), 60000);   // the sun moves on
     if (this.config.lightSensor && !this._sensorTried) this.startLightSensor();
+  },
+  // "System": the browser's own light/dark setting. The listener re-applies the theme the moment the device flips it.
+  systemDark() {
+    try {
+      if (!this._systemMq && window.matchMedia) {
+        this._systemMq = window.matchMedia("(prefers-color-scheme: dark)");
+        const again = () => this.applyTheme();
+        if (this._systemMq.addEventListener) this._systemMq.addEventListener("change", again); else if (this._systemMq.addListener) this._systemMq.addListener(again);
+      }
+      return !!(this._systemMq && this._systemMq.matches);
+    } catch (e) { return false; }
   },
   // Optional ambient light sensor (Chromium's AmbientLightSensor, only where the screen/browser has one and allows it).
   // Anything missing or refused is ignored: Auto then simply follows the sun.
