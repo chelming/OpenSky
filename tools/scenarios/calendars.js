@@ -49,6 +49,20 @@ module.exports = async (page, h) => {
   });
   ok("a source with 'only' keeps just the matching titles (Day 1-6, any case)", JSON.stringify(only) === '["Day 3","day 1"]', only);
 
+  // a header calendar's all-day events are left out of the calendar (they're in the header), timed ones stay
+  const hidden = await page.evaluate(() => {
+    const m = MM.getModules().withClass("MMM-OpenSky-Calendars")[0];
+    const sent = []; const orig = m.sendNotification.bind(m);
+    m.sendNotification = (n, p) => { sent.push([n, p]); };
+    const t = Date.now() + 86400000;
+    m.config.sources.push({ name: "School", type: "link", header: true });
+    m.events.set("School", [{ title: "Day 3", startDate: String(t), endDate: String(t + 86400000), fullDayEvent: true }, { title: "Concert", startDate: String(t), endDate: String(t + 3600000), fullDayEvent: false }]);
+    m.broadcast();
+    m.sendNotification = orig; m.config.sources.pop(); m.events.delete("School"); m.broadcast();
+    return { cal: sent.find(([n]) => n === "CALENDAR_EVENTS")[1].filter((e) => e.calendarName === "School").map((e) => e.title), hdr: sent.find(([n]) => n === "OPENSKY_HEADER_EVENTS")[1].map((e) => e.title) };
+  });
+  ok("a header calendar's all-day events leave the calendar but stay in the header", JSON.stringify(hidden) === '{"cal":["Concert"],"hdr":["Day 3","Concert"]}', JSON.stringify(hidden));
+
   // "Show today's event in the header": the Header shows today's matching all-day event, in a pill, whatever the person filter says
   const pill = await page.evaluate(() => {
     const hm = MM.getModules().withClass("MMM-OpenSky-Header")[0], t = new Date(), d0 = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();

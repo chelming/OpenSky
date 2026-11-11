@@ -54,7 +54,8 @@ Module.register("MMM-OpenSky-Calendars", {
       const color = set ? EC.pair(set)[1] : "";
       if (src.header) for (const ev of evs) headerEvents.push({ title: ev.title, startDate: ev.startDate, endDate: ev.endDate, fullDayEvent: ev.fullDayEvent, calendarName: src.name, color });
       // symbol: [] — MagicMirror's calendar always sets it and CalendarExt3 requires it (calls symbol.join)
-      for (const ev of evs) list.push({ ...ev, calendarName: src.name, color, colorName: set || src.color || null, symbol: [] });
+      // a calendar shown in the header has its all-day events there (the school's "Day 3"), so they aren't repeated in the calendar
+      for (const ev of src.header ? evs.filter((e) => !e.fullDayEvent) : evs) list.push({ ...ev, calendarName: src.name, color, colorName: set || src.color || null, symbol: [] });
     }
     const out = this.applyFilter(this.config.mergeShared ? this.mergeShared(list) : list);
     out.sort((a, b) => Number(a.startDate) - Number(b.startDate));

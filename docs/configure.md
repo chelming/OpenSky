@@ -302,7 +302,8 @@ An invalid pattern is ignored (everything shows). It is saved as `only` on the c
 
 **In the header:** turn on *Show today's event in the header* for that calendar (same sheet). Today's matching event, e.g. "Day 3",
 appears as a pill in the header beside the holiday/birthday countdown, in the calendar's color. It goes away at midnight until the next
-day's event, and doesn't depend on which person's circle is picked.
+day's event, and doesn't depend on which person's circle is picked. That calendar's all-day events are then left out of the calendar
+views (the pill already shows them); its timed events still appear.
 
 ### One event on several calendars (kids who share an activity)
 If each person has their own calendar and an event is on more than one of them, turn on **Show shared events once** and it
