@@ -333,9 +333,10 @@ Module.register("MMM-OpenSky-Header", {
   _alertPill() {
     const a = this.wxAlerts;
     if (!a) return null;
-    const none = a.state !== "alerts" || !a.alerts.length;
-    const worst = none ? null : a.alerts[0], hot = worst && (worst.severity === "extreme" || worst.severity === "severe");
-    const open = Number.isInteger(this.config.weatherPage) && !none;
+    if (a.state !== "alerts" || !a.alerts.length) return null;
+    const none = false;
+    const worst = a.alerts[0], hot = worst.severity === "extreme" || worst.severity === "severe";
+    const open = Number.isInteger(this.config.weatherPage);
     const pill = document.createElement(open ? "button" : "div");
     pill.className = `hb-alert ${none ? "hb-alert-none" : hot ? "hb-alert-hot" : "hb-alert-warn"}`;
     const ico = none ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M12 3 2 21h20L12 3zM12 10v5M12 18v.01"/>';

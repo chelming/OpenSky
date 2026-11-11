@@ -126,10 +126,10 @@ module.exports = async (page, h) => {
   const first = await page.evaluate(() => ({ h: document.querySelector(".wp-day .wp-note").textContent, r: document.querySelector(".wp-map-msg").textContent, week: document.querySelectorAll(".wp-day-row").length }));
   ok("a first failure: the forecast and radar say they can't load; the week still shows (header forecast)", /hourly forecast can't be loaded/.test(first.h) && /radar can't be loaded/.test(first.r) && first.week === 6, first);
 
-  // alerts: none = a calm green pill; outside the US = no pill at all
+  // alerts: none = no pill; outside the US = no pill at all
   await mod((m) => m.socketNotificationReceived("OS_WX_DATA", { alerts: { ok: true, supported: true, alerts: [] } }));
-  await until(() => page.evaluate(() => /No weather alerts/.test(document.querySelector(".hb-alert")?.textContent || "")));
-  ok("no alerts: a green 'No weather alerts' pill", await page.evaluate(() => { const p = document.querySelector(".hb-alert"); return /No weather alerts/.test(p.textContent) && /hb-alert-none/.test(p.className); }));
+  await until(() => page.evaluate(() => !document.querySelector(".hb-alert")));
+  ok("no alerts: no pill", await page.evaluate(() => !document.querySelector(".hb-alert")));
   await mod((m) => m.socketNotificationReceived("OS_WX_DATA", { alerts: { ok: true, supported: false, alerts: [] } }));
   await until(() => page.evaluate(() => !document.querySelector(".hb-alert")));
   ok("outside the US: no pill (nothing to say)", await page.evaluate(() => !document.querySelector(".hb-alert")));
