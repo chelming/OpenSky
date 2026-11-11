@@ -83,10 +83,6 @@ Module.register("MMM-OpenSky-Header", {
     const g = this.gameToday();
     if (g) row.appendChild(this._gamePill(g));
 
-    // Today's event(s) of the calendars set to show here (e.g. the school's "Day 3")
-    const sd = this._todayPill();
-    if (sd) row.appendChild(sd);
-
     // Top-right: quiet countdown to the next big holiday or family birthday
     const next = this._nextOccasion(this.now || new Date());
     if (next) {
@@ -103,6 +99,10 @@ Module.register("MMM-OpenSky-Header", {
       if (next.days === 0) cd.classList.add("hb-cd-today"); // not ".today": MMM-Todoist.css underlines every .today
       row.appendChild(cd);
     }
+
+    // Today's event(s) of the calendars set to show here (e.g. the school's "Day 3"): far right, after the countdown
+    const sd = this._todayPill();
+    if (sd) row.appendChild(sd);
 
     this._measureLater();
     return row;
