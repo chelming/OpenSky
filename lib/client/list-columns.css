@@ -14,7 +14,7 @@
   background: var(--list-tint);
 }
 .lc-list.alt { --list-accent: var(--os-accent-mid); --list-tint: #fff7f3; --list-dark: #b4532f; }
-.lc-list-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; }
+.lc-list-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; min-height: 44px; }
 .lc-list-title { font-size: 24px; font-weight: 800; color: var(--list-dark); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lc-badge {
   min-width: 30px;
@@ -31,23 +31,21 @@
   font-weight: 800;
 }
 .lc-add-item {
-  display: flex;
+  margin-left: auto;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 12px;
-  margin-bottom: 6px;
-  border: 2px dashed color-mix(in srgb, var(--list-accent) 55%, transparent);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, .6);
-  color: var(--list-dark);
-  font: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  white-space: nowrap;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--list-accent);
+  color: #fff;
   cursor: pointer;
 }
-.lc-add-item svg { width: 20px; height: 20px; }
+.lc-add-item svg { width: 24px; height: 24px; }
 .lc-items {
   flex: 1;
   min-height: 0;
