@@ -63,6 +63,42 @@ const server = http.createServer((req, res) => {
   const list = await ha.listEntities();
   ok("12 the phone's list: lights, switches, locks, sensors by name; no media players or automations", list.map((x) => x.id).join() === "light.attic,binary_sensor.garage,switch.fan,light.hall,sensor.temp,lock.front,sensor.power".split(",").sort((a, b) => list.find((x) => x.id === a).name.localeCompare(list.find((x) => x.id === b).name)).join() && list.length === 7, list.map((x) => x.id));
 
+  // ---- Home Assistant's websocket: changes are pushed (a tiny hand-made websocket server; no library needed) ----
+  const crypto = require("crypto");
+  const frame = (obj) => { const b = Buffer.from(JSON.stringify(obj)); return Buffer.concat([Buffer.from([0x81, b.length]), b]); };   // (short text frame)
+  const got = [];   // what the client sent us
+  let sock = null; const socks = [];
+  server.on("upgrade", (req, socket) => {
+    if (req.url !== "/api/websocket") return socket.destroy();
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${crypto.createHash("sha1").update(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64")}\r\n\r\n`);
+    sock = socket; socks.push(socket);
+    socket.on("data", (d) => {   // masked client text frame (short)
+      if ((d[0] & 0x0f) !== 1) return;
+      const len = d[1] & 0x7f, mask = d.subarray(2, 6), body = Buffer.from(d.subarray(6, 6 + len));
+      for (let i = 0; i < len; i++) body[i] ^= mask[i % 4];
+      const m = JSON.parse(body.toString()); got.push(m);
+      if (m.type === "auth") socket.write(frame({ type: m.access_token === TOKEN ? "auth_ok" : "auth_invalid" }));
+    });
+    socket.on("error", () => {});
+    socket.write(frame({ type: "auth_required" }));
+  });
+  const wait = async (f, ms = 3000) => { const end = Date.now() + ms; while (Date.now() < end && !f()) await new Promise((r) => setTimeout(r, 20)); return f(); };
+  const changed = [];
+  const w = ha.watch((e) => changed.push(e));
+  ok("13 watch: signs in with the token, then asks for state changes", await wait(() => w.live()) && got[0].type === "auth" && got[0].access_token === TOKEN && got.some((m) => m.type === "subscribe_events" && m.event_type === "state_changed"), got);
+  sock.write(frame({ id: 1, type: "event", event: { event_type: "state_changed", data: { entity_id: "light.hall" } } }));
+  ok("14 watch: a state change is passed on with its entity", await wait(() => changed.length === 1) && changed[0] === "light.hall", changed);
+  w.stop();
+  ok("15 stop closes the connection and goes quiet", !w.live());
+  fs.writeFileSync(process.env.OPENSKY_SECRETS, JSON.stringify({ homeassistant: { url, token: "wrong" } }));
+  got.length = 0;
+  const w2 = ha.watch(() => {});
+  await wait(() => got.length >= 1);
+  await new Promise((r) => setTimeout(r, 300));
+  ok("16 watch: a wrong token never goes live (and doesn't retry forever)", !w2.live() && got.filter((m) => m.type === "auth").length === 1, got);
+  w2.stop();
+
+  socks.forEach((x) => x.destroy());
   server.close(); fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);
 })();

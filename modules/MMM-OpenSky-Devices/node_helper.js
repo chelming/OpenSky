@@ -16,6 +16,14 @@ module.exports = NodeHelper.create({
     if (n === "OS_DEV_INIT") {
       this.list = Array.isArray(p && p.tiles) ? p.tiles.filter((t) => t && ha.ENTITY.test(t.entity || "")) : [];
       this.last = "";
+      // Home Assistant pushes changes over its websocket; we then re-read at once (the polling below slows right down while it's connected)
+      if (!this.watcher && this.list.length) {
+        this.watcher = ha.watch((entity) => {
+          if (!this.list.some((t) => t.entity === entity)) return;
+          clearTimeout(this.pushTimer);
+          this.pushTimer = setTimeout(() => this.poll(), 250);   // (a burst of changes → one read)
+        });
+      }
       this.poll();
     } else if (n === "OS_DEV_VISIBLE") {
       this.visible = !!p;
@@ -43,8 +51,9 @@ module.exports = NodeHelper.create({
     }
     const key = JSON.stringify(msg);
     if (key !== this.last) { this.last = key; this.sendSocketNotification("OS_DEV_STATE", msg); }
-    this.timer = setTimeout(() => this.poll(), this.visible ? 4000 : 60000);
+    const live = this.watcher && this.watcher.live();   // pushes arrive: polling is only a safety net
+    this.timer = setTimeout(() => this.poll(), live || !this.visible ? 60000 : 4000);
   },
 
-  stop() { clearTimeout(this.timer); }
+  stop() { clearTimeout(this.timer); clearTimeout(this.pushTimer); if (this.watcher) this.watcher.stop(); }
 });

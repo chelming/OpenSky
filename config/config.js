@@ -473,6 +473,9 @@ let config = {
   address: process.env.OPENSKY_ADDRESS || "localhost",
   port: Number(process.env.OPENSKY_PORT) || 8080,
   basePath: "/",
+  // after an update or "Restart OpenSky" the server has a new start-up stamp: every open screen notices within seconds and reloads itself
+  reloadAfterServerRestart: true,
+  checkServerInterval: 10 * 1000,
   // OPENSKY_IP_WHITELIST: comma-separated addresses allowed to open the page (Docker/tablets); "all" = anyone on the network
   ipWhitelist: process.env.OPENSKY_IP_WHITELIST === "all" ? [] : process.env.OPENSKY_IP_WHITELIST ? process.env.OPENSKY_IP_WHITELIST.split(",").map((a) => a.trim()).filter(Boolean) : ["127.0.0.1", "::ffff:127.0.0.1", "::1"],
   language: locale.language || "en",

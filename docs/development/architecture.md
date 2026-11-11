@@ -146,6 +146,21 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
   node helpers) is compatible with it and also covers things that aren't module config (service passwords, PINs).
 - Custom CSS is expected in `config/` (2.38 warns about `css/custom.css`); OpenSky sets `customCss` explicitly.
 
+## Live updates (screens never need a manual refresh)
+- **After a restart or update**: `config.js` sets MagicMirror's `reloadAfterServerRestart` (and `checkServerInterval`, 10 s).
+  Every open screen compares the server's start-up stamp (`/startup`) with the one it loaded with and reloads when it
+  changes, so a rebuilt container, `opensky restart` and "Restart OpenSky" in Settings all refresh tablets and wall
+  screens by themselves (new code, new settings), within about 10 seconds.
+- **Pushed, not polled**: the node helpers and the share page run in one process, so a change is announced in-process and
+  sent to every screen over MagicMirror's Socket.IO connection (`sendSocketNotification`). Local calendar and local
+  meals (`bus` "change"), lists (after each change), and notes + family countdowns (`lib/notes.js`,
+  `lib/family-countdowns.js` emit "change" on every write; Home's helper pushes `NOTES`). Home still asks every 5
+  minutes to drop expired notes.
+- **Home Assistant**: `lib/ha-tiles.js → watch()` keeps a websocket open to HA (`/api/websocket`, `state_changed`,
+  Node's built-in `WebSocket`); the Devices helper re-reads the tiles ~250 ms after a change to one of them. While it is
+  connected the poll slows to 60 s as a safety net; if HA or the socket is unavailable it polls every 4 s as before.
+- Things that can only be polled (Google, Mealie, Greenlight, CalDAV, weather) still are: those services don't call us.
+
 - Events broadcast as `CALENDAR_EVENTS` must look like MagicMirror's calendar output — including `symbol` (an array):
   MMM-CalendarExt3 calls `event.symbol.join()` and stops drawing the month without it.
 
