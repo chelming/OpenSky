@@ -64,7 +64,7 @@ Module.register("MMM-OpenSky-Music", {
     spotify: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M7 9.5c3.5-1 7.5-.6 10.5 1M7.5 12.8c2.8-.8 6-.4 8.5 1M8 16c2.2-.6 4.5-.3 6.5.8"/></svg>'
   },
 
-  hasScreen() { const i = this.installed; return !i || i.spotify || i.airplay; },
+  hasScreen() { if (this.config.docker) return false; const i = this.installed; return !i || i.spotify || i.airplay; },
 
   /** Which speaker is shown: the one tapped; else one that plays (this screen first); else the one shown before while
    *  it still has a song (paused — so pausing doesn't jump away from its Play button); else one with a song; else the first. */
@@ -92,7 +92,8 @@ Module.register("MMM-OpenSky-Music", {
     this.root = root;
     const v = this.view(), inst = this.installed;
     if (this.speakers.length) root.append(this.tabs(v));
-    if (v.screen && inst && !inst.spotify && !inst.airplay) root.append(this.notInstalled());
+    if (v.screen && this.config.docker) root.append(this.dockerIdle());
+    else if (v.screen && inst && !inst.spotify && !inst.airplay) root.append(this.notInstalled());
     else if (v.now) root.append(this.player(v.now, v));
     else if (v.screen) root.append(this.idle());
     else root.append(this.speakerIdle(v));
@@ -178,6 +179,15 @@ Module.register("MMM-OpenSky-Music", {
     if (this.config.airplay && inst.airplay) how.append(tile(this.ICON.airplay, "AirPlay (iPhone, iPad, Mac)", ["Open Control Center (or the song in Apple Music)", "Tap the AirPlay icon", `Pick “${name}”`], "Works with Apple Music, Podcasts, YouTube and most apps"));
     if (this.config.spotify && inst.spotify) how.append(tile(this.ICON.spotify, "Spotify (any phone)", ["Play something in Spotify", "Tap the speaker icon at the bottom", `Pick “${name}”`], "Needs Spotify Premium"));
     card.append(how, this.volumeRow());
+    return card;
+  },
+
+  // Docker: no speakers of its own, only Home Assistant media players
+  dockerIdle() {
+    const card = this.el("div", "mu-card mu-idle");
+    card.append(this.html("div", "mu-idle-ic", window.OpenSkyIcons ? window.OpenSkyIcons.svg("music") : ""),
+      this.el("h2", "mu-idle-title", "Control your speakers from here"),
+      this.el("p", "mu-idle-sub", "Add a speaker from Home Assistant (Sonos, HomePod, Echo, Google…): phone setup → Extras → Music → Other speakers."));
     return card;
   },
 

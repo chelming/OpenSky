@@ -56,7 +56,7 @@ Secure and the wrong-passcode pause is per phone rather than for the proxy as a 
 ## Good to know
 - **Anyone who can reach port 8080 can use the screen** (there is no login), so keep it on your home network or behind
   your reverse proxy's login. Secrets stay in `secrets.json` and never reach the page.
-- Things that belong to a Pi (screen brightness, sleep, Restart Pi, Update, the Music add-on) don't do anything here,
+- Things that belong to a Pi (screen brightness, sleep, Restart Pi, Update, the Music add-on's AirPlay and Spotify) don't do anything here (the Music page still controls Home Assistant speakers),
   and Settings hides Restart Pi and Shut down. **Restart OpenSky** (and finishing phone setup) stops OpenSky and relies on
   Docker's restart policy to start it again, so keep `restart: unless-stopped` (the compose file has it; with plain
   `docker run`, add `--restart unless-stopped`). `docker restart opensky` does the same from outside.

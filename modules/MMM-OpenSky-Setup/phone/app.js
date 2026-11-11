@@ -1210,6 +1210,7 @@
   function musicFields() {
     const inst = (info.addons && info.addons.music) || {};
     if (!S.pages.includes("music") && !inst.spotify && !inst.airplay) return [];
+    const thisScreen = !info.docker;   // a container has no speakers of its own
     if (!S.music || typeof S.music !== "object") S.music = {};
     const M = S.music;
     if (!Array.isArray(M.speakers)) M.speakers = [];
@@ -1234,10 +1235,10 @@
     } }, "Find my speakers");
     return [
       el("h4", { class: "sub-title" }, "Music"),
-      !inst.spotify && !inst.airplay ? el("p", { class: "hint" }, "To use this screen as a speaker, on the Pi open Terminal and type  opensky addon music. Other speakers (below) work without it.") : null,
-      field("Speaker name", text(M.name || "", (v) => { M.name = v.trim(); if (!M.name) delete M.name; change(); }, { placeholder: S.family.name || "OpenSky", maxlength: "40" }), "What phones show in the AirPlay and Spotify speaker lists."),
+      thisScreen && !inst.spotify && !inst.airplay ? el("p", { class: "hint" }, "To use this screen as a speaker, on the Pi open Terminal and type  opensky addon music. Other speakers (below) work without it.") : null,
+      ...(!thisScreen ? [] : [field("Speaker name", text(M.name || "", (v) => { M.name = v.trim(); if (!M.name) delete M.name; change(); }, { placeholder: S.family.name || "OpenSky", maxlength: "40" }), "What phones show in the AirPlay and Spotify speaker lists."),
       el("div", { class: "line" }, el("span", {}, el("b", {}, "AirPlay"), el("small", {}, "iPhone, iPad, Mac")), toggle(M.airplay !== false, (v) => { M.airplay = v; change(); }, "AirPlay")),
-      el("div", { class: "line" }, el("span", {}, el("b", {}, "Spotify Connect"), el("small", {}, "Needs Spotify Premium")), toggle(M.spotify !== false, (v) => { M.spotify = v; change(); }, "Spotify Connect")),
+      el("div", { class: "line" }, el("span", {}, el("b", {}, "Spotify Connect"), el("small", {}, "Needs Spotify Premium")), toggle(M.spotify !== false, (v) => { M.spotify = v; change(); }, "Spotify Connect"))]),
       el("h4", { class: "sub-title" }, "Other speakers to control"),
       el("p", { class: "hint" }, "Sonos, HomePod, Echo, Google speakers… through Home Assistant: the Music page gets a tab for each, with its song, buttons and volume."),
       ...(haSet ? [] : [field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
