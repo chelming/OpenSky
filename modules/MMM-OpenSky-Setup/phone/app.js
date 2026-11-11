@@ -684,6 +684,8 @@
   function aiCard() {
     const A = S.ai, ok = (v) => /^https?:\/\/[^/\s]+/i.test(String(v || "").trim());
     const test = async () => {
+      // (the button is never grayed out by what is typed: the card isn't redrawn while typing, so it would stay gray)
+      if (!ok(A.url)) { aiUi.err = "Type the AI helper's address first. It starts with http:// or https://"; aiUi.good = ""; render(); return; }
       aiUi.busy = true; aiUi.err = ""; aiUi.good = ""; render();
       try {
         const r = await api("POST", "/api/ai/test", { url: A.url || "", transcribeUrl: A.transcribeUrl || "" });
@@ -697,7 +699,7 @@
         "A model that understands sentences, running on your own network (llama.cpp's llama-server, Ollama, LM Studio…). Leave empty to switch quick add off."),
       field("Speech helper address (optional)", text(A.transcribeUrl || "", set("transcribeUrl"), { placeholder: "https://asr.example", inputmode: "url", autocapitalize: "off" }),
         "Adds a microphone button to New Event. Any server with an OpenAI-style /v1/audio/transcriptions works."),
-      el("button", { type: "button", class: "btn primary block", disabled: aiUi.busy || !ok(A.url), onclick: test }, aiUi.busy ? "Testing…" : "Test the connection")];
+      el("button", { type: "button", class: "btn primary block", disabled: aiUi.busy, onclick: test }, aiUi.busy ? "Testing…" : "Test the connection")];
     if (aiUi.good) body.push(el("p", { class: "good-note" }, aiUi.good));
     if (aiUi.err) body.push(el("p", { class: "err" }, aiUi.err));
     if (A.url && !S.profiles.some((p) => p.email)) body.push(el("p", { class: "hint" }, "To invite people to events, add their email under Your family → tap a person."));
