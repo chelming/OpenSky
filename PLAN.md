@@ -44,7 +44,7 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 | Weather (header + day tiles) | OpenWeatherMap (header) + Open-Meteo (7-day) ✅ | **Open-Meteo** default (no key) ✅; OpenWeatherMap ✅; **Weather page** ✅ (hourly: Open-Meteo; rain radar: RainViewer; alerts: NWS, US only) | °F/°C, location by address search |
 | Photos | Immich ✅ | **local folder / USB stick** default ✅; Immich ✅; 💭 Google Photos (API is very limited now) | Portrait pairing ✅ |
 | Family sharing | — | **share page** ✅ (family passcode: add photos, post a note to the Home screen; no settings access); 💭 email-to-frame, photo approval | Separate from phone setup, which stays short-lived |
-| Smart Home page | Home Assistant dashboard (webview) ✅ | Home Assistant; **any URL** embed; none | Generic "embedded page" with optional PIN |
+| Web pages (Smart Home, Frigate, Music Assistant…) | Home Assistant dashboard (webview) ✅ | **any URL** as its own sidebar page ✅ (phone setup → Extras → Web pages; title, icon, zoom; a PIN is optional); none | Log in once on the screen |
 | HA integration | screen switch/sensor, presence, sleep helpers ✅ | optional: auto-create HA entities via MQTT discovery or a small HA integration 💭 | Reference build uses REST + templates |
 | Header countdown pill | US holidays + birthdays ✅ | holidays by **country** ✅ (US: Google list; ~200 others: Nager.Date, + regions); birthdays from a calendar or a list | Themed icons ✅ |
 | Countdowns (trip, birthday, big day) | — | **countdowns** ✅: title, date, photo (upload or from the photo library), card on Home / banner on portrait, optional page, hides after the date; set up from the phone | Separate from the header pill |
