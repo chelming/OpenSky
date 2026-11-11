@@ -124,3 +124,7 @@ html[data-os-theme="dark"] .lc-list { --list-tint: #f4f4f5 !important; }
 html[data-os-theme="dark"] .hd-day.hd-is-today { background: #f4f4f5; }
 html[data-os-theme="dark"] .hd-nextweek { background: #f4f4f5; }
 html[data-os-theme="dark"] .hd-countdowns, html[data-os-theme="dark"] .hd-pill { --os-accent-tint: #f4f4f5; }
+/* ...and the same for the pale peach tints the other pages share (!important: the accent setting writes these inline) */
+html[data-os-theme="dark"] { --os-accent-soft: #e4e4e7 !important; --os-accent-tint: #f4f4f5 !important; }
+html[data-os-theme="dark"] .CX3 .cell.today { background-color: #f4f4f5 !important; }   /* the Calendar page's Today cell */
+html[data-os-theme="dark"] .hb-countdown:not([class*="hb-theme-"]), html[data-os-theme="dark"] .hb-theme-birthday, html[data-os-theme="dark"] .hb-theme-halloween { --cd-bg: #f4f4f5; }
