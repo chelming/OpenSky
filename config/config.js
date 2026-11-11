@@ -44,10 +44,10 @@ function textSizeOf(v) {
   return ["small", "normal", "large", "xlarge"].includes(k) ? k : "normal";
 }
 
-// look.theme: "light" (default) | "dark" | "auto" (by sun); same rule as lib/theme.js
+// look.theme: "light" (default) | "dark" | "auto" (by sun) | "system" (the browser's setting); same rule as lib/theme.js
 function themeOf(v) {
   const s = String(v == null ? "" : v).trim().toLowerCase().replace(/[\s_()-]/g, "");
-  return s === "dark" ? "dark" : (s === "auto" || s === "autobysun") ? "auto" : "light";
+  return s === "dark" ? "dark" : s === "system" ? "system" : (s === "auto" || s === "autobysun") ? "auto" : "light";
 }
 
 const { file: settingsFile, dir: settingsDir, settings: s } = readSettings();

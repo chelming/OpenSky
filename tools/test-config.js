@@ -193,7 +193,7 @@ ok("20 the Pi's rule (lib/text-size.js) and the screen/phone's (OpenSkyTextSize)
   ST.factor("xlarge") === 1.3 && ST.factor("small") === 0.9 && ST.factor("nope") === 1 && ST.factor() === 1);
 // dark mode: look.theme light (default) / dark / auto — config, the Pi (lib/theme.js) and the screen (OpenSkyTheme) agree; sun maths
 const themeIn = (v) => mod(build({ look: { theme: v } }), "MMM-OpenSky-Sidebar").config.theme;
-const themeCases = [["dark", "dark"], [" Auto ", "auto"], ["Auto (by sun)", "auto"], ["LIGHT", "light"], ["night", "light"], ["", "light"], [3, "light"], [undefined, "light"]];
+const themeCases = [["dark", "dark"], ["System", "system"], [" Auto ", "auto"], ["Auto (by sun)", "auto"], ["LIGHT", "light"], ["night", "light"], ["", "light"], [3, "light"], [undefined, "light"]];
 const themeGot = themeCases.map(([v]) => themeIn(v));
 ok("23 dark mode: names reach the screen; absent / anything else → light (today's look)", themeGot.every((g, i) => g === themeCases[i][1]), themeGot);
 const libTheme = require(path.join(__dirname, "..", "lib", "theme.js")), TH = global.window.OpenSkyTheme;
@@ -203,6 +203,7 @@ ok("25 dark mode: location and light sensor reach the Sidebar; no location → n
 process.env.OPENSKY_DOCKER = "1";
 ok("26 dark mode in Docker: the light sensor is never used (time / sun only)", mod(build({ look: { theme: "auto", lightSensor: true } }), "MMM-OpenSky-Sidebar").config.lightSensor === false);
 delete process.env.OPENSKY_DOCKER;
+ok("26b System follows the browser: isDark(\"system\") is the device's answer, not the clock", TH.isDark("system", new Date(), 0, 0, null, false, true) === true && TH.isDark("system", new Date(), 0, 0, null, true, false) === false && TH.isDark("light", new Date(), 0, 0, null, false, true) === false);
 // Boston, 10 Nov 2026: sunrise about 06:30 and sunset about 16:30 (EST = UTC-5; the maths is in UTC so check as instants)
 const bos = TH.sunTimes(new Date(2026, 10, 10, 12), 42.3601, -71.0589), minUtc = (d) => d.getUTCHours() * 60 + d.getUTCMinutes();
 ok("27 sun times: Boston in November (sunrise ~11:30 UTC, sunset ~21:30 UTC, on the same day); polar day / night; no location", bos && !bos.polar && Math.abs(minUtc(bos.rise) - 11 * 60 - 30) <= 15 && Math.abs(minUtc(bos.set) - 21 * 60 - 30) <= 15 && Math.abs(bos.set - bos.rise - 10 * 3600000) < 3600000 && bos.rise.getTime() > new Date(2026, 10, 10, 12).getTime() - 24 * 3600000 && bos.set.getTime() < new Date(2026, 10, 10, 12).getTime() + 24 * 3600000 &&
