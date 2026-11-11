@@ -112,10 +112,10 @@ html[data-layout="compact"] {
    The whole page is inverted (lightness flips, hue-rotate(180deg) puts every color's hue back), so every page, popup, the
    keyboard and the toasts are legible without a second stylesheet to keep in step. Photos, video and embedded pages are
    inverted back so they look as they are; the screensaver is already dark and is turned back as a whole. */
-html[data-os-theme="dark"] { filter: invert(1) hue-rotate(180deg) saturate(.8) contrast(.88); background: #fff; }   /* saturate + contrast: charcoal not pure black, softer tints */
+html[data-os-theme="dark"] { filter: invert(1) hue-rotate(180deg) contrast(.88); background: #fff; }   /* contrast: charcoal not pure black */
 html[data-os-theme="dark"] :is(img, video, canvas, webview, iframe):not(.ss-root *),
 html[data-os-theme="dark"] .ss-root,
-html[data-os-theme="dark"] .wp-hero { filter: contrast(1.1364) saturate(1.25) hue-rotate(180deg) invert(1); }   /* the exact inverse of the page's filter, so these look as they are */
+html[data-os-theme="dark"] .wp-hero { filter: contrast(1.1364) hue-rotate(180deg) invert(1); }   /* the exact inverse of the page's filter, so these look as they are */
 html[data-os-theme="dark"] .ost-dim { background: #fff; }   /* the evening dim layer is black; inverted it has to start out white */
 
 /* Dark mode: big tinted surfaces go neutral. A pale peach / green tint inverts into a muddy brown / olive block, so the card fill is
