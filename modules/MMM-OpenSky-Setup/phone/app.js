@@ -518,13 +518,16 @@
       b.append(whoColor(st));
       if (S.calendar.mergeShared) b.append(el("div", { class: "line" }, el("span", {}, el("b", {}, "Shared family calendar"), el("small", {}, "When the same event is on this calendar and another, it is shown once, with only the other calendar's name")),
         toggle(shared, (v) => { shared = v; }, "Shared family calendar")));
-      b.append(field("Only show events titled…", el("input", { type: "text", class: "input", value: only, placeholder: "e.g. ^Day [1-6]$", autocapitalize: "off", autocorrect: "off", spellcheck: "false", oninput: (e) => { only = e.target.value; } }),
-        "Leave empty to show everything. Otherwise only events whose title matches are shown (a pattern, upper or lower case): ^Day [1-6]$ keeps just Day 1 to Day 6; soccer|practice keeps either word."));
+      // (laid out like the switches around it: a divider, a black title, the explanation under it, then the box)
+      b.append(el("div", { class: "setting" },
+        el("b", {}, "Only show events titled…"),
+        el("small", {}, "Leave empty to show everything. Otherwise only events whose title matches are shown (a pattern, upper or lower case): ^Day [1-6]$ keeps just Day 1 to Day 6; soccer|practice keeps either word."),
+        el("input", { type: "text", class: "input", value: only, placeholder: "e.g. ^Day [1-6]$", "aria-label": "Only show events titled", autocapitalize: "off", autocorrect: "off", spellcheck: "false", oninput: (e) => { only = e.target.value; } })));
       b.append(el("div", { class: "line" }, el("span", {}, el("b", {}, "Show today's event in the header"), el("small", {}, "A pill by the holiday countdown with today's all-day event from this calendar, e.g. the school's \"Day 3\"")),
         toggle(inHeader, (v) => { inHeader = v; }, "Show today's event in the header")));
       if (c.type === "mealie") b.append(el("p", { class: "hint" }, "Which meals show:"), ...mealToggles(meals));
-      if (c.type !== "local" && c.type !== "caldav" && c.type !== "google" && c.type !== "mealie") b.append(field("Replace the link", el("textarea", { class: "input", rows: "2", placeholder: isSet(`calendar.sources.${c.name}`) ? "Saved ✓ — paste a new link to replace it" : "https://… or webcal://…", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.sources.${c.name}`] = e.target.value.trim(); } })));
-      if (c.type === "caldav") b.append(field("New password", el("input", { type: "password", class: "input", placeholder: "Saved ✓ — type to replace", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.caldav.${c.name}`] = { password: e.target.value.trim() }; } })));
+      if (c.type !== "local" && c.type !== "caldav" && c.type !== "google" && c.type !== "mealie") b.append(el("div", { class: "setting" }, el("b", {}, "Replace the link"), el("textarea", { class: "input", rows: "2", "aria-label": "Replace the link", placeholder: isSet(`calendar.sources.${c.name}`) ? "Saved ✓ — paste a new link to replace it" : "https://… or webcal://…", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.sources.${c.name}`] = e.target.value.trim(); } })));
+      if (c.type === "caldav") b.append(el("div", { class: "setting" }, el("b", {}, "New password"), el("input", { type: "password", class: "input", "aria-label": "New password", placeholder: "Saved ✓ — type to replace", oninput: (e) => { if (e.target.value.trim()) pending[`calendar.caldav.${c.name}`] = { password: e.target.value.trim() }; } })));
       if (c.type === "local") b.append(el("p", { class: "hint" }, "Removing it here takes it off the screen. Its events stay saved on the Pi."));
     }, [["Remove", "danger", () => {
       S.calendar.sources.splice(i, 1);
