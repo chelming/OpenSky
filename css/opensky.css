@@ -128,3 +128,15 @@ html[data-os-theme="dark"] .hd-countdowns, html[data-os-theme="dark"] .hd-pill {
 html[data-os-theme="dark"] { --os-accent-soft: #e4e4e7 !important; --os-accent-tint: #f4f4f5 !important; }
 html[data-os-theme="dark"] .CX3 .cell.today { background-color: #f4f4f5 !important; }   /* the Calendar page's Today cell */
 html[data-os-theme="dark"] .hb-countdown:not([class*="hb-theme-"]), html[data-os-theme="dark"] .hb-theme-birthday, html[data-os-theme="dark"] .hb-theme-halloween { --cd-bg: #f4f4f5; }
+/* Dark mode has no orange/brown by default: the default (peach) accent becomes blue (Sidebar.applyAccent), and the few hard-coded
+   warm colors follow. A color a person picked (accent, list or event colors) is never touched. */
+html[data-os-theme="dark"] .os-nav-today, html[data-os-theme="dark"] .hd-today.active { color: #1e3a8a; }
+html[data-os-theme="dark"] .hd-day.hd-is-today { box-shadow: inset 0 0 0 2px #c7d8f5; }
+html[data-os-theme="dark"] .hb-countdown:not([class*="hb-theme-"]), html[data-os-theme="dark"] .hb-theme-birthday, html[data-os-theme="dark"] .hb-theme-halloween { --cd-fg: #1d4ed8; }
+html[data-os-theme="dark"] .lc-list.alt:not([style*="--list-dark"]) { --list-dark: #1d4ed8; }
+html[data-os-theme="dark"] :is(.ch-error, .wg-answer) { color: #1d4ed8; }
+html[data-os-theme="dark"] .os-badge { background: linear-gradient(145deg, #9bc4ff 0%, #658fff 100%); box-shadow: 0 4px 12px rgba(101, 143, 255, .35); }   /* the family initial: blue, not peach */
+/* the warm holiday pills: Halloween purple, Thanksgiving green, Labor Day blue (the rest keep their own colors) */
+html[data-os-theme="dark"] .hb-theme-halloween { --cd-bg: #f4f0ff; --cd-fg: #6d4bc4; --cd-solid: #7b4ae2; }
+html[data-os-theme="dark"] .hb-theme-thanksgiving { --cd-bg: #ecf7ef; --cd-fg: #2e7d4f; --cd-solid: #2e9e57; }
+html[data-os-theme="dark"] .hb-theme-labor { --cd-bg: #edf3ff; --cd-fg: #2f5fb8; --cd-solid: #2f5fb8; }

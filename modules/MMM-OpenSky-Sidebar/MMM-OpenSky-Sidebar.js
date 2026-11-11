@@ -193,7 +193,9 @@ Module.register("MMM-OpenSky-Sidebar", {
     const T = window.OpenSkyTheme, mode = this.deviceTheme() || this.config.theme;
     const fresh = this._lux && Date.now() - this._lux.at < 15 * 60000 ? this._lux.v : null;   // a sensor reading from the last quarter hour
     const dark = T.isDark(mode, new Date(), this.config.latitude, this.config.longitude, this.config.lightSensor ? fresh : null, this.isDark(), this.systemDark());
+    const was = document.documentElement.dataset.osTheme;
     document.documentElement.dataset.osTheme = dark ? "dark" : "light";
+    if (was !== document.documentElement.dataset.osTheme && this.config.accent !== undefined) this.applyAccent(this.effectiveAccent());   // the default accent differs per look
     if (!this._themeTimer) this._themeTimer = setInterval(() => this.applyTheme(), 60000);   // the sun moves on
     if (this.config.lightSensor && !this._sensorTried) this.startLightSensor();
   },
@@ -235,6 +237,7 @@ Module.register("MMM-OpenSky-Sidebar", {
 
   // The accent color for every module (css/opensky.css defines the default peach tones)
   applyAccent(accent) {
+    if (accent === "peach" && this.isDark()) accent = "blue";   // dark mode: no orange/brown by default (a chosen accent is kept)
     if (accent === "peach") { ["", "-mid", "-light", "-soft", "-tint", "-dark"].forEach((k) => document.documentElement.style.removeProperty(`--os-accent${k}`)); return; }   // back to the css defaults
     const pal = window.OpenSkyEventColors && window.OpenSkyEventColors.PALETTE;
     const a = /^#[0-9a-f]{6}$/i.test(accent || "") ? accent : (pal && pal[accent] ? pal[accent][1] : null);
