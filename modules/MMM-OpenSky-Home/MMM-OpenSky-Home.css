@@ -328,7 +328,7 @@ html[data-layout="compact"] .hd-note-x { width: 38px; height: 38px; padding: 10p
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); /* equal lists, whatever the text; too narrow for all side by side → a grid */
-  grid-auto-rows: minmax(150px, 1fr);   /* tall enough for the title and "Add item"; more lists than fit → the card scrolls */
+  grid-auto-rows: minmax(150px, 1fr);   /* tall enough for the title and the + button; more lists than fit → the card scrolls */
   overflow-y: auto; scrollbar-width: none;
   gap: 14px;
 }

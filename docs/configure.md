@@ -412,7 +412,7 @@ If your server needs a key: `secrets.json → ai.key`.
   (the built-in Shopping List, Local To-do, Google Tasks or others connected to HA). Put your HA address and a
   long-lived access token (HA → your profile → Security) in `secrets.json → homeassistant.url / .token`.
 - **Mealie** (`"provider": "mealie", "shoppingList": "Weekly Shop"`): one of your Mealie shopping lists. See [Meals (Mealie)](#meals-on-this-screen-or-mealie).
-- Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap **Add item** to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
+- Home shows the first three lists; the **Lists** page shows them all (`columns` fit across, more scroll sideways). Tap the **+** in a list's header to add, tap the circle to check off (with Undo), or tap an item to edit or delete it.
 - **Greenlight chores** have their own page. See [Chores](#chores-greenlight-unofficial).
 
 ## Devices (Home Assistant tiles)
