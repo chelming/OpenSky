@@ -46,6 +46,9 @@ lists don't use Home Assistant already), Save, tap **Find my speakers** and swit
 `opensky.json`: `"music": { "speakers": ["media_player.kitchen", "media_player.living_room"] }` (the address and token
 go in `secrets.json` → `homeassistant`). This part doesn't need the add-on installed.
 
+**In Docker** this is the only part: the container has no speaker of its own, so phone setup hides the AirPlay/Spotify
+settings and the Music page is just the remote for your Home Assistant speakers.
+
 ## Good to know
 - It's **AirPlay 1** (the version Raspberry Pi OS ships). iPhones, iPads and Macs play to it like any AirPlay speaker;
   it just can't be grouped with HomePods for multi-room in the Home app.
