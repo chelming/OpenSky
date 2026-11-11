@@ -8,6 +8,9 @@ touchscreen, use [install.md](install.md) instead.)
 git clone https://github.com/CosmoJM/OpenSky.git && cd OpenSky
 docker compose up -d --build
 ```
+Or skip the build and use the ready-made image (amd64 and arm64) from each release: in `docker-compose.yml` replace the
+`build: .` line with `image: ghcr.io/chelming/opensky:latest` (or a version such as `:1.1.0`), then `docker compose pull && docker compose up -d`.
+
 Then open **`http://<this computer>:8080`** on each tablet. Your settings and data are in `./docker-config/`
 (`opensky.json`, `secrets.json`, lists, on-device calendar): back that folder up.
 

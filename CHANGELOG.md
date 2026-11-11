@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.0 — 2026-11-10
+- **Container image:** OpenSky is published as `ghcr.io/chelming/opensky` (amd64 and arm64) with every release, so Docker
+  users can pull it instead of building ([docs/docker.md](docs/docker.md)).
+- **Quick add:** type or say an event ("dentist Thursday at 3") and the New Event form is filled in for you to check;
+  uses any OpenAI-compatible AI server on your network (optional). Family members can be invited on Google events.
+- **Chores page** from Greenlight (unofficial): each child's chores for today, ticked off on the screen, with a count
+  of chores left on their circle in the header.
+- **Meals:** an on-device meal plan (Meals page, "Dinner tonight" on Home, meals on the calendar), or from Mealie with
+  recipes, ingredients and steps; Mealie also works as a shopping-list provider.
+- **Weather page:** right now, the next 24 hours, a rain radar and US weather alerts (a pill in the header); no keys.
+- **Countdowns:** a trip, birthday or big day with days to go and a photo, on Home and an optional page; family members
+  can add them from the share page.
+- **Devices page:** Home Assistant lights, switches, locks and sensors as tappable tiles.
+- **Family share page:** add photos and notes from a phone with a family passcode; no access to settings.
+- **Dark mode:** Light, Dark, Auto (by sunset, optional light sensor) or System (follows the device), per screen.
+- **Screensaver** (photos, clock, weather, Up next) and **event reminders** (chime and/or banner).
+- **Several screens:** screen profiles (pages, person, text size, accent) and per-screen text size, accent and hidden
+  pages; Home cards can be chosen and ordered; pages can be reordered by dragging.
+- **Layouts:** a portrait layout for vertical monitors and a compact layout for small screens; busy days show as many
+  events as fit and then "+N more"; Today's tile shows what's left; all-day events are a slim strip.
+- **Calendars:** show an event shared by several calendars once; people in the top bar filter calendars and lists; a
+  per-calendar title filter; a header pill with today's event of a calendar (e.g. the school's "Day 3").
+- **Phone setup:** "Remember this device" skips the pairing code; photos can be added and removed from the phone.
+- **Docker:** per-browser brightness, evening dim and sleep schedule; backups list mounted folders; the Music page
+  offers only Home Assistant speakers.
+- Docs are published as a GitHub Pages site, with refreshed screenshots.
+
 ## 1.0.4 — 2026-10-27
 - **Phone setup: any color for a calendar or a list** — besides the palette chips, the phone's color picker or a
   typed color code (like #8cbfc4), the same as for the accent color.
