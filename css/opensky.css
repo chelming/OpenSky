@@ -117,6 +117,7 @@ html[data-os-theme="dark"] :is(img, video, canvas, webview, iframe):not(.ss-root
 html[data-os-theme="dark"] .ss-root,
 html[data-os-theme="dark"] .wp-hero { filter: contrast(1.1364) hue-rotate(180deg) invert(1); }   /* the exact inverse of the page's filter, so these look as they are */
 html[data-os-theme="dark"] .ost-dim { background: #fff; }   /* the evening dim layer is black; inverted it has to start out white */
+html[data-os-theme="dark"] .os-sleep-cover { filter: contrast(1.1364) hue-rotate(180deg) invert(1); }   /* cancel the page inversion so the soft-sleep cover stays pure black */
 
 /* Dark mode: big tinted surfaces go neutral. A pale peach / green tint inverts into a muddy brown / olive block, so the card fill is
    a plain light gray (charcoal once inverted) and the color stays in the title, the ring and the accents. */
