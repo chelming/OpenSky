@@ -7,6 +7,7 @@ process.env.OPENSKY_SETTINGS = path.join(tmp, "opensky.json");
 process.env.OPENSKY_SECRETS = path.join(tmp, "secrets.json");
 process.env.OPENSKY_NOTES = path.join(tmp, "notes.json");
 process.env.OPENSKY_FAMILY_COUNTDOWNS = path.join(tmp, "family-countdowns.json");
+process.env.OPENSKY_LOCAL_MEALS = path.join(tmp, "meals.json");
 const notes = require("../lib/notes.js"), share = require("../lib/share.js");
 let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; console.log(`${v ? "PASS" : "FAIL"}  ${k} ${i}`); };
 
@@ -98,6 +99,18 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   ok("20e the state lists the countdowns", r.body.countdowns.length === 1, r.body);
   r = await call("POST", "/api/countdowns/delete", { id: r.body.countdowns[0].id }, as);
   ok("20f ...and one can be removed (twice → 404)", r.status === 200 && r.body.countdowns.length === 0 && (await call("POST", "/api/countdowns/delete", { id: "nope" }, as)).status === 404);
+  // the on-device meal plan
+  const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  ok("20g no on-device plan (Mealie only / off) → no meal card, adding is refused", (await call("GET", "/api/state", undefined, as)).body.meals === null && (await call("POST", "/api/meals", { date: day(1), type: "dinner", title: "Tacos" }, as)).status === 409);
+  settings = { photos: { folder: pics }, meals: { provider: "local" } };
+  r = await call("GET", "/api/state", undefined, as);
+  ok("20h with meals.provider local the state offers the meal types", r.body.meals && r.body.meals.types.includes("dinner") && r.body.meals.entries.length === 0, r.body.meals);
+  r = await call("POST", "/api/meals", { date: day(1), type: "dinner", title: "  Tacos " }, as);
+  ok("20i a phone plans a meal (no recipe), kept in meals.json", r.status === 200 && r.body.entries[0].title === "Tacos" && JSON.parse(fs.readFileSync(process.env.OPENSKY_LOCAL_MEALS, "utf8")).entries.length === 1, r.body);
+  ok("20j ...a missing title, a bad day or a bad meal type is refused, needs the cookie and the header", (await call("POST", "/api/meals", { date: day(1), type: "dinner", title: " " }, as)).status === 400 && (await call("POST", "/api/meals", { date: "nope", type: "dinner", title: "x" }, as)).status === 400 && (await call("POST", "/api/meals", { date: day(1), type: "brunch", title: "x" }, as)).status === 400 && (await call("POST", "/api/meals", { date: day(1), type: "dinner", title: "x" }, {})).status === 401 && (await call("POST", "/api/meals", { date: day(1), type: "dinner", title: "x" }, { ...as, "X-OpenSky": "0" })).status === 403);
+  const mid = r.body.entries[0].id;
+  r = await call("POST", "/api/meals/delete", { id: mid }, as);
+  ok("20k ...a meal can be removed (twice → 404)", r.status === 200 && r.body.entries.length === 0 && (await call("POST", "/api/meals/delete", { id: mid }, as)).status === 404);
   // everything setup can do is out of reach
   const reach = [["GET", "/api/backup"], ["POST", "/api/save"], ["POST", "/api/restore"], ["POST", "/api/done"], ["GET", "/api/share"], ["POST", "/api/share/passcode"],["GET", "/api/google"], ["GET", "/api/photos"]];
   const codes = [];
