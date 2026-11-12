@@ -671,7 +671,7 @@
           line("Meals on the calendar", "Each meal as an all-day entry", !!M.calendar, (v) => { m.calendar = v; if (!v) delete m.calendarColor; change(); render(); }));
         if (M.calendar) body.push(colorField(M.calendarColor || "orange", (c) => { m.calendarColor = c; change(); }));
         if (mealie) body.push(el("p", { class: "label" }, "Recipes"));
-        if (mealie) body.push(field("Shopping list for “Add ingredients”", select([["", "None (no button on recipes)"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
+        if (mealie && mealUi.mlists) body.push(field("Shopping list for “Add ingredients”", select([["", "None (no button on recipes)"], ...mealUi.mlists.map((x) => [x.id, x.name])], (M.addToList && M.addToList.id) || "", (v) => {
           const x = mealUi.mlists.find((y) => y.id === v);
           if (x) m.addToList = { id: x.id, name: x.name }; else delete m.addToList;
           change();
