@@ -305,7 +305,8 @@ const PAGES = {
     position: "fullscreen_above",
     config: {
       source: (s.wordgame && s.wordgame.source === "opensky") ? "opensky" : "nyt",
-      extraWords: (s.wordgame && Array.isArray(s.wordgame.extraWords)) ? s.wordgame.extraWords : []
+      extraWords: (s.wordgame && Array.isArray(s.wordgame.extraWords)) ? s.wordgame.extraWords : [],
+      people: profiles   // each person plays their own board; none configured = one shared family board
     }
   }],
   timer: () => [{

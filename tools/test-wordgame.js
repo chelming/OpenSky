@@ -54,6 +54,22 @@ const server = http.createServer((req, res) => {
   await h2.socketNotificationReceived("OS_WG_INIT", { source: "opensky" });
   ok("6 source \"opensky\": OpenSky's word, no NYT request", last().source === "opensky" && last().backup === false && hits === b2);
 
+  // with profiles: each person has their own board + stats; nobody picked = no board
+  fs.rmSync(process.env.OPENSKY_WORDGAME, { force: true });
+  await h2.socketNotificationReceived("OS_WG_INIT", { source: "opensky", people: ["Mom", "Kid"] });
+  ok("7 profiles, nobody picked: no board is sent", last().player === null && last().people.length === 2 && !last().guesses);
+  await h2.socketNotificationReceived("OS_WG_GUESS", { word: "crane", date: h2.ymd() });
+  ok("8 a guess with nobody picked is refused", /Pick who/.test(lastErr().message));
+  await h2.socketNotificationReceived("OS_WG_SYNC", { player: "mom" });
+  const date = last().date, ans = h2.cached.answer;
+  ok("9 a person (any case) gets their own board", last().player === "Mom" && last().guesses.length === 0);
+  await h2.socketNotificationReceived("OS_WG_GUESS", { word: ans, date, player: "Mom" });
+  ok("10 Mom solves it: her stats count", last().player === "Mom" && last().status === "won" && last().stats.played === 1);
+  await h2.socketNotificationReceived("OS_WG_SYNC", { player: "Kid" });
+  ok("11 Kid's board and stats are untouched", last().player === "Kid" && last().status === "playing" && last().guesses.length === 0 && last().stats.played === 0 && last().answer === null);
+  await h2.socketNotificationReceived("OS_WG_SYNC", { player: "Stranger" });
+  ok("12 an unknown name is treated as nobody", last().player === null);
+
   server.close(); fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`SUMMARY pass=${passed} fail=${failed}`);
 })().catch((e) => { console.log(`SUMMARY pass=${passed} fail=${failed + 1} (crashed: ${e.message})`); process.exit(1); });
