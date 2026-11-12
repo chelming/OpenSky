@@ -146,10 +146,11 @@ Module.register("MMM-OpenSky-Embed", {
     f.setAttribute("allow", "fullscreen; autoplay; clipboard-write");
     const z = this.config.zoom;
     if (z && z !== 1) { f.style.width = `${100 / z}%`; f.style.height = `${100 / z}%`; f.style.transform = `scale(${z})`; f.style.transformOrigin = "0 0"; }
-    // A page that refuses to be framed gives the page no error, so offer the way out once it has had a moment.
+    // A page that never finishes loading may be one that refuses to be framed: offer the way out. Once it has loaded,
+    // the hint goes away (a refusal also fires "load", so the always-visible Open in a new tab button covers that).
     clearTimeout(this._hintTimer);
     const later = (ms) => { clearTimeout(this._hintTimer); this._hintTimer = setTimeout(() => { hint.hidden = false; }, ms); };
-    f.addEventListener("load", () => later(2500));
+    f.addEventListener("load", () => { clearTimeout(this._hintTimer); hint.hidden = true; });
     later(6000);
     f.setAttribute("src", url);
     this.view = f;
