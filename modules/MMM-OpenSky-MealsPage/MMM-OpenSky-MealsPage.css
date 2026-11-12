@@ -29,7 +29,7 @@
 .mp-msg { margin: 6px 4px 12px; padding: 12px 16px; border-radius: 14px; background: #f3f4f6; color: #4b5563; font-size: 17px; }
 .mp-msg[hidden], .mp-days[hidden] { display: none; }
 
-.mp-days { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
+.mp-days { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .mp-day { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 10px; border-radius: 20px; background: #f9fafb; }
 .mp-today-col { background: #fff; box-shadow: inset 0 0 0 2px var(--os-accent); }
 .mp-day-head { text-transform: none; font-family: inherit; color: #1f2937; display: flex; flex-direction: column; margin: 2px 4px 10px; padding: 0 0 6px; border-bottom: 1px solid #e5e7eb; line-height: 1.15; }
@@ -70,3 +70,15 @@ html[data-layout="portrait"] .mp-meal-text b { font-size: 19px; }
 }
 .mp-add svg { width: 22px; height: 22px; }
 html[data-layout="compact"] .mp-add { width: 36px; height: 36px; }
+
+/* the spare eighth cell: week summary */
+.mp-sum { min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 14px 18px; border-radius: 20px; background: #f3f4f6; color: #374151; }
+.mp-sum-big { font-size: 40px; font-weight: 800; line-height: 1; color: var(--os-accent); }
+.mp-sum-sub { font-size: 17px; font-weight: 700; color: #6b7280; }
+.mp-sum-line { font-size: 17px; font-weight: 700; }
+.mp-sum small { margin-top: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; }
+.mp-sum-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.mp-chip { padding: 4px 12px; border-radius: 14px; background: #fff; font-size: 15px; font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.mp-chip-now { box-shadow: inset 0 0 0 2px var(--os-accent); }
+html[data-layout="portrait"] .mp-sum { display: none; }
+html[data-layout="portrait"] .mp-days { grid-template-rows: none; }

@@ -70,6 +70,23 @@ Module.register("MMM-OpenSky-MealsPage", {
     return e;
   },
 
+  // the spare cell beside the last day: how much of the week is planned and which days are still open
+  summary(days, entries, fmt) {
+    const keys = days.map((d) => this.key(d)), today = this.key(new Date(this.nowMs()));
+    const open = days.filter((d, i) => !entries.some((e) => e.date === keys[i]));
+    const planned = 7 - open.length, meals = entries.filter((e) => keys.includes(e.date)).length;
+    const box = this.el("section", "mp-sum");
+    box.append(this.el("b", "mp-sum-big", `${planned} of 7`), this.el("span", "mp-sum-sub", planned === 7 ? "days planned. The week is covered." : "days planned"));
+    if (meals) box.append(this.el("span", "mp-sum-line", `${meals} meal${meals === 1 ? "" : "s"} this week`));
+    if (open.length && open.length < 7) {
+      box.append(this.el("small", null, "Still open"));
+      const row = this.el("div", "mp-sum-days");
+      open.forEach((d) => row.append(this.el("span", `mp-chip${this.key(d) === today ? " mp-chip-now" : ""}`, fmt(d, { weekday: "short" }))));
+      box.append(row);
+    }
+    return box;
+  },
+
   render() {
     if (!this.root) return;
     const days = this.weekDays(), loc = this.locale();
@@ -84,7 +101,7 @@ Module.register("MMM-OpenSky-MealsPage", {
     box.hidden = false;
     const types = this.state.types || this.config.types, label = (t) => t === "side" ? "Side" : t.charAt(0).toUpperCase() + t.slice(1);
     const today = this.key(new Date(this.nowMs()));
-    box.replaceChildren(...days.map((d) => {
+    const cols = days.map((d) => {
       const k = this.key(d), col = this.el("section", `mp-day${k === today ? " mp-today-col" : ""}`);
       const h = this.el("header", "mp-day-head");
       h.append(this.el("b", null, fmt(d, { weekday: "short" })), this.el("span", null, fmt(d, { month: "short", day: "numeric" })));
@@ -113,7 +130,9 @@ Module.register("MMM-OpenSky-MealsPage", {
       if (!entries.length) items.append(this.el("p", "mp-empty", "—"));
       col.append(items);
       return col;
-    }));
+    });
+    cols.push(this.summary(days, st.entries, fmt));   // the eighth grid cell (4 + 3 days + this)
+    box.replaceChildren(...cols);
     this.root.querySelector(".mp-prev").disabled = this.weekOffset <= -1;   // Mealie is asked for a week back to five weeks ahead
     this.root.querySelector(".mp-next").disabled = this.weekOffset >= 5;
   }
