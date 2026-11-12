@@ -299,7 +299,7 @@ module.exports = NodeHelper.create({
   async handle(req, res) {
     if (!this.hostOk(req)) return this.send(res, 421, { error: "Wrong address" });
     const url = new URL(req.url, "http://x");
-    if (req.method === "GET" && STATIC[url.pathname]) {
+    if ((req.method === "GET" || req.method === "HEAD") && STATIC[url.pathname]) {
       const [file, type] = STATIC[url.pathname];
       return this.send(res, 200, fs.readFileSync(path.join(PHONE, file)), { "Content-Type": type });
     }
