@@ -81,10 +81,14 @@ Module.register("MMM-OpenSky-Embed", {
   },
 
   /* ---------------- the page ---------------- */
+  // Electron has <webview>; an ordinary browser (Docker + Chromium, a laptop) does not, so it gets an <iframe>.
+  hasWebview() { return /Electron\//.test(navigator.userAgent || ""); },
+
   open(url) {
     this.url = url;
     this.state = "open";
     this.unlocked = true;
+    if (!this.hasWebview()) return this.openFrame(url);
     this.root.innerHTML = `
       <div class="oe-frame"></div>
       <div class="oe-tools">
@@ -118,7 +122,44 @@ Module.register("MMM-OpenSky-Embed", {
     if (lockBtn) lockBtn.onclick = () => this.lock();
   },
 
-  showError(message) {
+  openFrame(url) {
+    // An https page can't show an http page inside it: the browser blocks "mixed content" without telling the page.
+    let mixed = false;
+    try { mixed = location.protocol === "https:" && new URL(url, location.href).protocol === "http:"; } catch (e) { /* bad address */ }
+    if (mixed) {
+      this.showError(`${this.config.title} has an http:// address, and this page is https://, so the browser won't show it here. Use an https:// address for it, or open it in its own tab.`, url);
+      return;
+    }
+    this.root.innerHTML = `
+      <div class="oe-frame"></div>
+      <div class="oe-tools">
+        <button class="oe-tool oe-reload" aria-label="Reload"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
+        <a class="oe-tool oe-newtab" target="_blank" rel="noopener" aria-label="Open in a new tab"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a>
+        ${this.config.locked ? `<button class="oe-tool oe-lockbtn" aria-label="Lock"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></button>` : ""}
+      </div>
+      <div class="oe-hint" hidden>Blank? Some sites don't allow being shown inside another page. <a class="oe-hintlink" target="_blank" rel="noopener">Open it in a new tab</a></div>`;
+    this.root.querySelector(".oe-newtab").href = url;
+    this.root.querySelector(".oe-hintlink").href = url;
+    const hint = this.root.querySelector(".oe-hint");
+    const f = document.createElement("iframe");
+    f.className = "oe-view";
+    f.setAttribute("allow", "fullscreen; autoplay; clipboard-write");
+    const z = this.config.zoom;
+    if (z && z !== 1) { f.style.width = `${100 / z}%`; f.style.height = `${100 / z}%`; f.style.transform = `scale(${z})`; f.style.transformOrigin = "0 0"; }
+    // A page that refuses to be framed gives the page no error, so offer the way out once it has had a moment.
+    clearTimeout(this._hintTimer);
+    const later = (ms) => { clearTimeout(this._hintTimer); this._hintTimer = setTimeout(() => { hint.hidden = false; }, ms); };
+    f.addEventListener("load", () => later(2500));
+    later(6000);
+    f.setAttribute("src", url);
+    this.view = f;
+    this.root.querySelector(".oe-frame").appendChild(f);
+    this.root.querySelector(".oe-reload").onclick = () => { hint.hidden = true; later(6000); f.setAttribute("src", url); };
+    const lockBtn = this.root.querySelector(".oe-lockbtn");
+    if (lockBtn) lockBtn.onclick = () => this.lock();
+  },
+
+  showError(message, openUrl) {
     this.state = "error";
     if (this.view) { this.view.remove(); this.view = null; }
     this.root.innerHTML = `
@@ -126,7 +167,9 @@ Module.register("MMM-OpenSky-Embed", {
         <div class="oe-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></svg></div>
         <div class="oe-title"></div><div class="oe-sub"></div>
         <button class="oe-btn">Try again</button>
+        ${openUrl ? `<a class="oe-link" target="_blank" rel="noopener">Open in a new tab</a>` : ""}
       </div>`;
+    if (openUrl) this.root.querySelector(".oe-link").href = openUrl;
     this.root.querySelector(".oe-title").textContent = this.config.title;
     this.root.querySelector(".oe-sub").textContent = message;
     this.root.querySelector(".oe-btn").onclick = () => {

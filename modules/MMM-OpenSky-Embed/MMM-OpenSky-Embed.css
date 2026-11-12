@@ -20,6 +20,11 @@
 .oe-tools { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 10px; }
 .oe-tool { width: 56px; height: 56px; padding: 14px; border: 0; border-radius: 50%; background: rgba(31, 41, 55, .72); color: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); cursor: pointer; }
 .oe-tool svg { width: 100%; height: 100%; display: block; }
+a.oe-tool { display: block; box-sizing: border-box; }
+.oe-view { background: #fff; }
+.oe-hint { position: absolute; left: 14px; bottom: 14px; max-width: calc(100% - 220px); padding: 10px 16px; border-radius: 14px; background: rgba(31, 41, 55, .82); color: #fff; font-size: 16px; }
+.oe-hint a { color: #fff; font-weight: 700; text-decoration: underline; }
+.oe-link { margin-top: 4px; font-size: 17px; font-weight: 700; color: var(--os-accent); }
 
 .oe-card {
   display: flex;
