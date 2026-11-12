@@ -19,7 +19,13 @@ module.exports = async (page, h) => {
   const toast = () => page.evaluate(() => { const t = document.querySelector(".wg-toast"); return t && !t.hidden ? t.textContent : ""; });
 
   await h.tap(".os-page-wordgame");
+  await until(async () => await page.evaluate(() => !!document.querySelector(".wg-person")));
+  ok("with family profiles nobody is selected: 'Who's playing?' with a button per person, no board yet",
+    await page.evaluate(() => /Who's playing/.test(document.body.textContent) && document.querySelectorAll(".wg-person").length === 2 && !document.querySelector(".wg-board")));
+  ok("the person's photo is shown on their button", await page.evaluate(() => !!document.querySelectorAll(".wg-person")[1].querySelector("img")));
+  await page.evaluate(() => document.querySelectorAll(".wg-person")[0].click());   // Mom
   await until(async () => !!(await st()));
+  ok("picking Mom shows Mom's puzzle and stats", await page.evaluate(() => /Mom's puzzle/.test(document.querySelector(".wg-sub").textContent) && /Mom's stats/.test(document.querySelector(".wg-side").textContent)));
   let s = await st();
   ok("NYT unreachable → today's OpenSky word (#number from Jan 1 2026), no answer sent to the page", s && s.number === days + 1 && s.backup && s.answer === null && s.guesses.length === 0, s && { number: s.number, answer: s.answer });
   ok("the subtitle says it's the backup word", await page.evaluate(() => /NYT's word unavailable/.test(document.querySelector(".wg-sub").textContent)));
@@ -51,7 +57,14 @@ module.exports = async (page, h) => {
   ok("solved: praise, stats (1 played, 100%), countdown to the next puzzle", s.status === "won" && s.stats.played === 1 && s.stats.won === 1 && /Magnificent|Genius|Impressive|Splendid|Great|Phew/.test(side) && /Next puzzle in \d+:\d\d:\d\d/.test(side), side.slice(0, 160));
   await h.shot("wordgame");
   const saved = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "out", "wordgame.test.json"), "utf8"));
-  ok("board + stats saved on the Pi", saved.today.status === "won" && saved.stats.played === 1);
+  ok("board + stats saved on the Pi, under Mom", saved.players.Mom.today.status === "won" && saved.players.Mom.stats.played === 1 && !saved.players.Kid);
+  await page.evaluate(() => document.querySelector(".wg-switch").click());
+  await until(async () => await page.evaluate(() => !!document.querySelector(".wg-person")));
+  ok("Switch player → back to 'Who's playing?'", await page.evaluate(() => document.querySelectorAll(".wg-person").length === 2 && !document.querySelector(".wg-board")));
+  await page.evaluate(() => document.querySelectorAll(".wg-person")[1].click());   // Kid
+  await until(async () => (await st()) && (await st()).player === "Kid");
+  s = await st();
+  ok("Kid starts their own fresh board and zero stats", s.player === "Kid" && s.guesses.length === 0 && s.status === "playing" && s.stats.played === 0, { p: s.player, g: s.guesses.length });
 
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);

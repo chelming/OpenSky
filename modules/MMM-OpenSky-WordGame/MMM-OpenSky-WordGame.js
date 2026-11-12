@@ -1,11 +1,14 @@
 /* MMM-OpenSky-WordGame — the family's daily five-letter word game (one shared board per day).
  * The answer stays on the server (node_helper.js checks every guess); the page only gets colored patterns.
+ * With family profiles each person plays their own board with their own stats: nobody is selected at first, the page asks
+ * who is playing, and "Switch player" (or the idle reset) goes back to that question. No profiles = one shared board.
  * Board + big touch keyboard (the wireless keyboard works too), tile flip animation, family stats card,
  * countdown to the next puzzle. New puzzle at midnight. */
 Module.register("MMM-OpenSky-WordGame", {
   defaults: {
     source: "nyt",      // "nyt" = the New York Times' daily word (OpenSky's own if NYT can't be reached) | "opensky"
-    extraWords: []      // more accepted guesses (opensky.json → wordgame.extraWords)
+    extraWords: [],     // more accepted guesses (opensky.json → wordgame.extraWords)
+    people: []          // family profiles [{ name, color, photo }]; empty = one shared board
   },
 
   ROWS: [["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"], ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
@@ -19,14 +22,15 @@ Module.register("MMM-OpenSky-WordGame", {
     this.typed = "";
     this.busy = false;
     this.revealRow = -1;             // row currently flipping (animation)
-    this.sendSocketNotification("OS_WG_INIT", { source: this.config.source, extraWords: this.config.extraWords });
+    this.player = this.config.people.length ? null : "";   // null = nobody picked yet
+    this.sendSocketNotification("OS_WG_INIT", { source: this.config.source, extraWords: this.config.extraWords, people: this.config.people.map((x) => x.name) });
     this.lastDate = this.ymd();
     setInterval(() => {              // midnight → new puzzle; countdown tick
-      if (this.ymd() !== this.lastDate) { this.lastDate = this.ymd(); this.typed = ""; this.sendSocketNotification("OS_WG_SYNC"); }
+      if (this.ymd() !== this.lastDate) { this.lastDate = this.ymd(); this.typed = ""; this.sync(); }
       this.tickCountdown();
     }, 1000);
     document.addEventListener("keydown", (e) => {
-      if (!this.visible || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!this.visible || this.player === null || e.ctrlKey || e.metaKey || e.altKey) return;
       const a = document.activeElement;
       if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
       if (/^[a-zA-Z]$/.test(e.key)) this.press(e.key.toLowerCase());
@@ -37,15 +41,31 @@ Module.register("MMM-OpenSky-WordGame", {
 
   ymd(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; },
 
+  sync() { if (this.player !== null) this.sendSocketNotification("OS_WG_SYNC", { player: this.player }); },
+
+  // Back to "who is playing?" (the next person starts fresh)
+  forgetPlayer() {
+    if (!this.config.people.length) return;
+    this.player = null; this.state = null; this.typed = ""; this.revealRow = -1; this.busy = false;
+    this.render();
+  },
+
+  choose(name) {
+    this.player = name; this.state = null; this.typed = "";
+    this.render();
+    this.sync();
+  },
+
   suspend() { this.visible = false; },
-  resume() { this.visible = true; this.sendSocketNotification("OS_WG_SYNC"); },
+  resume() { this.visible = true; this.sync(); },
 
   notificationReceived(n) {
-    if (n === "OPENSKY_IDLE_RESET") { this.typed = ""; this.render(); }
+    if (n === "OPENSKY_IDLE_RESET") { this.typed = ""; this.forgetPlayer(); this.render(); }
   },
 
   socketNotificationReceived(n, p) {
     if (n === "OS_WG_STATE" || n === "OS_WG_ERROR") clearTimeout(this._busyTimer);
+    if (n === "OS_WG_STATE" && (this.player === null || p.player !== this.player)) return;   // an answer for someone else / nobody picked
     if (n === "OS_WG_STATE") {
       const prevCount = this.state ? this.state.guesses.length : 0;
       const sameDay = this.state && this.state.date === p.date;
@@ -70,10 +90,10 @@ Module.register("MMM-OpenSky-WordGame", {
     else if (k === "enter") {
       if (this.typed.length < 5) { this.toast("Not enough letters"); this.shakeCurrent(); return; }
       this.busy = true;                                    // blocks a double-tapped Enter
-      this.sendSocketNotification("OS_WG_GUESS", { word: this.typed, date: s.date });
+      this.sendSocketNotification("OS_WG_GUESS", { word: this.typed, date: s.date, player: this.player });
       // If no answer comes back (connection blip), unlock instead of freezing the keyboard
       clearTimeout(this._busyTimer);
-      this._busyTimer = setTimeout(() => { if (this.busy) { this.busy = false; this.toast("Couldn't check that — try again"); this.sendSocketNotification("OS_WG_SYNC"); } }, 8000);
+      this._busyTimer = setTimeout(() => { if (this.busy) { this.busy = false; this.toast("Couldn't check that — try again"); this.sync(); } }, 8000);
       return;
     } else if (this.typed.length < 5) this.typed += k;
     this.renderBoard();
@@ -94,13 +114,15 @@ Module.register("MMM-OpenSky-WordGame", {
   render() {
     const r = this.root;
     if (!r) return;
+    if (this.player === null) return this.renderPicker();
     if (!this.state) { r.innerHTML = `<div class="wg-loading">Loading today's puzzle…</div>`; return; }
     const s = this.state;
     const day = new Date(s.date + "T12:00:00").toLocaleDateString(config.locale || "en-US", { weekday: "long", month: "long", day: "numeric" });
     r.innerHTML = `
       <div class="wg-head">
         <div class="wg-title"><span class="wg-logo"><i class="g">W</i></span>Word Game</div>
-        <div class="wg-sub">${s.number != null ? `#${s.number} · ` : ""}${day} · today's family puzzle${s.backup ? " (NYT's word unavailable — OpenSky's word)" : ""}</div>
+        ${this.player ? `<button class="wg-switch">Switch player</button>` : ""}
+        <div class="wg-sub">${s.number != null ? `#${s.number} · ` : ""}${day} · ${this.player ? `${this.esc(this.player)}'s puzzle` : "today's family puzzle"}${s.backup ? " (NYT's word unavailable — OpenSky's word)" : ""}</div>
       </div>
       <div class="wg-body">
         <div class="wg-play">
@@ -110,9 +132,22 @@ Module.register("MMM-OpenSky-WordGame", {
         </div>
         <aside class="wg-side"></aside>
       </div>`;
+    const sw = r.querySelector(".wg-switch");
+    if (sw) sw.onclick = () => this.forgetPlayer();
     this.renderBoard();
     this.renderKeys();
     this.renderStats();
+  },
+
+  esc(t) { return String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); },
+
+  renderPicker() {
+    this.root.innerHTML = `
+      <div class="wg-head"><div class="wg-title"><span class="wg-logo"><i class="g">W</i></span>Word Game</div></div>
+      <div class="wg-who"><div class="wg-who-q">Who's playing?</div>
+        <div class="wg-who-row">${this.config.people.map((x, i) => `<button class="wg-person" data-i="${i}">
+          <span class="wg-av" style="background:${x.color || "#9ca3af"}">${x.photo ? `<img src="${x.photo}" alt="">` : this.esc(x.name.charAt(0).toUpperCase())}</span>${this.esc(x.name)}</button>`).join("")}</div></div>`;
+    this.root.querySelectorAll(".wg-person").forEach((b) => { b.onclick = () => this.choose(this.config.people[Number(b.dataset.i)].name); });
   },
 
   renderBoard() {
@@ -172,11 +207,11 @@ Module.register("MMM-OpenSky-WordGame", {
       <div class="wg-card wg-result ${done ? s.status : "playing"}">
         ${done && s.status === "won" ? `<div class="wg-big">${this.PRAISE[s.guesses.length - 1]}</div><div class="wg-small">Solved in ${s.guesses.length} ${s.guesses.length === 1 ? "guess" : "guesses"}</div>`
         : done ? `<div class="wg-big">So close!</div><div class="wg-small">The word was <b class="wg-answer">${(s.answer || "").toUpperCase()}</b></div>`
-        : `<div class="wg-big">${s.guesses.length ? `Guess ${s.guesses.length + 1} of 6` : "Today's puzzle"}</div><div class="wg-small">${s.guesses.length ? "Keep going — everyone can chip in" : "Tap the letters or use the keyboard"}</div>`}
+        : `<div class="wg-big">${s.guesses.length ? `Guess ${s.guesses.length + 1} of 6` : "Today's puzzle"}</div><div class="wg-small">${s.guesses.length ? (this.player ? "Keep going" : "Keep going — everyone can chip in") : "Tap the letters or use the keyboard"}</div>`}
         ${done ? `<div class="wg-next">Next puzzle in <b class="wg-countdown"></b></div>` : ""}
       </div>
       <div class="wg-card">
-        <div class="wg-card-title">Family stats</div>
+        <div class="wg-card-title">${this.player ? `${this.esc(this.player)}'s stats` : "Family stats"}</div>
         <div class="wg-nums">
           <div><b>${st.played}</b><span>Played</span></div>
           <div><b>${winPct}</b><span>Win %</span></div>

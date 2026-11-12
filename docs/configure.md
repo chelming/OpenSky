@@ -108,7 +108,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |
-| `wordgame` | a daily five-letter word puzzle for the whole family (one shared board a day, family stats) |
+| `wordgame` | a daily five-letter word puzzle (with family profiles: pick who is playing first, each person has their own board and stats; without, one shared board) |
 | `timer` | kitchen timers with a chime |
 | `devices` | Home Assistant **lights, switches, locks and sensors** as tappable tiles — see [Devices](#devices-home-assistant-tiles) |
 | `music` | **add-on**: what's playing on the screen's speakers, with play / pause / skip and the volume — see [Music add-on](music.md) |
@@ -119,6 +119,7 @@ You can also add your own **web pages** as pages (next section).
 (fetched by the Pi). If NYT can't be reached, OpenSky's own word for the day is used (the page says so) and NYT is
 tried again until someone guesses. For OpenSky's own words only: `"wordgame": { "source": "opensky" }`.
 A word you know is real but isn't accepted? Add it: `"wordgame": { "extraWords": ["emoji"] }`.
+With family profiles set up, the page first asks **who is playing**; each person has their own board and stats (kept in `wordgame.json`), and "Switch player" (or the idle reset) goes back to the question. Earlier shared stats stay in the file but are not shown once profiles exist.
 
 ### Home cards
 ```json

@@ -121,3 +121,13 @@ html[data-layout="portrait"] .wg-body { grid-template-columns: minmax(0, 1fr); g
 html[data-layout="portrait"] .wg-play { padding: 20px 0; gap: 22px; }
 html[data-layout="portrait"] .wg-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
 html[data-layout="compact"] .wg-tile { font-size: 30px; border-width: 2px; }
+
+/* ---------- who's playing ---------- */
+.wg-switch { margin-left: auto; order: 3; border: 0; border-radius: 999px; padding: 10px 20px; background: #eef0f3; color: #1f2937; font: inherit; font-size: 17px; font-weight: 700; }
+.wg-head .wg-sub { order: 2; }
+.wg-who { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; border-radius: 26px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(31,41,55,.07); }
+.wg-who-q { font-size: 34px; font-weight: 800; }
+.wg-who-row { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; max-width: 90%; }
+.wg-person { display: flex; flex-direction: column; align-items: center; gap: 12px; border: 0; background: none; font: inherit; font-size: 22px; font-weight: 700; color: #1f2937; padding: 8px 14px; }
+.wg-av { width: 108px; height: 108px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 48px; font-weight: 800; }
+.wg-av img { width: 100%; height: 100%; object-fit: cover; }
