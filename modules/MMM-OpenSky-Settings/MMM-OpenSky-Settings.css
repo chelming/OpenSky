@@ -95,7 +95,7 @@
 .ost-input:focus { outline: none; border-color: var(--os-accent); }
 .ost-pin { flex: 0 0 200px; }
 .ost-top { align-items: flex-start; }
-.ost-icons { display: grid; grid-template-columns: repeat(8, 52px); gap: 8px; }
+.ost-icons { display: grid; grid-template-columns: repeat(8, 52px); gap: 8px; max-height: 240px; overflow-y: auto; }
 .ost-icon { width: 52px; height: 52px; padding: 12px; border: 0; border-radius: 14px; background: #f3f4f6; color: #4b5563; cursor: pointer; }
 .ost-icon svg { width: 100%; height: 100%; display: block; }
 .ost-icon.on { background: var(--os-accent-tint); color: var(--os-accent); box-shadow: inset 0 0 0 2px var(--os-accent); }
