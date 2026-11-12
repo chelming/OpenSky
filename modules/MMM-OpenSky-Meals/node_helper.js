@@ -36,7 +36,7 @@ module.exports = NodeHelper.create({
 
   socketNotificationReceived(n, p) {
     if (n === "OS_MEALS_INIT") {
-      this.cfg = { types: (p && p.types) || ["dinner"], local: !!(p && p.local) };
+      this.cfg = { types: (p && p.types) || ["dinner"], local: !!(p && p.local), mealie: !p || p.mealie !== false };
       if (this.cfg.local && !this.watching) { this.watching = true; localMeals.bus.on("change", () => this.refresh()); }
       clearInterval(this.timer);
       this.timer = setInterval(() => this.refresh(), 10 * 60 * 1000);
@@ -78,7 +78,15 @@ module.exports = NodeHelper.create({
     this.lastRefresh = Date.now();
     try {
       const now = Date.now();
-      this.last = { entries: this.cfg.local ? localMeals.planEntries(now - 7 * DAY, now + 35 * DAY, this.cfg.types) : await mealie.planEntries(now - 7 * DAY, now + 35 * DAY, this.cfg.types) };
+      const from = now - 7 * DAY, to = now + 35 * DAY;
+      const mine = () => this.cfg.local ? localMeals.planEntries(from, to, this.cfg.types).map((e) => ({ ...e, local: true })) : [];
+      let theirs = [], err = null;
+      if (this.cfg.mealie) {
+        try { theirs = await mealie.planEntries(from, to, this.cfg.types); }
+        catch (e) { if (!this.cfg.local) throw e; err = e; theirs = (this.last && this.last.mealie) || []; }   // on-device meals still show when Mealie is down
+      }
+      this.last = { entries: [...theirs, ...mine()], mealie: theirs };
+      if (err) throw err;
       if (this.error) console.log("[OpenSky] meals: Mealie is answering again");
       this.error = null;
     } catch (e) {

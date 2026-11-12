@@ -99,7 +99,7 @@ Module.register("MMM-OpenSky-MealsPage", {
       const items = this.el("div", "mp-items");
       const entries = st.entries.filter((e) => e.date === k);
       entries.forEach((e) => {
-        const c = this.el("button", `mp-meal${e.slug || this.config.editable ? "" : " mp-plain"}`);
+        const c = this.el("button", `mp-meal${e.slug || e.local ? "" : " mp-plain"}`);
         c.type = "button";
         if (e.hasImage && e.recipeId) { const im = this.el("img", "mp-thumb"); im.alt = ""; im.loading = "lazy"; im.src = `/opensky-meal-image/${encodeURIComponent(e.recipeId)}`; im.onerror = () => im.remove(); c.append(im); }
         const t = this.el("span", "mp-meal-text");
@@ -107,7 +107,7 @@ Module.register("MMM-OpenSky-MealsPage", {
         t.append(this.el("b", null, e.title));
         if (e.time) t.append(this.el("small", "mp-time", e.time));
         c.append(t);
-        if (e.slug || this.config.editable) c.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
+        if (e.slug || e.local) c.onclick = () => this.sendNotification("OPENSKY_MEAL_OPEN", { entry: e });
         items.append(c);
       });
       if (!entries.length) items.append(this.el("p", "mp-empty", "—"));
