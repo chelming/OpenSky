@@ -167,7 +167,9 @@ pick an icon, optionally lock it with a PIN, then **Restart now**. Edit or remov
 - `title` is the sidebar label; `icon` is picked from the icon grid in phone setup or Settings (about 75 icons: cameras,
   lights, servers, music, home, pets, weather, health… many from [Tabler Icons](https://tabler.io/icons)); `zoom` (e.g. `0.8`) fits more of a busy page.
 - Log in once on the screen (the keyboard appears); the page remembers it like a browser does.
-- **Back** and **Reload** buttons sit in the bottom-right corner.
+- **Back** and **Reload** buttons sit in the bottom-right corner. In an ordinary browser (Docker, a laptop or tablet) the page is
+  shown in a frame instead: there is no Back button (use the page's own links), and an **Open in a new tab** button sits beside Reload.
+  If the page stays blank, see [Web page is blank](troubleshooting.md#a-web-page-stays-blank-home-assistant-frigate).
 - **Private address or a PIN:** put them in `secrets.json`, not here (opensky.json can be read by devices on your Wi-Fi):
   ```json
   "embeds": { "money": { "url": "http://192.168.1.50:8080/", "pin": "4826" } }

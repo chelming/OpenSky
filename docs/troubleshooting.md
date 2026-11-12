@@ -96,6 +96,24 @@ OpenSky's calendar helper listens on port 5747 on the Pi itself. If another prog
 - A photo is sideways: OpenSky follows the photo's own rotation setting. Re-save it from a photo app to fix it.
 - Immich: check `photos.url` (with `http://` and the port, usually `:2283`) and the API key.
 
+## A web page stays blank (Home Assistant, Frigate)
+This is about the pages you add in Settings → Pages → *Add a web page*. In a browser they are shown in a frame, and a
+site can refuse that. It is not a CORS problem. Open the browser's developer tools (F12) → Console: it names the cause.
+- **"Refused to display … in a frame" / `X-Frame-Options` / `frame-ancestors`** — the site forbids being framed.
+  **Home Assistant:** in `configuration.yaml` add
+  ```yaml
+  http:
+    use_x_frame_options: false
+  ```
+  then restart Home Assistant (Settings → System → Restart). If you also use a reverse proxy, it must not add `X-Frame-Options`
+  or a `frame-ancestors` rule either. **Frigate:** its own page can be framed; if you reach it through a proxy, remove the proxy's
+  `X-Frame-Options` / `Content-Security-Policy: frame-ancestors` header.
+- **"Mixed Content"** — OpenSky is opened as `https://…` but the page's address starts with `http://`. The browser won't show it
+  there (OpenSky says so on the page). Give the page an `https://` address, or open OpenSky over `http://` on your home network.
+- **You are asked to log in again and again** — a framed site's cookies are treated as third-party. Serving both from the same
+  domain (for example `opensky.example.com` and `frigate.example.com`) keeps them first-party and usually fixes it.
+- Whatever the cause, **Open in a new tab** (bottom-right, or in the hint that appears on a blank page) always works.
+
 ## Touch is off, or the time is wrong
 - **Time**: set the time zone with `sudo raspi-config nonint do_change_timezone <Your/Zone>` and restart.
 - **Touch lands in the wrong place**: that's the display's setting in Raspberry Pi OS (Screen Configuration → Touchscreen), not OpenSky's.

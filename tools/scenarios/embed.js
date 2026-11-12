@@ -58,6 +58,17 @@ module.exports = async (page, h) => {
   await pin("2468"); await h.sleep(800);
   ok("5 wrong PINs → a pause (even the right PIN waits)", /Too many tries — wait \d+ s/.test(m) && !(await viewIn("vault")), m);
 
+  // an ordinary browser has no <webview>: the page falls back to an <iframe> (forced here, the harness runs in Electron)
+  await h.tap(".os-page-home"); await h.sleep(400);
+  await page.evaluate(() => { const m = MM.getModules().withClass("MMM-OpenSky-Embed").find((x) => x.config.key === "smarthome"); m.hasWebview = () => false; m.view = null; m.state = "idle"; m.url = null; });
+  await h.tap(".os-page-smarthome");
+  await until(async () => page.evaluate((sel) => !!document.querySelector(sel + " iframe.oe-view"), root("smarthome")));
+  ok("no <webview> available: the page opens in an <iframe>", await page.evaluate((sel) => !!document.querySelector(sel + " iframe.oe-view") && !document.querySelector(sel + " webview"), root("smarthome")));
+  ok("iframe mode has Reload + Open in a new tab (and no Back)", await page.evaluate((sel) => !!document.querySelector(sel + " .oe-reload") && /embed\.html$/.test(document.querySelector(sel + " .oe-newtab")?.href || "") && !document.querySelector(sel + " .oe-back"), root("smarthome")));
+  await until(async () => page.evaluate((sel) => !document.querySelector(sel + " .oe-hint")?.hidden, root("smarthome")), 40);
+  ok("iframe mode: the 'blank? open in a new tab' hint appears", await page.evaluate((sel) => !document.querySelector(sel + " .oe-hint")?.hidden, root("smarthome")));
+  await h.shot("embed-iframe");
+
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };
