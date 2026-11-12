@@ -14,6 +14,13 @@ opensky logs       # what happened lately (the newest lines are at the bottom)
   Usual causes are a missing comma between items, a comma after the last item, or a missing quote.
 - After a power cut it should start by itself. If it doesn't, re-run `./install.sh` and answer **yes** to "Log in automatically".
 
+## The page shows an error or "404" after a restart
+- A page that's open when OpenSky restarts checks the server every few seconds and **reloads by itself** once it answers again,
+  so it should recover within a few seconds of the restart finishing.
+- With a browser showing the screen (Docker), you can also turn on pull-to-refresh by starting Chromium with
+  `--pull-to-refresh=1` (add it to the kiosk/launch command); then drag down from the top of a page to reload it.
+- Still stuck? Docker: `docker logs opensky` (the server may not have started). Pi: `opensky status` and `opensky logs`.
+
 ## Sleep doesn't turn my screen off properly (or it comes back on)
 Settings → **Sleep turns off by** → try each option with **Test**. Monitors differ: some go to sleep when the signal
 stops, some reconnect and come back on (OpenSky notices and switches to Black screen + dim), TVs often prefer HDMI-CEC.

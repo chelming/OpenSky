@@ -28,7 +28,7 @@ can install, configure and extend.
 - Out: the reference build's finance page. (A generic "PIN-locked embedded page" may come back as an option.)
 
 ## Options matrix — the reference build's choice, and what OpenSky should offer
-Legend: **default** = what a new install uses; ✅ = in the reference build already; 🔜 = planned; 💭 = idea.
+Legend: **default** = what a new install uses; ✅ = in the reference build already; 💭 = idea.
 
 | Area | Reference build | Options to offer | Notes |
 |---|---|---|---|
@@ -38,13 +38,13 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 | Screen off/on | soft sleep (black cover + DDC backlight 0) ✅ | Settings → "Sleep turns off by" ✅: auto / black screen + dim / signal off (wlr-randr, came-back self-check + did-it-wake check) / HDMI-CEC (only when a TV answers) / display backlight; Test button; wake-on-touch input watcher. DDC/CI power-off removed after a real test fully powered down a touch monitor (only its power button woke it) | Auto-detect + "test" button |
 | Wake | touch / mouse / keyboard ✅ | + motion sensor (PIR) 💭; + presence (Home Assistant) | |
 | Sleep schedule | Settings page + HA automations ✅ | **built-in schedule** default ✅; Home Assistant optional | Don't require HA |
-| Calendar (read) | iCloud via CalDAV backend ✅ | **ICS URL** default ✅ (Google/Outlook/iCloud "secret address"); on-device ✅; iCloud + generic CalDAV ✅; Google Calendar API ✅ (own OAuth client, guided on the phone); Microsoft 365 / Outlook (Graph) | Several calendars, color per person |
-| Calendar (add/edit) | iCloud CalDAV ✅ | CalDAV ✅; Google (OAuth, read + write) ✅; Microsoft 365 💭; read-only mode ✅ | OAuth = setup friction; guide it |
-| Lists | Todoist (2 projects) ✅ | **on-device lists** default (no account) ✅; Todoist ✅; Home Assistant to-do ✅ (covers Google Tasks etc. connected to HA); Google Tasks; Microsoft To Do; Apple Reminders (CalDAV VTODO); Mealie shopping lists ✅; on-device meal plan ✅ (Meals page); 💭 Grocy, AnyList | Any number of lists, user-named |
-| Weather (header + day tiles) | OpenWeatherMap (header) + Open-Meteo (7-day) ✅ | **Open-Meteo** default (no key) ✅; OpenWeatherMap ✅; 💭 Met.no; **Weather page** ✅ (hourly: Open-Meteo; rain radar: RainViewer; alerts: NWS, US only, other countries 💭) | °F/°C, location by address search |
-| Photos | Immich ✅ | **local folder / USB stick** default ✅; Immich ✅; 🔜 PhotoPrism; Nextcloud/WebDAV; iCloud shared album link; 💭 Google Photos (API is very limited now) | Portrait pairing ✅ |
+| Calendar (read) | iCloud via CalDAV backend ✅ | **ICS URL** default ✅ (Google/Outlook/iCloud "secret address"); on-device ✅; iCloud + generic CalDAV ✅; Google Calendar API ✅ (own OAuth client, guided on the phone) | Several calendars, color per person |
+| Calendar (add/edit) | iCloud CalDAV ✅ | CalDAV ✅; Google (OAuth, read + write) ✅; read-only mode ✅ | OAuth = setup friction; guide it |
+| Lists | Todoist (2 projects) ✅ | **on-device lists** default (no account) ✅; Todoist ✅; Home Assistant to-do ✅ (covers Google Tasks etc. connected to HA); Mealie shopping lists ✅; on-device meal plan ✅ (Meals page); 💭 Grocy, AnyList | Any number of lists, user-named |
+| Weather (header + day tiles) | OpenWeatherMap (header) + Open-Meteo (7-day) ✅ | **Open-Meteo** default (no key) ✅; OpenWeatherMap ✅; **Weather page** ✅ (hourly: Open-Meteo; rain radar: RainViewer; alerts: NWS, US only) | °F/°C, location by address search |
+| Photos | Immich ✅ | **local folder / USB stick** default ✅; Immich ✅; 💭 Google Photos (API is very limited now) | Portrait pairing ✅ |
 | Family sharing | — | **share page** ✅ (family passcode: add photos, post a note to the Home screen; no settings access); 💭 email-to-frame, photo approval | Separate from phone setup, which stays short-lived |
-| Smart Home page | Home Assistant dashboard (webview) ✅ | Home Assistant; **any URL** embed; none | Generic "embedded page" with optional PIN |
+| Web pages (Smart Home, Frigate, Music Assistant…) | Home Assistant dashboard (webview) ✅ | **any URL** as its own sidebar page ✅ (phone setup → Extras → Web pages; title, icon, zoom; a PIN is optional); none | Log in once on the screen |
 | HA integration | screen switch/sensor, presence, sleep helpers ✅ | optional: auto-create HA entities via MQTT discovery or a small HA integration 💭 | Reference build uses REST + templates |
 | Header countdown pill | US holidays + birthdays ✅ | holidays by **country** ✅ (US: Google list; ~200 others: Nager.Date, + regions); birthdays from a calendar or a list | Themed icons ✅ |
 | Countdowns (trip, birthday, big day) | — | **countdowns** ✅: title, date, photo (upload or from the photo library), card on Home / banner on portrait, optional page, hides after the date; set up from the phone | Separate from the header pill |
@@ -52,10 +52,10 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 | Curbside pickup icons | New Bedford rules (collection.js) ✅ | generic schedule ✅ (trash day, recycling weekly/every other week, yard-waste weeks, holiday shift rule); ICS import ✅ (city / ReCollect pickup calendars → icons by keyword) (many cities / ReCollect publish one); city presets contributed by users | Reference city = example preset |
 | Timer chime | USB speaker (PipeWire) ✅ | any audio output; 💭 smart-speaker announcement via HA | |
 | Daily word game | NYT daily word ✅ | **NYT word default** ✅ (the maintainer's call); built-in SCOWL words as backup / opt-out ✅ | Rename (not "Wordle", a NYT trademark) |
-| On-screen keyboard | iPad-style US ✅ | own module ✅; 🔜 layouts (US, UK, intl.); 💭 languages | |
+| On-screen keyboard | iPad-style US ✅ | own module ✅; 💭 languages | |
 | Brightness / volume (Settings) | ddcutil + wpctl ✅ | DDC/CI; Pi display backlight; none (hide slider) | Auto-detect |
-| Look & feel | family name in the header, pastel theme ✅ | family name ✅, 12/24 h ✅, units ✅, first day of week ✅; accent color ✅; text size ✅; compact layout for small screens ✅, portrait (vertical monitor) layout ✅, screensaver (photos + clock + Up next, off by default; phone setup → Extras) ✅; event reminders (chime + banner before an event, off by default) ✅; dark mode (Light / Dark / Auto by sunset, per screen, optional light sensor) ✅; 🔜 date format; 💭 languages (i18n) | |
-| Updates | manual | "Update" button in Settings ✅ (git pull + installer); automatic rollback when it doesn't start ✅ + `opensky rollback`; 🔜 settings migrations | Big for friendliness |
+| Look & feel | family name in the header, pastel theme ✅ | family name ✅, 12/24 h ✅, units ✅, first day of week ✅; accent color ✅; text size ✅; compact layout for small screens ✅, portrait (vertical monitor) layout ✅, screensaver (photos + clock + Up next, off by default; phone setup → Extras) ✅; event reminders (chime + banner before an event, off by default) ✅; dark mode (Light / Dark / Auto by sunset, per screen, optional light sensor) ✅; 💭 languages (i18n) | |
+| Updates | manual | "Update" button in Settings ✅ (git pull + installer); automatic rollback when it doesn't start ✅ + `opensky rollback` | Big for friendliness |
 | Backups | nightly git + NAS (reference build) | export/import from the phone setup page ✅ (settings + on-device data; passwords optional) | |
 | Food (add-on) | Google Places + Routes ✅ | Google (own key); 💭 OpenStreetMap/Overpass (free, no key) | Later |
 
@@ -96,10 +96,8 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
 6. ✅ **Public release v1.0.0** (2026-10-23): tag + GitHub release. Next: announcement (MagicMirror forum "Showcase").
 
 ## v2 (nice to have — after v1.0)
-- Look: dark mode, date format, more themes; languages (i18n); keyboard layouts (UK, international).
-- More providers: Microsoft 365 / Outlook (Graph) calendars, Google Tasks direct, Apple Reminders (CalDAV VTODO),
-  PhotoPrism / Nextcloud photos, NWS / Met.no weather.
-- Presence: screen on/off from Home Assistant (nobody home → off), settings migrations between versions.
+- Look: ✅ dark mode; more themes; languages (i18n).
+- Presence: screen on/off from Home Assistant (nobody home → off).
 - Add-ons: **Food** (nearby restaurants), others from the community; a ready-to-flash SD-card image.
 - **Devices page:** ✅ native Home Assistant tiles — lights and switches toggle, locks need a confirm tap, sensors read-only
   (`MMM-OpenSky-Devices`, `lib/ha-tiles.js`, docs/configure.md → Devices). Maybe later: dimmers, covers, climate, scenes.
