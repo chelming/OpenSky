@@ -30,7 +30,16 @@ const theme = require(path.join(global.root_path || process.cwd(), "modules", "o
 const DRY = process.env.OPENSKY_DRY_RUN === "1";
 const DOCKER = process.env.OPENSKY_DOCKER === "1";   // in a container: Docker restarts us when we exit; no Pi to update or power off
 // the icons a web page can have (same list as OpenSkyIcons.webPage in lib/client/opensky-client.js)
-const WEB_ICONS = ["embed", "smarthome", "globe", "camera", "play", "music", "cart", "food", "school", "briefcase", "heart", "chart", "cloud", "car", "paw", "book"];
+// (read from that file so the two can't drift apart)
+const WEB_ICONS = (() => {
+  try {
+    const src = fs.readFileSync(path.resolve(__dirname, "..", "..", "lib", "client", "opensky-client.js"), "utf8");
+    const list = (/webPage:\s*\[([^\]]*)\]/.exec(src) || [])[1] || "";
+    const names = list.match(/"[a-z0-9]+"/g) || [];
+    if (names.length) return names.map((n) => n.slice(1, -1));
+  } catch (e) { /* fall back below */ }
+  return ["embed", "smarthome", "globe", "camera", "play", "music", "cart", "food", "school", "briefcase", "heart", "chart", "cloud", "car", "paw", "book"];
+})();
 const REPO = path.resolve(__dirname, "..", "..");   // (MagicMirror links the module in; Node resolves the real folder)
 const SETTINGS_DIR = path.dirname(process.env.OPENSKY_SETTINGS || path.join(global.root_path || process.cwd(), "config", "opensky.json"));
 const FILE = process.env.OPENSKY_DEVICE_SETTINGS || path.join(SETTINGS_DIR, "device.json");

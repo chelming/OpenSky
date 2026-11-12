@@ -164,8 +164,8 @@ pick an icon, optionally lock it with a PIN, then **Restart now**. Edit or remov
 }
 ```
 - The key (`smarthome` here) is what you put in `pages`. Lower-case letters, digits and `-`.
-- `title` is the sidebar label; `icon` is one of `embed globe smarthome camera play music cart food school briefcase
-  heart chart cloud car paw book`; `zoom` (e.g. `0.8`) fits more of a busy page.
+- `title` is the sidebar label; `icon` is picked from the icon grid in phone setup or Settings (about 75 icons: cameras,
+  lights, servers, music, home, pets, weather, health… many from [Tabler Icons](https://tabler.io/icons)); `zoom` (e.g. `0.8`) fits more of a busy page.
 - Log in once on the screen (the keyboard appears); the page remembers it like a browser does.
 - **Back** and **Reload** buttons sit in the bottom-right corner.
 - **Private address or a PIN:** put them in `secrets.json`, not here (opensky.json can be read by devices on your Wi-Fi):
