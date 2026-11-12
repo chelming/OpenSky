@@ -78,6 +78,17 @@ module.exports = async (page, h, app) => {
   await until(() => phone.evaluate(() => /Added/.test(document.body.innerText)));
   ok("a photo from the phone lands in the photo folder", fs.existsSync(path.join(PICS, "Beach.png")) && await phone.evaluate(() => /Added/.test(document.body.innerText)));
 
+  // plan a meal from the phone (meals.provider local): kept on the Pi, listed on the phone, removable
+  const mealFile = path.join(OUT, "meals.test.json"), stored = () => { try { return JSON.parse(fs.readFileSync(mealFile, "utf8")).entries || []; } catch (e) { return []; } };
+  ok("the phone offers a Plan a meal card", await phone.evaluate(() => /Plan a meal/.test(document.body.innerText)));
+  await phone.fill("input[placeholder^='Tacos']", "Pizza night");
+  await phone.click("button:has-text('Add to the plan')");
+  await until(() => phone.evaluate(() => /Pizza night/.test(document.body.innerText)));
+  ok("a meal planned on the phone is listed there and kept on the Pi", await phone.evaluate(() => /Pizza night/.test(document.body.innerText)) && stored().some((e) => e.title === "Pizza night"), stored());
+  await phone.click("button[aria-label='Remove Pizza night']");
+  await until(() => !stored().length);
+  ok("...and removing it takes it out of the plan", !stored().length);
+
   // the page keeps the phone signed in; a new passcode signs it out
   await phone.reload();
   await until(() => phone.evaluate(() => !!document.querySelector("textarea")));
@@ -91,5 +102,5 @@ module.exports = async (page, h, app) => {
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };
-module.exports.patchSettings = (s) => { s.share = { enabled: true }; s.photos = { ...(s.photos || {}), folder: PICS }; };
+module.exports.patchSettings = (s) => { s.share = { enabled: true }; s.photos = { ...(s.photos || {}), folder: PICS }; s.meals = { provider: "local", types: ["dinner"] }; };
 module.exports.env = { OPENSKY_SHARE_PORT: String(PORT) };
