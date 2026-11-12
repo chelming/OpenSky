@@ -112,7 +112,7 @@ site can refuse that. It is not a CORS problem. Open the browser's developer too
   there (OpenSky says so on the page). Give the page an `https://` address, or open OpenSky over `http://` on your home network.
 - **You are asked to log in again and again** — a framed site's cookies are treated as third-party. Serving both from the same
   domain (for example `opensky.example.com` and `frigate.example.com`) keeps them first-party and usually fixes it.
-- Whatever the cause, **Open in a new tab** (bottom-right, or in the hint that appears on a blank page) always works.
+- Whatever the cause, **Open in a new tab** (bottom-right; a page that hasn't loaded after a few seconds also gets a hint pointing to it) always works.
 
 ## Touch is off, or the time is wrong
 - **Time**: set the time zone with `sudo raspi-config nonint do_change_timezone <Your/Zone>` and restart.

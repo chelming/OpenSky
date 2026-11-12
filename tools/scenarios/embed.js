@@ -65,8 +65,8 @@ module.exports = async (page, h) => {
   await until(async () => page.evaluate((sel) => !!document.querySelector(sel + " iframe.oe-view"), root("smarthome")));
   ok("no <webview> available: the page opens in an <iframe>", await page.evaluate((sel) => !!document.querySelector(sel + " iframe.oe-view") && !document.querySelector(sel + " webview"), root("smarthome")));
   ok("iframe mode has Reload + Open in a new tab (and no Back)", await page.evaluate((sel) => !!document.querySelector(sel + " .oe-reload") && /embed\.html$/.test(document.querySelector(sel + " .oe-newtab")?.href || "") && !document.querySelector(sel + " .oe-back"), root("smarthome")));
-  await until(async () => page.evaluate((sel) => !document.querySelector(sel + " .oe-hint")?.hidden, root("smarthome")), 40);
-  ok("iframe mode: the 'blank? open in a new tab' hint appears", await page.evaluate((sel) => !document.querySelector(sel + " .oe-hint")?.hidden, root("smarthome")));
+  await h.sleep(7000);   // past the 6 s the hint waits for a page that never loads
+  ok("iframe mode: a page that loaded does not show the 'blank?' hint", await page.evaluate((sel) => document.querySelector(sel + " .oe-hint")?.hidden === true, root("smarthome")));
   await h.shot("embed-iframe");
 
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
