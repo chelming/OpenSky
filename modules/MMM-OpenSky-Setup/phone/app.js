@@ -642,16 +642,16 @@
   function mealsCard() {
     const ensure = () => { if (!S.meals || typeof S.meals !== "object" || Array.isArray(S.meals)) S.meals = {}; return S.meals; };
     const M = S.meals && typeof S.meals === "object" ? S.meals : {};
-    const mealie = M.provider === "mealie", local = M.provider === "local", on = mealie || local;
+    const mealie = M.provider === "mealie" || M.provider === "both", local = M.provider === "local" || M.provider === "both", on = mealie || local;
     const types = Array.isArray(M.types) && M.types.length ? M.types : ["dinner"];
     const line = (title, sub, flag, onflip) => el("div", { class: "line" }, el("span", {}, el("b", {}, title), sub ? el("small", {}, sub) : null), toggle(flag, onflip, title));
     const hasPage = S.pages.includes("meals");
-    const body = [field("Where the meal plan lives", seg([["", "Off"], ["local", "On this screen"], ["mealie", "Mealie"]], M.provider || "", (v) => {
+    const body = [field("Where the meal plan lives", seg([["", "Off"], ["local", "On this screen"], ["mealie", "Mealie"], ["both", "Both"]], M.provider || "", (v) => {
       if (v) Object.assign(ensure(), { provider: v, types, home: M.home !== false });
       else { delete ensure().provider; const i = S.pages.indexOf("meals"); if (i >= 0 && S.pages.length > 1) S.pages.splice(i, 1); }
       if (v === "local") { delete ensure().addToList; if (!S.pages.includes("meals")) { const at = S.pages.indexOf("lists"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "meals"); } }
       change(); render();
-    }), local ? "Plan meals right on the Meals page: tap + on a day. Nothing to sign up for." : "On this screen needs no account. Mealie (mealie.io) is a recipe and meal planning app you run yourself.")];
+    }), M.provider === "both" ? "Mealie's meal plan plus meals you add yourself: tap + on a day. Mealie's own meals can only be changed in Mealie." : local ? "Plan meals right on the Meals page: tap + on a day. Nothing to sign up for." : "On this screen needs no account. Mealie (mealie.io) is a recipe and meal planning app you run yourself.")];
     if (on) {
       if (mealie) body.push(mealieBox(mealUi, render));
       if (local || mealUi.mlists) {
@@ -944,7 +944,7 @@
   }
 
   function pageNames() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local") ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music", devices: "Devices" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && ["mealie", "local", "both"].includes(S.meals.provider) ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music", devices: "Devices" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     return names;
   }
@@ -993,7 +993,7 @@
   // Home's right-hand cards: which show and in what order (opensky.json → home.cards; not set = all four, as before)
   const HOME_CARDS = ["notes", "tonight", "lists", "photos"];
   function homeCardsCard() {
-    const mealsOn = !!(S.meals && (S.meals.provider === "mealie" || S.meals.provider === "local"));
+    const mealsOn = !!(S.meals && ["mealie", "local", "both"].includes(S.meals.provider));
     const names = { notes: "Family notes", ...(mealsOn ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" };
     const H = { get cards() { return (S.home || {}).cards; }, set cards(v) { S.home = { ...(S.home || {}), cards: v }; } };
     const cards = Array.isArray(H.cards) ? H.cards.filter((c) => HOME_CARDS.includes(c)) : [...HOME_CARDS];

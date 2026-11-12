@@ -99,17 +99,18 @@ const linkedProfiles = (v) => {   // a calendar's / list's profile names → the
 };
 
 // Meals: the Meals page, "Dinner tonight" on Home, the meals on the calendar, and (Mealie) a shopping list for a recipe's
-// ingredients. opensky.json → meals: { provider: "mealie" | "local", types: ["dinner"], home: true, calendar: false,
+// ingredients. opensky.json → meals: { provider: "mealie" | "local" | "both", types: ["dinner"], home: true, calendar: false,
 // calendarColor, addToList: { id, name } }. "local" = a plan kept on this Pi (config/meals.json), edited on the Meals page;
-// "mealie" = Mealie's meal plan (address and token are in secrets.json → mealie, read by node helpers only).
+// "mealie" = Mealie's meal plan, "both" = the two together (Mealie's entries read-only, the on-device ones editable) (address and token are in secrets.json → mealie, read by node helpers only).
 const mealSettings = (s.meals && typeof s.meals === "object") ? s.meals : {};
-const mealsOn = mealSettings.provider === "mealie" || mealSettings.provider === "local";
-const mealsLocal = mealSettings.provider === "local";
+const mealsOn = ["mealie", "local", "both"].includes(mealSettings.provider);
+const mealsLocal = mealSettings.provider === "local" || mealSettings.provider === "both";
+const mealsMealie = mealSettings.provider === "mealie" || mealSettings.provider === "both";
 const mealTypes = (() => {
   const t = (Array.isArray(mealSettings.types) ? mealSettings.types : ["dinner"]).map((x) => String(x).toLowerCase()).filter((x) => ["breakfast", "lunch", "dinner", "side"].includes(x));
   return t.length ? [...new Set(t)] : ["dinner"];
 })();
-const mealList = !mealsLocal && mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
+const mealList = mealsMealie && mealSettings.addToList && /^[0-9a-f-]{8,64}$/i.test(String(mealSettings.addToList.id || ""))
   ? { id: String(mealSettings.addToList.id), name: String(mealSettings.addToList.name || "the shopping list").slice(0, 40) } : null;
 
 // Countdowns: a vacation, birthday or other big day with a days-to-go counter, a title and a photo. opensky.json → countdowns:
@@ -146,7 +147,7 @@ const profileColor = (c) => {
 // a source's "only show events titled…" pattern (a regular expression, any case): kept only when it is a valid one
 const titlePattern = (v) => { const t = typeof v === "string" ? v.trim().slice(0, 200) : ""; if (!t) return ""; try { new RegExp(t, "i"); return t; } catch (e) { return ""; } };
 const calendarSources = (Array.isArray(cal.sources) ? cal.sources : []).filter((c) => c && c.name)
-  .filter((c) => c.name !== "Pickup" && c.name !== "Holidays" && !(mealsOn && c.name === "Meals"))   // (names OpenSky uses itself)
+  .filter((c) => c.name !== "Pickup" && c.name !== "Holidays" && !(mealsOn && (c.name === "Meals" || c.name === "Meals (Mealie)")))   // (names OpenSky uses itself)
   .map((c) => ({ name: String(c.name), type: ["local", "caldav", "google", "mealie"].includes(c.type) ? c.type : "link", url: c.url || null, color: profileColor(c) || c.color || null, fetchMinutes: c.fetchMinutes || 5,
     ...(c.role === "shared" ? { role: "shared" } : {}),
     ...(titlePattern(c.only) ? { only: titlePattern(c.only) } : {}),
@@ -162,7 +163,11 @@ const calendarPeople = calendarSources.filter((c) => c.role !== "shared").map((c
 // CalDAV calendars are read through OpenSky's calendar service on this Pi (the account stays in secrets.json)
 const servicePort = (cal.service && cal.service.port) || 5747;
 calendarSources.filter((c) => c.type === "caldav").forEach((c) => { c.url = `http://127.0.0.1:${servicePort}/${encodeURIComponent(c.name)}/calendar.ics`; });
-if (mealsOn && mealSettings.calendar) calendarSources.push({ name: "Meals", type: mealsLocal ? "localmeals" : "mealie", url: null, meals: mealTypes, color: mealSettings.calendarColor || "orange", fetchMinutes: 5 });
+if (mealsOn && mealSettings.calendar) {
+  const mealCal = (name, type) => ({ name, type, url: null, meals: mealTypes, color: mealSettings.calendarColor || "orange", fetchMinutes: 5 });
+  if (mealsLocal) calendarSources.push(mealCal("Meals", "localmeals"));
+  if (mealsMealie) calendarSources.push(mealCal(mealsLocal ? "Meals (Mealie)" : "Meals", "mealie"));
+}
 if (cal.holidays === "US") calendarSources.push({ name: "Holidays", url: "https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics", color: "tan", fetchMinutes: 720 });
 else if (/^[A-Za-z]{2}$/.test(cal.holidays || "")) calendarSources.push({ name: "Holidays", type: "holidays", url: null, country: cal.holidays.toUpperCase(), region: cal.holidaysRegion || null, color: "tan", fetchMinutes: 720 });
 
@@ -362,7 +367,7 @@ for (const [key, e] of Object.entries(embeds)) {
 }
 
 const pages = (Array.isArray(s.pages) && s.pages.length ? s.pages : ["home", "timer"]).filter((p) => {
-  if (p === "meals" && !mealsOn) { console.error(`[OpenSky] the "meals" page needs meals.provider "mealie" or "local" in ${settingsFile} — skipped`); return false; }
+  if (p === "meals" && !mealsOn) { console.error(`[OpenSky] the "meals" page needs meals.provider "mealie", "local" or "both" in ${settingsFile} — skipped`); return false; }
   if (PAGES[p]) return true;
   console.error(`[OpenSky] unknown page "${p}" in ${settingsFile} — skipped`);
   return false;
@@ -406,7 +411,7 @@ const fixed = [
   { module: "MMM-OpenSky-Settings", config: {} },
   { module: "MMM-OpenSky-Setup", config: {} },
   ...(s.keyboard && s.keyboard.enabled === false ? [] : [{ module: "MMM-OpenSky-Keyboard", config: { layout: (s.keyboard && s.keyboard.layout) || "en" } }]),
-  ...(mealsOn ? [{ module: "MMM-OpenSky-Meals", config: { types: mealTypes, addToList: mealList, local: mealsLocal } }] : []),
+  ...(mealsOn ? [{ module: "MMM-OpenSky-Meals", config: { types: mealTypes, addToList: mealList, local: mealsLocal, mealie: mealsMealie } }] : []),
   ...(familyLists.length ? [{ module: "MMM-OpenSky-Lists", config: { lists: familyLists, refreshMinutes: listSettings.refreshMinutes || 2 } }] : []),
   ...(calendarSources.length ? [{ module: "MMM-OpenSky-EventEditor", config: { editable: editableCalendars, servicePort, quickAdd: quickAddFlags } }] : []),
   ...(saver.enabled === true ? [{

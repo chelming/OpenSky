@@ -113,6 +113,11 @@ const mlcal = mod(ml, "MMM-OpenSky-Calendars").config.sources.filter((x) => x.na
 ok("21 Meals on this screen: the page is editable, the data module is local with no ingredients list, the calendar source is the local plan",
   mod(ml, "MMM-OpenSky-MealsPage").config.editable === true && mod(ml, "MMM-OpenSky-Meals").config.local === true && mod(ml, "MMM-OpenSky-Meals").config.addToList === null &&
   mlcal.length === 1 && mlcal[0].type === "localmeals" && mod(ml, "MMM-OpenSky-Home").config.tonight === true, [mod(ml, "MMM-OpenSky-Meals").config, mlcal]);
+const mb = build({ pages: ["home", "meals"], meals: { provider: "both", types: ["dinner"], home: true, calendar: true, addToList: { id: LISTID, name: "Weekly Shop" } } });
+const mbcal = mod(mb, "MMM-OpenSky-Calendars").config.sources.filter((x) => /^Meals/.test(x.name));
+ok("22b Meals 'both': editable page, local + Mealie data, ingredients list kept, two calendar sources",
+  mod(mb, "MMM-OpenSky-MealsPage").config.editable === true && mod(mb, "MMM-OpenSky-Meals").config.local === true && mod(mb, "MMM-OpenSky-Meals").config.mealie === true &&
+  mod(mb, "MMM-OpenSky-Meals").config.addToList && mbcal.map((x) => x.type).join() === "localmeals,mealie" && mod(mb, "MMM-OpenSky-Home").config.tonight === true, [mod(mb, "MMM-OpenSky-Meals").config, mbcal]);
 ok("22 Meals on Mealie stays read-only", mod(mc, "MMM-OpenSky-MealsPage").config.editable === false && mod(mc, "MMM-OpenSky-Meals").config.local === false);
 const wx = build({ pages: ["home", "weather"], location: { name: "Boston, MA", latitude: 42.36, longitude: -71.06 }, locale: { timeFormat: 24, units: "metric" }, weather: { radar: false } });
 const wxm = mod(wx, "MMM-OpenSky-WeatherPage");

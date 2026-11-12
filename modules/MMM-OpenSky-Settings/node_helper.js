@@ -305,7 +305,7 @@ module.exports = NodeHelper.create({
       pages, names,
       homeCards: {
         order: Array.isArray(s.home && s.home.cards) ? s.home.cards.filter((c) => HOME_CARDS.includes(c)) : [...HOME_CARDS],
-        names: { notes: "Family notes", ...(s.meals && (s.meals.provider === "mealie" || s.meals.provider === "local") ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" },
+        names: { notes: "Family notes", ...(s.meals && ["mealie", "local", "both"].includes(s.meals.provider) ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" },
         photosOff: !!(s.photos && s.photos.enabled === false)
       },
       prefs: {

@@ -13,6 +13,7 @@ Module.register("MMM-OpenSky-Meals", {
   defaults: {
     types: ["dinner"],        // breakfast, lunch, dinner, side — from opensky.json → meals.types
     addToList: null,          // { id, name } the shopping list "Add ingredients" fills; null = no button
+    mealie: true,             // Mealie supplies (part of) the plan; with local too (meals.provider "both") Mealie's entries are read-only
     local: false              // the plan is kept on this Pi (meals.provider "local"): meals are added and changed on the Meals page
   },
 
@@ -22,14 +23,14 @@ Module.register("MMM-OpenSky-Meals", {
   start() {
     this.state = { entries: [], loaded: false, error: null };
     this.seq = 0;
-    this.sendSocketNotification("OS_MEALS_INIT", { types: this.config.types, local: this.config.local });
+    this.sendSocketNotification("OS_MEALS_INIT", { types: this.config.types, local: this.config.local, mealie: this.config.mealie });
   },
 
   getDom() { return document.createElement("div"); },
 
   notificationReceived(n, p) {
     if (n === "OPENSKY_MEALS_REFRESH") this.sendSocketNotification("OS_MEALS_REFRESH");
-    else if (n === "OPENSKY_MEAL_OPEN" && p && p.entry) { if (this.config.local) this.openEditor(p.entry); else this.openRecipe(p.entry); }
+    else if (n === "OPENSKY_MEAL_OPEN" && p && p.entry) { if (p.entry.slug || !this.config.local || (this.config.mealie && !p.entry.local)) this.openRecipe(p.entry); else this.openEditor(p.entry); }
     else if (n === "OPENSKY_MEAL_ADD" && p && p.date && this.config.local) this.openEditor({ date: p.date });
     else if (n === "OPENSKY_IDLE_RESET" || n === "PAGE_CHANGED") this.close();
   },

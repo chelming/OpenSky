@@ -467,6 +467,11 @@ The plan is kept on the Pi in `meals.json` (next to `lists.json`; it is part of 
   There are no recipes or pictures, and no shopping-list button (those need Mealie).
 - Settings: `"meals": { "provider": "local", "types": ["dinner"], "home": true, "calendar": false }`.
 
+### Both together
+Choose **Both** to see Mealie's meal plan and your own on-screen meals side by side. Mealie's meals open their recipe and can only be
+changed in Mealie; the ones you add with **+** are editable here. If Mealie is unreachable your own meals still show.
+Settings: `"meals": { "provider": "both", ... }`.
+
 ### Mealie
 [Mealie](https://mealie.io) is a self-hosted recipe manager. OpenSky can show its **meal plan** and **recipes**, and use its
 **shopping lists**. Everything is set up on the phone, with no file editing: Settings → *Set up from your phone* → **Meals**.
