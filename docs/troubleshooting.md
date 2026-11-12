@@ -17,8 +17,9 @@ opensky logs       # what happened lately (the newest lines are at the bottom)
 ## The page shows an error or "404" after a restart
 - A page that's open when OpenSky restarts checks the server every few seconds and **reloads by itself** once it answers again,
   so it should recover within a few seconds of the restart finishing.
-- On the Pi's own touch screen you can also drag down from the top of a page to reload it (pull-to-refresh).
-- Still stuck? Run `opensky status` and `opensky logs`: the server may not have started (see the first section).
+- With a browser showing the screen (Docker), you can also turn on pull-to-refresh by starting Chromium with
+  `--pull-to-refresh=1` (add it to the kiosk/launch command); then drag down from the top of a page to reload it.
+- Still stuck? Docker: `docker logs opensky` (the server may not have started). Pi: `opensky status` and `opensky logs`.
 
 ## Sleep doesn't turn my screen off properly (or it comes back on)
 Settings → **Sleep turns off by** → try each option with **Test**. Monitors differ: some go to sleep when the signal
