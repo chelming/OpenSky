@@ -354,7 +354,7 @@ module.exports = async (page, h, app) => {
   await h.sleep(250);
   await save();
   S = settings();
-  ok("pages: Timer off, Lists moved up one", !S.pages.includes("timer") && S.pages.indexOf("lists") === 1, S.pages);
+  ok("pages: Timer off, Lists moved up one (to the top, now that Home is the only page above it)", !S.pages.includes("timer") && S.pages.indexOf("lists") === 0, S.pages);
 
   // ---- Pages: drag the last page's grip up to fourth place ----
   await goTab("screens");
