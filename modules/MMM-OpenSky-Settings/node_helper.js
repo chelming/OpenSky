@@ -302,7 +302,7 @@ module.exports = NodeHelper.create({
     for (const [k, e] of Object.entries(s.embeds || {})) names[k] = (e && e.title) || k;
     const pages = Array.isArray(s.pages) ? s.pages.filter((p) => names[p]) : ["home", "timer"];
     this.sendSocketNotification("OS_SET_PREFS", {
-      pages, names,
+      pages, names, nav: this.cleanNav(s.nav),
       homeCards: {
         order: Array.isArray(s.home && s.home.cards) ? s.home.cards.filter((c) => HOME_CARDS.includes(c)) : [...HOME_CARDS],
         names: { notes: "Family notes", ...(s.meals && ["mealie", "local", "both"].includes(s.meals.provider) ? { tonight: "Dinner tonight" } : {}), lists: "Lists", photos: "Photos" },
@@ -383,6 +383,21 @@ module.exports = NodeHelper.create({
     this.writeSecrets(sec);
   },
 
+  // Sidebar grouping (opensky.json → nav): { groups: [{ label, icon, pages }], more: [page keys] }. The same rules as config/config.js,
+  // so what is saved is always something the screen understands (a page is in one place, at most four groups, labels up to 14 characters).
+  cleanNav(nav) {
+    const raw = nav && typeof nav === "object" ? nav : {}, used = new Set(["home"]), key = /^[a-z][a-z0-9-]{0,30}$/;
+    const take = (l) => (Array.isArray(l) ? l : []).map(String).filter((k) => { if (!key.test(k) || used.has(k)) return false; used.add(k); return true; });
+    const labels = new Set();
+    const groups = (Array.isArray(raw.groups) ? raw.groups : []).slice(0, 4).map((g) => {
+      const label = String((g && g.label) || "").trim().slice(0, 14);
+      if (!label || labels.has(label.toLowerCase())) return null;
+      labels.add(label.toLowerCase());
+      return { label, icon: /^[a-z][a-zA-Z0-9]{0,30}$/.test(String(g.icon || "")) ? String(g.icon) : "grid", pages: take(g.pages) };
+    }).filter(Boolean);
+    return { groups, more: take(raw.more) };
+  },
+
   savePrefs(patch) {
     let s;
     try { s = this.readSettings(true); } catch (e) { return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: e.message }); }
@@ -392,6 +407,11 @@ module.exports = NodeHelper.create({
       catch (e) { return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: e.message }); }
     }
     if (Array.isArray(patch.pages) && patch.pages.length) { s.pages = patch.pages.map(String).filter((p) => /^[a-z][a-z0-9-]{0,30}$/.test(p)); restartNeeded = true; }
+    if (patch.nav && typeof patch.nav === "object") {
+      const n = this.cleanNav(patch.nav);
+      if (n.groups.length || n.more.length) s.nav = n; else delete s.nav;   // nothing grouped = no setting at all
+      restartNeeded = true;
+    }
     if (Array.isArray(patch.homeCards)) {
       s.home = { ...(s.home && typeof s.home === "object" ? s.home : {}), cards: [...new Set(patch.homeCards.map(String).filter((c) => HOME_CARDS.includes(c)))] };
       if (s.home.cards.includes("photos") && s.photos && s.photos.enabled === false) s.photos.enabled = true;

@@ -132,3 +132,126 @@ html[data-layout="portrait"] .os-badge { width: 40px; height: 40px; flex: none; 
 
 /* a very short page (big text on a small screen): icons only, no labels */
 html[data-nav="icons"] .os-label { display: none; }
+
+/* ---------- groups: one rail button that opens a small flyout (opensky.json → nav.groups) ---------- */
+.os-slot { position: relative; flex: 0 0 auto; height: var(--tile-size, 76px); }
+.os-slot > .os-tile { height: 100%; }
+.os-flyout {
+  position: absolute;
+  left: calc(100% + 16px);
+  top: 0;
+  z-index: 5;
+  min-width: 190px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(31, 41, 55, .18), 0 2px 6px rgba(0, 0, 0, .06);
+  animation: os-pop .14s ease-out;
+}
+.os-flyout[hidden] { display: none; }
+.os-slot.up .os-flyout { top: auto; bottom: 0; }
+.os-fly-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 18px 0 12px;
+  border: none;
+  border-radius: 15px;
+  background: transparent;
+  color: #374151;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .12s ease, transform .1s ease;
+}
+.os-fly-item:active { transform: scale(.97); background: #f3f4f6; }
+.os-fly-icon { width: 24px; height: 24px; display: flex; flex: none; color: var(--tile-fg); }
+.os-fly-icon svg { width: 100%; height: 100%; }
+.os-fly-item.active { background: var(--os-accent-tint); color: var(--tile-active); }
+.os-fly-item.active .os-fly-icon { color: var(--tile-active); }
+
+/* ---------- More: a compact grid of small icon + label buttons on a dimmed layer beside the rail ---------- */
+.os-scrim { position: fixed; top: 0; right: 0; bottom: 0; left: var(--os-side-width, 92px); pointer-events: auto; }
+.os-scrim[hidden] { display: none; }
+.os-moremenu {
+  position: fixed;
+  top: 0; bottom: 0; right: 0;
+  left: var(--os-side-width, 92px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 24, 39, .30);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+  animation: os-fade .14s ease-out;
+}
+.os-moremenu[hidden] { display: none; }
+.os-more-panel {
+  max-width: calc(100% - 40px);
+  padding: 20px 22px 24px;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, .28), 0 2px 8px rgba(0, 0, 0, .06);
+  animation: os-pop .16s ease-out;
+}
+.os-more-head { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 12px; font-size: 17px; font-weight: 800; color: #1f2937; }
+.os-more-x {
+  width: 36px; height: 36px; padding: 8px;
+  border: none; border-radius: 50%;
+  background: #f3f4f6; color: #6b7280;
+  display: flex; cursor: pointer;
+}
+.os-more-x svg { width: 100%; height: 100%; }
+.os-more-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), 104px); gap: 8px; justify-content: center; }
+.os-more-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 9px;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .12s ease, transform .1s ease;
+}
+.os-more-item:active { transform: scale(.94); background: #f3f4f6; }
+.os-more-chip {
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 16px;
+  background: var(--os-accent-tint);
+  color: var(--os-accent);
+}
+.os-more-chip svg { width: 26px; height: 26px; }
+.os-more-item.util .os-more-chip { background: #f3f4f6; color: #6b7280; }
+.os-more-item.active .os-more-chip { background: var(--os-accent); color: #ffffff; }
+.os-more-label { font-size: 13px; font-weight: 700; line-height: 1.1; color: #4b5563; white-space: nowrap; }
+.os-more-item.active .os-more-label { color: var(--os-accent); }
+
+@keyframes os-pop { from { opacity: 0; transform: translateY(4px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes os-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* compact layout (smaller screens): a little tighter */
+html[data-layout="compact"] .os-more-grid { grid-template-columns: repeat(var(--cols, 4), 92px); }
+html[data-layout="compact"] .os-more-chip { width: 46px; height: 46px; border-radius: 14px; }
+html[data-layout="compact"] .os-more-chip svg { width: 23px; height: 23px; }
+html[data-layout="compact"] .os-fly-item { height: 46px; font-size: 14px; }
+
+/* portrait: the rail is a bar along the bottom, so flyouts open above their button and More covers the page above the bar */
+html[data-layout="portrait"] .os-slot { flex: 1 1 0; min-width: 0; height: auto; display: flex; }
+html[data-layout="portrait"] .os-slot > .os-tile { flex: 1 1 auto; height: auto; width: auto; min-width: 0; }
+html[data-layout="portrait"] .os-flyout { left: 50%; top: auto; bottom: calc(100% + 14px); transform: translateX(-50%); animation: none; }
+html[data-layout="portrait"] .os-slot.up .os-flyout { bottom: calc(100% + 14px); }
+html[data-layout="portrait"] .os-moremenu, html[data-layout="portrait"] .os-scrim { left: 0; bottom: var(--os-nav-height, 112px); }
+html[data-layout="portrait"] .os-more-grid { grid-template-columns: repeat(var(--cols, 4), 96px); }

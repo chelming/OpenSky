@@ -957,7 +957,8 @@
       const on = S.pages.includes(k), i = S.pages.indexOf(k);
       box.append(el("div", { class: `pagerow${on ? "" : " off"}`, "data-page": k },
         on ? el("span", { class: "grip", "aria-label": "Drag to reorder", html: ICON.grip }) : null,
-        el("span", { class: "row-main" }, el("b", {}, names[k])),
+        el("span", { class: "row-main" }, el("b", {}, names[k]),
+          on && k !== "home" ? el("select", { class: "input where", "aria-label": `Where ${names[k]} goes`, onchange: (e) => setPlace(k, e.target.value) }, ...placeOptions().map(([v, label]) => el("option", { value: v, selected: v === placeOf(k) }, label))) : null),
         on ? el("span", { class: "order" },
           el("button", { type: "button", class: "mini", "aria-label": "Up", disabled: i === 0, onclick: () => { S.pages.splice(i, 1); S.pages.splice(i - 1, 0, k); change(); render(); }, html: ICON.up }),
           el("button", { type: "button", class: "mini", "aria-label": "Down", disabled: i === S.pages.length - 1, onclick: () => { S.pages.splice(i, 1); S.pages.splice(i + 1, 0, k); change(); render(); }, html: ICON.down })) : null,
@@ -987,7 +988,63 @@
         };
       };
     });
-    return section("pages", "pages", "Pages", "The buttons down the left side, top to bottom. Drag a page by its grip to move it. The first is where the screen goes back to when idle.", box);
+    return section("pages", "pages", "Pages", "The buttons down the left side, top to bottom. Drag a page by its grip to move it. The first is where the screen goes back to when idle. Too many buttons? Put a page in a group or in More.", box, groupsBlock());
+  }
+
+  /* Sidebar groups (opensky.json → nav: { groups: [{ label, icon, pages }], more: [page keys] }): a group is ONE button that opens a small
+   * flyout; More is one button with a grid (also holding Sleep and Settings). Where a page goes is chosen per page in the list above. */
+  const MAX_GROUPS = 4;
+  const navGroups = () => (S.nav && Array.isArray(S.nav.groups) ? S.nav.groups : []);
+  const ensureNav = () => {
+    if (!S.nav || typeof S.nav !== "object" || Array.isArray(S.nav)) S.nav = {};
+    if (!Array.isArray(S.nav.groups)) S.nav.groups = [];
+    if (!Array.isArray(S.nav.more)) S.nav.more = [];
+    return S.nav;
+  };
+  const tidyNav = () => { if (S.nav && !navGroups().length && !(S.nav.more || []).length) delete S.nav; };   // nothing grouped = no setting at all
+  function placeOf(k) {
+    const gi = navGroups().findIndex((g) => (g.pages || []).includes(k));
+    return gi >= 0 ? `g:${gi}` : ((S.nav && S.nav.more) || []).includes(k) ? "more" : "";
+  }
+  function placeOptions() { return [["", "In the sidebar"], ...navGroups().map((g, i) => [`g:${i}`, `In ${g.label}`]), ["more", "In More"]]; }
+  function setPlace(k, v) {
+    const n = ensureNav();
+    n.groups.forEach((g) => { g.pages = (g.pages || []).filter((x) => x !== k); });
+    n.more = n.more.filter((x) => x !== k);
+    if (v === "more") n.more.push(k);
+    else if (v.startsWith("g:") && n.groups[Number(v.slice(2))]) n.groups[Number(v.slice(2))].pages.push(k);
+    tidyNav(); change(); render();
+  }
+  function groupsBlock() {
+    const names = pageNames(), rows = el("div", { class: "rows" });
+    navGroups().forEach((g, i) => {
+      const n = (g.pages || []).filter((k) => S.pages.includes(k) && names[k]);
+      rows.append(row("#f59e0b", g.label, n.length ? n.map((k) => names[k]).join(", ") : "No pages yet: choose it in a page's menu above", () => editGroup(i),
+        el("span", { class: "row-ic", html: window.OpenSkyIcons.svg(g.icon || "grid") })));
+    });
+    const inMore = ((S.nav && S.nav.more) || []).filter((k) => S.pages.includes(k) && names[k]);
+    return el("div", { class: "groups" },
+      el("span", { class: "label" }, "Groups"),
+      rows,
+      navGroups().length < MAX_GROUPS ? el("button", { type: "button", class: "add", onclick: () => editGroup(-1) }, icon("plus"), "Add a group") : null,
+      el("span", { class: "hint" }, `A group is one button that opens a small menu of its pages, like House for Home Assistant and Cams.${inMore.length ? ` More (${inMore.map((k) => names[k]).join(", ")}) is one button too, and Sleep and Settings move into it.` : ""}`));
+  }
+  function editGroup(i) {
+    const old = i >= 0 ? navGroups()[i] : null;
+    const d = { label: old ? old.label : "", icon: old ? old.icon || "grid" : "smarthome" };
+    const err = el("p", { class: "err" });
+    sheet(old ? old.label : "Add a group", (b) => b.append(
+      field("Button label", text(d.label, (v) => { d.label = v.trim(); }, { placeholder: "e.g. House", maxlength: "14" })),
+      el("div", { class: "field" }, el("span", { class: "label" }, "Icon"), iconPicker(d.icon, (n) => { d.icon = n; })),
+      el("p", { class: "hint" }, "Choose which pages go in it from each page's menu in the Pages list."),
+      err),
+      [...(old ? [["Remove", "danger", () => { S.nav.groups.splice(i, 1); tidyNav(); change(); render(); }]] : [["Cancel", "", () => {}]]), ["Done", "primary", () => {
+        const bad = nameOk(d.label, navGroups().filter((_, j) => j !== i).map((g) => g.label));
+        if (bad) { err.textContent = bad; return false; }
+        const n = ensureNav();
+        if (old) { old.label = d.label; old.icon = d.icon; } else n.groups.push({ label: d.label, icon: d.icon, pages: [] });
+        change(); render();
+      }]]);
   }
 
   // Home's right-hand cards: which show and in what order (opensky.json → home.cards; not set = all four, as before)

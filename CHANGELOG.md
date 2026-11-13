@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **Fewer sidebar buttons:** put pages in a group (one button with a small menu) or in a compact **More** grid that also
+  holds Sleep and Settings. Set per page in phone setup → Pages (where groups are made) or Settings → Pages
+  ([docs/configure.md](docs/configure.md#fewer-buttons-groups-and-more)).
+
 ## 1.1.0 — 2026-11-10
 - **Container image:** OpenSky is published as `ghcr.io/chelming/opensky` (amd64 and arm64) with every release, so Docker
   users can pull it instead of building ([docs/docker.md](docs/docker.md)).

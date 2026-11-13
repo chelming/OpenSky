@@ -113,3 +113,7 @@
 .ost-hc.ost-dragging, .ost-page.ost-dragging { background: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); position: relative; z-index: 2; }
 .ost-hc.ost-dragging .ost-grip, .ost-page.ost-dragging .ost-grip { cursor: grabbing; }
 .ost-profiles { flex-wrap: wrap; }
+
+/* Pages: where a page's button goes (sidebar / a group / More) */
+.ost-select.ost-where { min-height: 44px; max-width: 190px; margin-left: auto; font-size: 15px; font-weight: 600; }
+.ost-where + .ost-order { margin-left: 0; }

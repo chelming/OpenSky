@@ -380,6 +380,32 @@ const pages = (Array.isArray(s.pages) && s.pages.length ? s.pages : ["home", "ti
   console.error(`[OpenSky] unknown page "${p}" in ${settingsFile} — skipped`);
   return false;
 });
+// Sidebar grouping: fewer buttons on the rail. opensky.json → nav: { groups: [{ key?, label, icon?, pages: [page keys] }], more: [page keys] }.
+// A group is ONE rail button (at the spot of its first page in `pages`) that opens a small flyout with its pages; `more` pages live
+// in a "More" grid (with Sleep and Settings) behind one last button. A page is in one place only (the first mention wins: groups,
+// then more); their order is the order of `pages`; Home always stays on the rail; unknown pages are dropped. Without `nav` the rail is one button per page, as always.
+const nav = (() => {
+  const raw = (s.nav && typeof s.nav === "object") ? s.nav : {};
+  const used = new Set(["home"]);
+  // (a group's / More's pages follow the order of `pages`, so dragging pages in Settings orders them everywhere)
+  const take = (list) => (Array.isArray(list) ? list : []).map(String).filter((k) => {
+    if (!pages.includes(k) || used.has(k)) return false;
+    used.add(k);
+    return true;
+  }).sort((a, b) => pages.indexOf(a) - pages.indexOf(b));
+  const keys = new Set();
+  const groups = (Array.isArray(raw.groups) ? raw.groups : []).slice(0, 4).map((g) => {
+    if (!g || typeof g !== "object") return null;
+    const label = String(g.label || "").trim().slice(0, 14);
+    let key = String(g.key || label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+    if (!label || !key || keys.has(key)) return null;
+    const members = take(g.pages);
+    if (!members.length) return null;
+    keys.add(key);
+    return { key, label, icon: /^[a-z][a-zA-Z0-9]{0,30}$/.test(String(g.icon || "")) ? String(g.icon) : "grid", pages: members };
+  }).filter(Boolean);
+  return { groups, more: take(raw.more) };
+})();
 // Screen profiles: named presets a screen picks in Settings (which pages it shows, whose calendars, text size, accent). opensky.json →
 // screens: [{ name, pages?: [page keys], person?: profile name, textSize?, accent? }]. Each screen remembers its pick in its own browser.
 const screenProfiles = (Array.isArray(s.screens) ? s.screens : []).filter((x) => x && String(x.name || "").trim())
@@ -477,7 +503,8 @@ const fixed = [
       lightSensor: !!(s.look && s.look.lightSensor === true) && process.env.OPENSKY_DOCKER !== "1",   // no sensor in a container: sun only
       latitude: Number.isFinite(loc.latitude) ? loc.latitude : null,
       longitude: Number.isFinite(loc.longitude) ? loc.longitude : null,
-      screens: screenProfiles
+      screens: screenProfiles,
+      nav
     }
   }
 ];
