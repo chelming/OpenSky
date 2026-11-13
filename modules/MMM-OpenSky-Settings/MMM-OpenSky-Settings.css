@@ -135,3 +135,23 @@
 /* Pages: where a page's button goes (sidebar / a group / More) */
 .ost-select.ost-where { min-height: 44px; max-width: 190px; margin-left: auto; font-size: 15px; font-weight: 600; }
 .ost-where + .ost-order { margin-left: 0; }
+
+/* the content column is narrower beside the section list: rows wrap instead of scrolling sideways */
+.ost-panel { width: min(900px, calc(94 * var(--vw))); }
+.ost-nav { flex-basis: 180px; }
+.ost-body { overflow-x: hidden; }
+.ost-row { flex-wrap: wrap; row-gap: 6px; }
+.ost-row .ost-label { min-width: 0; }
+.ost-row .ost-select, .ost-row .ost-input { max-width: 100%; }
+.ost-seg { flex-wrap: wrap; max-width: 100%; }
+.ost-sub .ost-row .ost-label { min-width: 70px; }
+/* page + home-card rows: one line each (grip, name, controls, switch) */
+.ost-page, .ost-hc { flex-wrap: nowrap; gap: 8px; }
+.ost-page .ost-label, .ost-hc .ost-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-page .ost-grip, .ost-hc .ost-grip { width: 28px; margin-right: 0; }
+.ost-page .ost-order, .ost-hc .ost-order { margin-left: 0; gap: 4px; }
+.ost-page .ost-mini, .ost-hc .ost-mini { width: 38px; height: 44px; }
+.ost-page .ost-small { margin-left: 0; padding: 0 12px; font-size: 15px; }
+.ost-page .ost-select.ost-where { flex: 0 1 130px; min-width: 0; max-width: 130px; margin-left: 0; font-size: 14px; padding: 0 8px; }
+.ost-page .ost-toggle, .ost-hc .ost-toggle { margin-left: 0; }
+.ost-page .ost-btn { white-space: nowrap; flex: none; }
