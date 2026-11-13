@@ -52,9 +52,11 @@ svg { width: 100%; height: 100%; display: block; fill: none; stroke: currentColo
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand b { display: block; font-size: 19px; letter-spacing: -.2px; }
 .brand small { display: block; color: var(--muted); font-size: 13px; }
-.jump { position: sticky; top: calc(62px + env(safe-area-inset-top)); z-index: 4; display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 12px; background: linear-gradient(var(--bg) 70%, rgba(255, 247, 243, 0)); scrollbar-width: none; }
-.jump::-webkit-scrollbar { display: none; }
-.jump a { flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; background: #fff; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; box-shadow: var(--shadow); }
+.tabs { position: sticky; top: calc(62px + env(safe-area-inset-top)); z-index: 4; display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 12px; background: linear-gradient(var(--bg) 70%, rgba(255, 247, 243, 0)); scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: 0 0 auto; padding: 9px 16px; border: 0; border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; box-shadow: var(--shadow); cursor: pointer; }
+.tabs button.on { background: var(--accent); color: #fff; }
+.card[hidden] { display: none; }
 
 /* ---------- cards ---------- */
 .card { margin: 6px 0 18px; padding: 20px 18px 18px; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }

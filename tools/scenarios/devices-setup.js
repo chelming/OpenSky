@@ -40,36 +40,36 @@ module.exports = async (page, h, app) => {
     if (!done) throw new Error(`nothing to tap: ${scope} ${selector} "${label}"`);
     await h.sleep(250);
   };
-  const type = async (selector, value) => { await phone.fill(selector, value); await h.sleep(100); };
+  const type = async (selector, value) => { await phone.evaluate((sel) => { const c = document.querySelector(sel)?.closest(".card"); const b = c && document.querySelector(`.tabs button[data-tab="${c.dataset.tab}"]`); if (b) b.click(); }, selector); await phone.fill(selector, value); await h.sleep(100); };
   const save = async () => {
     await tap(".bar", ".btn", "Save");
     return until(() => phone.evaluate(() => /Saved ✓/.test(document.querySelector(".bar")?.textContent || "")));
   };
-  const extras = () => phone.evaluate(() => document.querySelector("#extras").textContent);
+  const extras = () => phone.evaluate(() => (document.querySelector("#devices") || { textContent: "" }).textContent);
   const tiles = () => (settings().devices || {}).tiles;
 
   ok("no Devices section until the page is on", !/Find my devices/.test(await extras()));
   await tap("#pages", ".toggle", "Devices");
   await until(async () => /Find my devices/.test(await extras()));
-  ok("Devices page on: its section appears in Extras, with the address and token fields", /Find my devices/.test(await extras()) && (await phone.evaluate(() => !!document.querySelector("#extras input[placeholder='Paste a long-lived access token']"))));
-  await type("#extras input[placeholder='http://homeassistant.local:8123']", `http://127.0.0.1:${HA}`);
-  await type("#extras input[placeholder='Paste a long-lived access token']", TOKEN);
+  ok("Devices page on: its section appears in Connections (the address and token are in the Home Assistant card)", /Find my devices/.test(await extras()) && (await phone.evaluate(() => !!document.querySelector("#ha input[placeholder='Paste a long-lived access token']"))));
+  await type("#ha input[placeholder='http://homeassistant.local:8123']", `http://127.0.0.1:${HA}`);
+  await type("#ha input[placeholder='Paste a long-lived access token']", TOKEN);
   await save();
   ok("address + token saved to secrets.json only", secrets().homeassistant?.token === TOKEN && !JSON.stringify(settings()).includes(TOKEN));
 
-  await tap("#extras", ".btn.block", "Find my devices");
+  await tap("#devices", ".btn.block", "Find my devices");
   await until(async () => /light\.hall/.test(await extras()));
-  const listed = await phone.evaluate(() => [...document.querySelectorAll("#extras .btn")].map((b) => b.getAttribute("aria-label") || "").filter((l) => /^Add /.test(l)));
+  const listed = await phone.evaluate(() => [...document.querySelectorAll("#devices .btn")].map((b) => b.getAttribute("aria-label") || "").filter((l) => /^Add /.test(l)));
   ok("Find my devices lists lights, switches, locks, sensors by name — no speakers or automations", listed.join("|") === "Add Desk fan|Add Front door|Add Hall light|Add Living room temperature", listed);
 
-  await tap("#extras", ".btn", "Add Hall light"); await tap("#extras", ".btn", "Add Front door"); await tap("#extras", ".btn", "Add Desk fan");
-  await type("#extras input[aria-label='Name for light.hall']", "Hall");
-  await tap("#extras", ".mini", "Move down");   // (the first row's Down: Hall after Front door)
-  await tap("#extras", ".btn", "Add Living room temperature");
+  await tap("#devices", ".btn", "Add Hall light"); await tap("#devices", ".btn", "Add Front door"); await tap("#devices", ".btn", "Add Desk fan");
+  await type("#devices input[aria-label='Name for light.hall']", "Hall");
+  await tap("#devices", ".mini", "Move down");   // (the first row's Down: Hall after Front door)
+  await tap("#devices", ".btn", "Add Living room temperature");
   await h.shot("devices-phone");
   await save();
   ok("tiles saved in the order picked, with the typed name (others keep Home Assistant's)", JSON.stringify(tiles()) === '[{"entity":"lock.front"},{"entity":"light.hall","name":"Hall"},{"entity":"switch.fan"},{"entity":"sensor.temp"}]', tiles());
-  const removed = await phone.evaluate(() => { const b = [...document.querySelectorAll("#extras .mini")].filter((x) => x.getAttribute("aria-label") === "Remove"); b[2].click(); return b.length; });
+  const removed = await phone.evaluate(() => { const b = [...document.querySelectorAll("#devices .mini")].filter((x) => x.getAttribute("aria-label") === "Remove"); b[2].click(); return b.length; });
   await h.sleep(250);
   await save();
   ok("Remove takes a tile off (the fan)", removed === 4 && JSON.stringify(tiles().map((t) => t.entity)) === '["lock.front","light.hall","sensor.temp"]', tiles());

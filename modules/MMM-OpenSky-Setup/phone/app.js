@@ -198,12 +198,22 @@
     $app.innerHTML = "";
     $app.append(
       el("header", { class: "top" }, el("div", { class: "brand" }, el("img", { class: "brand-icon sm", src: "icon.png", alt: "" }), el("div", {}, el("b", {}, "OpenSky"), el("small", {}, S.family.name || "Setup")))),
-      el("nav", { class: "jump" }, ...[["family", "Family"], ["calendars", "Calendars"], ["lists", "Lists"], ["meals", "Meals"], ["weather", "Weather"], ["countdowns", "Countdowns"], ["chores", "Chores"], ["photos", "Photos"], ["share", "Share"], ["pages", "Pages"], ["homecards", "Home cards"], ["web", "Web pages"], ["screens", "Screens"], ["extras", "Extras"], ["backup", "Backup"]].map(([id, t]) => el("a", { href: `#${id}` }, t))),
-      familyCard(), calendarsCard(), listsCard(), mealsCard(), weatherCard(), countdownsCard(), choresCard(), photosCard(), shareCard(), pagesCard(), homeCardsCard(), webCard(), screensCard(), aiCard(), extrasCard(), backupCard(),
+      el("nav", { class: "tabs", "aria-label": "Setup sections" }, ...TABS.map(([id, label]) => el("button", { type: "button", class: id === tab ? "on" : "", "data-tab": id, onclick: () => showTab(id, true) }, label))),
+      ...cards(),
       el("p", { class: "fine end" }, "Changes reach the screen when you tap Finish."),
       el("div", { class: "bar" }));
+    showTab(tab);
     renderBar();
     window.scrollTo(0, y);
+  }
+
+  // every card, in tab order; each is hidden unless its tab is open
+  function cards() {
+    const make = { family: familyCard, calendars: calendarsCard, weather: weatherCard, reminders: remindersCard, pickup: pickupCard, ai: aiCard,
+      lists: listsCard, meals: mealsCard, chores: choresCard, countdowns: countdownsCard, photos: photosCard, share: shareCard, screensaver: screensaverCard,
+      pages: pagesCard, homecards: homeCardsCard, web: webCard, screens: screensCard, look: lookCard,
+      ha: homeAssistantCard, music: musicCard, devices: devicesCard, games: gamesCard, backup: backupCard, access: accessCard };
+    return TABS.flatMap(([t, , ids]) => ids.map((id) => { const c = make[id](); if (c) c.dataset.tab = t; return c; })).filter(Boolean);
   }
 
   function renderBar() {
@@ -278,7 +288,8 @@
       el("div", { class: "two" },
         field("Temperature", seg([["imperial", "°F"], ["metric", "°C"]], S.locale.units || "imperial", (v) => { S.locale.units = v; change(); })),
         field("Clock", seg([[12, "12-hour"], [24, "24-hour"]], S.locale.timeFormat === 24 ? 24 : 12, (v) => { S.locale.timeFormat = v; change(); }))),
-      field("Week starts on", seg([[0, "Sunday"], [1, "Monday"]], S.locale.firstDayOfWeek === 1 ? 1 : 0, (v) => { S.locale.firstDayOfWeek = v; change(); })));
+      field("Week starts on", seg([[0, "Sunday"], [1, "Monday"]], S.locale.firstDayOfWeek === 1 ? 1 : 0, (v) => { S.locale.firstDayOfWeek = v; change(); })),
+      sportsFields());
   }
 
   /* ---------------- people (profiles): name + color; calendars and lists link to them by name ---------------- */
@@ -722,6 +733,10 @@
       line("Hour by hour", "The next 24 hours: temperature, sky and chance of rain", W.hourly !== false, (v) => { if (v) delete W.hourly; else W.hourly = false; change(); }),
       line("Rain radar", "An animated map of the last hour. Needs the internet; it says so when it can't load", W.radar !== false, (v) => { if (v) delete W.radar; else W.radar = false; change(); }),
       line("Weather alerts", "Warnings and watches from the US National Weather Service. Other countries show a short note instead", W.alerts !== false, (v) => { if (v) delete W.alerts; else W.alerts = false; change(); }));
+    const weatherKey = el("div");
+    const drawWeather = (p) => weatherKey.replaceChildren(...(p === "openweathermap" ? [field("OpenWeatherMap API key", secretInput("weather.openweathermap.apiKey", "Paste the key"))] : []));
+    drawWeather(W.provider || "open-meteo");
+    body.push(field("Weather from", seg([["open-meteo", "Open-Meteo (free)"], ["openweathermap", "OpenWeatherMap"]], W.provider || "open-meteo", (v) => { W.provider = v; change(); drawWeather(v); })), weatherKey);
     return section("weather", "weather", "Weather", "Hours ahead, radar and alerts, free and with no account", ...body);
   }
 
@@ -1208,13 +1223,31 @@
       el("div", { class: "hex-row" }, picker, code), el("span", { class: "hint" }, "Or any color: tap the swatch to pick one, or type its code (e.g. your team's color)."), warn);
   }
 
-  function extrasCard() {
-    const pk = S.pickup, hd = S.header, wg = S.wordgame, w = S.weather;
-    if (!hd.sports || typeof hd.sports !== "object") hd.sports = { league: "nfl", team: "" };
-    const days = [["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]];
-    const weatherKey = el("div");
-    const drawWeather = (p) => weatherKey.replaceChildren(...(p === "openweathermap" ? [field("OpenWeatherMap API key", secretInput("weather.openweathermap.apiKey", "Paste the key"))] : []));
-    drawWeather(w.provider || "open-meteo");
+  // The old "Extras" card, one card per topic (each sits in its tab, see TABS)
+  function lookCard() {
+    return section("look", "extras", "Look", "Defaults for every screen. Each screen can pick its own in Settings on that screen.",
+      accentField(),
+      field("Text size (default for every screen)", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
+        "Makes everything on the screen bigger or smaller; Large and Extra large show less at once. Each screen can pick its own in Settings on that screen; this is what the others use."),
+      field("Dark mode (default for every screen)", select(Object.entries(window.OpenSkyTheme.LABELS), (S.look && window.OpenSkyTheme.normalize(S.look.theme)) || "light", (v) => { S.look = S.look || {}; if (v === "light") delete S.look.theme; else S.look.theme = v; change(); }),
+        "Auto switches to dark from sunset to sunrise where you live (the place under Your family; 19:00 to 07:00 without a location). System follows each screen's own device setting (a phone, tablet or computer's dark mode). Each screen can pick its own in Settings on that screen."),
+      info.docker ? null : field("Dark mode: use the light sensor", toggle(!!(S.look && S.look.lightSensor === true), (v) => { S.look = S.look || {}; if (v) S.look.lightSensor = true; else delete S.look.lightSensor; change(); }, "Use the light sensor in Auto"),
+        "Only if the screen has an ambient light sensor: a dark room turns Auto dark even in daytime. Without a sensor (and in Docker) Auto follows the sun."),
+    );
+  }
+
+  function screensaverCard() {
+    return section("screensaver", "photos", "Screensaver", "Your photos full screen with the time and what's up next",
+      field("Screensaver", select([["0", "Off"], ...[5, 10, 15, 30, 60].map((m) => [String(m), `After ${m} minutes without a touch`])], String(S.screensaver && S.screensaver.enabled === true ? (S.screensaver.afterMinutes || 10) : 0), (v) => {
+        const sv = S.screensaver = S.screensaver || {};
+        if (v === "0") sv.enabled = false; else { sv.enabled = true; sv.afterMinutes = Number(v); }
+        change();
+      }), "Shows your photos full screen with the time and what's up next. A touch brings the screen back."),
+      field("Screensaver: show what's up next", toggle(!(S.screensaver && S.screensaver.upNext === false), (v) => { const sv = S.screensaver = S.screensaver || {}; if (v) delete sv.upNext; else sv.upNext = false; change(); }, "Show what's up next on the screensaver")),
+    );
+  }
+
+  function remindersCard() {
     const remBox = el("div");
     const drawRem = () => {
       const r = S.reminders || {};
@@ -1226,41 +1259,79 @@
       ] : []));
     };
     drawRem();
-    return section("extras", "extras", "Extras", null,
-      accentField(),
-      field("Text size (default for every screen)", select(Object.entries(window.OpenSkyTextSize.LABELS), (S.look && window.OpenSkyTextSize.normalize(S.look.textSize)) || "normal", (v) => { S.look = S.look || {}; if (v === "normal") delete S.look.textSize; else S.look.textSize = v; change(); }),
-        "Makes everything on the screen bigger or smaller; Large and Extra large show less at once. Each screen can pick its own in Settings on that screen; this is what the others use."),
-      field("Dark mode (default for every screen)", select(Object.entries(window.OpenSkyTheme.LABELS), (S.look && window.OpenSkyTheme.normalize(S.look.theme)) || "light", (v) => { S.look = S.look || {}; if (v === "light") delete S.look.theme; else S.look.theme = v; change(); }),
-        "Auto switches to dark from sunset to sunrise where you live (the place under Your family; 19:00 to 07:00 without a location). System follows each screen's own device setting (a phone, tablet or computer's dark mode). Each screen can pick its own in Settings on that screen."),
-      field("Dark mode: use the light sensor", toggle(!!(S.look && S.look.lightSensor === true), (v) => { S.look = S.look || {}; if (v) S.look.lightSensor = true; else delete S.look.lightSensor; change(); }, "Use the light sensor in Auto"),
-        "Only if the screen has an ambient light sensor: a dark room turns Auto dark even in daytime. Without a sensor (and in Docker) Auto follows the sun."),
-      field("Screensaver", select([["0", "Off"], ...[5, 10, 15, 30, 60].map((m) => [String(m), `After ${m} minutes without a touch`])], String(S.screensaver && S.screensaver.enabled === true ? (S.screensaver.afterMinutes || 10) : 0), (v) => {
-        const sv = S.screensaver = S.screensaver || {};
-        if (v === "0") sv.enabled = false; else { sv.enabled = true; sv.afterMinutes = Number(v); }
-        change();
-      }), "Shows your photos full screen with the time and what's up next. A touch brings the screen back."),
-      field("Screensaver: show what's up next", toggle(!(S.screensaver && S.screensaver.upNext === false), (v) => { const sv = S.screensaver = S.screensaver || {}; if (v) delete sv.upNext; else sv.upNext = false; change(); }, "Show what's up next on the screensaver")),
+    return section("reminders", "calendar", "Event reminders", "A chime and a banner shortly before an event starts",
       field("Event reminders", select([["0", "Off"], ...[5, 10, 15, 30].map((m) => [String(m), `${m} minutes before an event`])], String((S.reminders && S.reminders.minutes) || 0), (v) => {
         const r = S.reminders = S.reminders || {};
         if (v === "0") delete r.minutes; else r.minutes = Number(v);
         change(); drawRem();
       }), "A chime and a banner on the screen shortly before an event starts. Each event only once."),
-      remBox,
+      remBox);
+  }
+
+  function pickupCard() {
+    const pk = S.pickup;
+    const days = [["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]];
+    return section("pickup", "calendar", "Trash & recycling", "Pickup icons on the week",
       field("Trash day", select(days, pk.trashDay || "", (v) => { pk.trashDay = v; change(); })),
       (info.presets || []).length ? field("City pickup schedule", select([["", "None — just my trash day"], ...info.presets.map((p) => [p, p.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ (\w\w)$/, (m) => m.toUpperCase())])], pk.preset || "", (v) => { pk.preset = v; change(); }), "Adds recycling, yard waste and holiday delays.") : null,
       field("Or a pickup calendar link", el("input", { type: "password", class: "input", autocomplete: "off", inputmode: "url",
         placeholder: isSet("calendar.sources.Pickup") ? "Saved ✓ — paste a new link to replace it" : "https://… (your city or ReCollect)",
         oninput: (e) => { const v = e.target.value.trim(); pending["calendar.sources.Pickup"] = v; pk.url = v ? "secret" : (isSet("calendar.sources.Pickup") ? "secret" : ""); if (!pk.url) delete pk.url; change(); } }),
         "Many cities publish trash & recycling days as a calendar. Its events become the icons. Kept private (it can contain your address)."),
-      el("div", { class: "two" },
-        field("Sports league", select([["nfl", "NFL"], ["college-football", "College football"], ["nba", "NBA"], ["wnba", "WNBA"], ["mens-college-basketball", "College basketball"], ["mlb", "MLB"], ["nhl", "NHL"], ["mls", "MLS"], ["nwsl", "NWSL"], ["epl", "Premier League"]], hd.sports.league || "nfl", (v) => { hd.sports.league = v; change(); })),
-        field("Team code", text(hd.sports.team, (v) => { hd.sports.team = v.trim().toUpperCase(); change(); }, { placeholder: "e.g. NE", maxlength: "5", autocapitalize: "characters" }), "Game-day pill. Empty = off.")),
-      field("Word game", seg([["nyt", "NYT's daily word"], ["opensky", "OpenSky's words"]], wg.source === "opensky" ? "opensky" : "nyt", (v) => { wg.source = v; change(); })),
-      ...musicFields(),
-      ...devicesFields(),
-      field("Weather from", seg([["open-meteo", "Open-Meteo (free)"], ["openweathermap", "OpenWeatherMap"]], w.provider || "open-meteo", (v) => { w.provider = v; change(); drawWeather(v); })),
-      weatherKey);
+    );
   }
+
+  // sports team for the header's game-day pill (lives in the Your family card)
+  function sportsFields() {
+    const hd = S.header;
+    if (!hd.sports || typeof hd.sports !== "object") hd.sports = { league: "nfl", team: "" };
+    return el("div", { class: "two" },
+        field("Sports league", select([["nfl", "NFL"], ["college-football", "College football"], ["nba", "NBA"], ["wnba", "WNBA"], ["mens-college-basketball", "College basketball"], ["mlb", "MLB"], ["nhl", "NHL"], ["mls", "MLS"], ["nwsl", "NWSL"], ["epl", "Premier League"]], hd.sports.league || "nfl", (v) => { hd.sports.league = v; change(); })),
+        field("Team code", text(hd.sports.team, (v) => { hd.sports.team = v.trim().toUpperCase(); change(); }, { placeholder: "e.g. NE", maxlength: "5", autocapitalize: "characters" }), "Game-day pill. Empty = off."));
+  }
+
+  function gamesCard() {
+    const wg = S.wordgame;
+    return section("games", "extras", "Word game", "Which words the Games page's word game uses",
+      field("Word game", seg([["nyt", "NYT's daily word"], ["opensky", "OpenSky's words"]], wg.source === "opensky" ? "opensky" : "nyt", (v) => { wg.source = v; change(); })),
+    );
+  }
+
+  // one place for the Home Assistant address + token: the Music speakers and the Devices page use them
+  function homeAssistantCard() {
+    return section("ha", "web", "Home Assistant", "Used by the Music page's other speakers, the Devices page and Home Assistant shopping lists",
+      field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
+        field("Home Assistant token", secretInput("homeassistant.token", "Paste a long-lived access token"), "In Home Assistant: your profile → Security → Long-lived access tokens → Create token. Save, then Find my speakers."));
+  }
+
+  function musicCard() {
+    const f = musicFields();
+    return f.length ? section("music", "extras", "Music", "This screen as a speaker, and other speakers to control", ...f) : null;
+  }
+
+  function devicesCard() {
+    const f = devicesFields();
+    return f.length ? section("devices", "extras", "Devices", "Home Assistant lights, switches, locks and sensors as tiles", ...f) : null;
+  }
+
+  // the rest of the phone page is grouped into tabs: [id, label, [card ids in order]]
+  const TABS = [
+    ["family", "Family", ["family"]],
+    ["calendar", "Calendar", ["calendars", "weather", "reminders", "pickup", "ai"]],
+    ["lists", "Lists & meals", ["lists", "meals", "chores", "countdowns"]],
+    ["photos", "Photos", ["photos", "share", "screensaver"]],
+    ["screens", "Screens", ["pages", "homecards", "web", "screens", "look"]],
+    ["connections", "Connections", ["ha", "music", "devices", "games"]],
+    ["backup", "Backup", ["backup", "access"]]
+  ];
+  let tab = "family";
+  const showTab = (k, top) => {
+    if (!TABS.some(([t]) => t === k)) return;
+    tab = k;
+    document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === k));
+    document.querySelectorAll(".card[data-tab]").forEach((c) => { c.hidden = c.dataset.tab !== k; });
+    if (top) window.scrollTo(0, 0);
+  };
 
   // Music page: this screen as a speaker (the add-on: name, AirPlay / Spotify) and other speakers to control
   // (Home Assistant media players). Shown once the Music page is on, or the add-on is installed.
@@ -1291,15 +1362,13 @@
       b.disabled = false; b.textContent = "Find my speakers";
     } }, "Find my speakers");
     return [
-      el("h4", { class: "sub-title" }, "Music"),
       thisScreen && !inst.spotify && !inst.airplay ? el("p", { class: "hint" }, "To use this screen as a speaker, on the Pi open Terminal and type  opensky addon music. Other speakers (below) work without it.") : null,
       ...(!thisScreen ? [] : [field("Speaker name", text(M.name || "", (v) => { M.name = v.trim(); if (!M.name) delete M.name; change(); }, { placeholder: S.family.name || "OpenSky", maxlength: "40" }), "What phones show in the AirPlay and Spotify speaker lists."),
       el("div", { class: "line" }, el("span", {}, el("b", {}, "AirPlay"), el("small", {}, "iPhone, iPad, Mac")), toggle(M.airplay !== false, (v) => { M.airplay = v; change(); }, "AirPlay")),
       el("div", { class: "line" }, el("span", {}, el("b", {}, "Spotify Connect"), el("small", {}, "Needs Spotify Premium")), toggle(M.spotify !== false, (v) => { M.spotify = v; change(); }, "Spotify Connect"))]),
       el("h4", { class: "sub-title" }, "Other speakers to control"),
       el("p", { class: "hint" }, "Sonos, HomePod, Echo, Google speakers… through Home Assistant: the Music page gets a tab for each, with its song, buttons and volume."),
-      ...(haSet ? [] : [field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
-        field("Home Assistant token", secretInput("homeassistant.token", "Paste a long-lived access token"), "In Home Assistant: your profile → Security → Long-lived access tokens → Create token. Save, then Find my speakers.")]),
+      haSet ? null : el("p", { class: "hint bad" }, "Save the Home Assistant address and token (Home Assistant, above) first, then find your speakers."),
       others, find
     ];
   }
@@ -1342,10 +1411,8 @@
       b.disabled = false; b.textContent = "Find my devices";
     } }, "Find my devices");
     return [
-      el("h4", { class: "sub-title" }, "Devices"),
       el("p", { class: "hint" }, "Lights, switches, locks and sensors from Home Assistant, as tiles on the Devices page. Tap a light or switch to turn it on or off; a lock asks for a second tap."),
-      ...(haSet ? [] : [field("Home Assistant address", addressInput("homeassistant.url", "http://homeassistant.local:8123")),
-        field("Home Assistant token", secretInput("homeassistant.token", "Paste a long-lived access token"), "In Home Assistant: your profile → Security → Long-lived access tokens → Create token. Save, then Find my devices.")]),
+      haSet ? null : el("p", { class: "hint bad" }, "Save the Home Assistant address and token (Home Assistant, above) first, then find your devices."),
       mine, find,
       text("", (v) => { query = v; draw(); }, { placeholder: "Search the devices found", "aria-label": "Search the devices found" }),
       others
@@ -1401,8 +1468,11 @@
       el("div", { class: "line top" }, el("span", {}, el("b", {}, "Include passwords & keys"), el("small", {}, "Keep that file somewhere private")),
         toggle(false, (v) => { link.setAttribute("href", v ? "/api/backup?secrets=1" : "/api/backup"); }, "Include passwords")),
       link,
-      el("button", { type: "button", class: "btn block", onclick: () => file.click() }, "Restore from a backup"), file, auto,
-      el("h4", { class: "sub-title" }, "Remembered devices"),
+      el("button", { type: "button", class: "btn block", onclick: () => file.click() }, "Restore from a backup"), file, auto);
+  }
+
+  function accessCard() {
+    return section("access", "backup", "Remembered phones", "Phone access to this page",
       el("p", { class: "hint" }, "Phones and computers that ticked \"Remember this device\" skip the pairing code until you forget them."),
       el("button", { type: "button", class: "btn block", onclick: () => api("POST", "/api/devices/forget").then(() => { toast("Forgotten — every device needs the code again", "good"); load(); }, (x) => toast(x.message, "bad")) },
         info && info.remembered ? `Forget remembered devices (${info.remembered})` : "Forget remembered devices"));
