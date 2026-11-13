@@ -944,7 +944,7 @@
   }
 
   function pageNames() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && ["mealie", "local", "both"].includes(S.meals.provider) ? { meals: "Meals" } : {}), wordgame: "Word Game", timer: "Timer", music: "Music", devices: "Devices" };
+    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && ["mealie", "local", "both"].includes(S.meals.provider) ? { meals: "Meals" } : {}), wordgame: "Games", timer: "Timer", music: "Music", devices: "Devices" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     return names;
   }
