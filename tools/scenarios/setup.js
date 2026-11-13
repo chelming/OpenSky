@@ -60,11 +60,13 @@ module.exports = async (page, h, app) => {
   ok("phone: a wrong code is refused kindly", await phone.evaluate(() => /not the code/.test(document.querySelector(".pair-msg").textContent)));
   await phone.fill(".code-input", card.code);
   await until(() => phone.evaluate(() => !!document.querySelector("#family")));
-  ok("phone: the right code opens the settings; the screen says the phone is connected", await phone.evaluate(() => ["family", "calendars", "lists", "photos", "pages", "web", "extras", "backup"].every((id) => document.querySelector(`section.card#${id}`))) && /Phone connected/.test(await status()));
+  ok("phone: the right code opens the settings; the screen says the phone is connected", await phone.evaluate(() => ["family", "calendars", "lists", "photos", "pages", "web", "look", "backup"].every((id) => document.querySelector(`section.card#${id}`))) && /Phone connected/.test(await status()));
   await phone.screenshot({ path: path.join(OUT, "setup-phone-main.png"), fullPage: true });
 
   // edit: family name, a list, a private calendar link
+  const goTab = (t) => phone.evaluate((t) => document.querySelector(`.tabs button[data-tab="${t}"]`).click(), t);
   await phone.fill("#family input.input", "The Testers Too");
+  await goTab("lists");
   await phone.click("#lists .add"); await h.sleep(400);
   await phone.fill(".sheet input.input", "Hardware");
   await phone.click(".sheet .btn.primary"); await h.sleep(400);
@@ -75,6 +77,7 @@ module.exports = async (page, h, app) => {
   await phone.screenshot({ path: path.join(OUT, "setup-phone-ha-list.png") });
   await phone.click(".sheet .btn.primary"); await h.sleep(400);
   await phone.fill("#lists input[placeholder^='Paste a long-lived']", "ha-test-token-123");
+  await goTab("calendar");
   await phone.click("#calendars .add"); await h.sleep(400);
   await phone.fill(".sheet input.input", "Grandma");
   await phone.fill(".sheet textarea", "https://calendar.example.com/private-abc123/basic.ics");
