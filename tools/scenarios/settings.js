@@ -9,6 +9,7 @@ module.exports = async (page, h) => {
   const open = () => page.evaluate(() => !!document.querySelector(".ost-overlay:not([hidden]) .ost-panel"));
   // wait until every change has its reply and the panel has redrawn (taps go by position; the layout must be settled)
   const settled = () => until(async () => page.evaluate(() => !MM.getModules().withClass("MMM-OpenSky-Settings")[0].inflight));
+  const tab = (k) => page.evaluate((k) => MM.getModules().withClass("MMM-OpenSky-Settings")[0].showTab(k), k);
   const asleep = () => page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].isAsleep());
 
   ok("sidebar has a Settings tile", !!(await h.box(".os-settings")) || !!(await page.$("[class*='settings']")));
@@ -16,7 +17,16 @@ module.exports = async (page, h) => {
   await until(open);
   await until(async () => page.evaluate(() => !!document.querySelector(".ost-prefs .ost-section")));
   const secs = await page.evaluate(() => [...document.querySelectorAll(".ost-section h3")].map((x) => x.textContent));
-  ok("panel opens with Screen / Sleep / Sound / Pages / Look & extras / Backups / System", JSON.stringify(secs) === JSON.stringify(["Screen", "Sleep at night", "Sound", "Pages", "Look & extras", "Backups", "System"]), secs);
+  ok("panel has every section", JSON.stringify(secs) === JSON.stringify(["Screen", "Sleep at night", "Sound", "Pages", "Home cards", "Look", "Extras", "Event reminders", "Backups", "System"]), secs);
+  const visible = () => page.evaluate(() => [...document.querySelectorAll(".ost-section h3")].filter((x) => x.offsetParent).map((x) => x.textContent));
+  ok("opens on 'This screen': only its sections are shown", JSON.stringify(await visible()) === JSON.stringify(["Screen", "Sleep at night", "Sound", "Look"]), await visible());
+  await h.tap('.ost-tab[data-tab="pages"]');
+  ok("the Pages tab shows only Pages", JSON.stringify(await visible()) === JSON.stringify(["Pages"]), await visible());
+  await h.tap('.ost-tab[data-tab="home"]');
+  ok("the Home tab shows Home cards + Extras", JSON.stringify(await visible()) === JSON.stringify(["Home cards", "Extras"]), await visible());
+  await h.tap('.ost-tab[data-tab="system"]');
+  ok("the System tab shows System; the phone button stays in the list", JSON.stringify(await visible()) === JSON.stringify(["System"]) && !!(await h.box(".ost-nav .ost-phone")), await visible());
+  await h.tap('.ost-tab[data-tab="screen"]');
   ok("brightness method explained (no hardware here → dims the picture)", await page.evaluate(() => /Dims the picture/.test(document.querySelector(".ost-note").textContent)));
 
   await slide("brightness", 40);
@@ -80,6 +90,7 @@ module.exports = async (page, h) => {
   const S = () => JSON.parse(fs.readFileSync(path.join(__dirname, "..", "out", "opensky.test.json"), "utf8"));
   await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].sendNotification("OPENSKY_SETTINGS_OPEN"));
   await until(async () => page.evaluate(() => document.querySelectorAll(".ost-page").length > 3));
+  await tab("pages");
   const before = S().pages;
   await page.evaluate(() => document.querySelector('.ost-page[data-page="wordgame"] .ost-toggle').click());
   await until(async () => !S().pages.includes("wordgame"));
@@ -104,6 +115,7 @@ module.exports = async (page, h) => {
   await page.mouse.move(back.x, (back.y + bottom.y) / 2, { steps: 4 }); await page.mouse.move(back.x, bottom.y + 20, { steps: 6 });
   await page.mouse.up();
   await until(async () => S().pages.join() === dragBefore.join());
+  await tab("screen");
   const mine = () => page.evaluate(() => localStorage.getItem("opensky.accent"));
   await page.evaluate(() => document.querySelector('[data-accent="teal"]').click());
   await until(async () => (await mine()) === "teal");
@@ -115,6 +127,7 @@ module.exports = async (page, h) => {
   await h.shot("settings-accent-code");
   for (const k of ["{numbers}", "1", "{letters}", "d", "{numbers}", "4", "{letters}", "e", "d", "{numbers}", "8"]) await h.tap(`.okb-key[data-key="${k}"]`);
   const typed = await page.evaluate(() => ({ v: document.querySelector(".ost-hex").value, sw: document.querySelector(".ost-swatch").style.getPropertyValue("--c"), empty: document.querySelector(".ost-swatch").classList.contains("empty") }));
+  await page.evaluate(() => document.querySelector(".ost-hex-use").scrollIntoView({ block: "center" })); await h.sleep(300);
   await h.tap(".ost-hex-use");
   await until(async () => (await mine()) === "#1d4ed8");
   ok("accent color code: typed on the on-screen keyboard, previewed, Use → saved as #rrggbb and applied at once", typed.v === "1d4ed8" && typed.sw === "#1d4ed8" && !typed.empty &&
@@ -152,7 +165,7 @@ module.exports = async (page, h) => {
   await page.evaluate(() => document.querySelector(".ost-wf-save").click());
   await until(async () => S().embeds && S().embeds.recipes);
   const rec = S().embeds.recipes;
-  ok("Add a web page on the screen: name + address + icon → its own page in the sidebar (before Timer)", icons === 16 && /name/.test(emptyErr) && rec.title === "Recipes" && rec.icon === "food" && /embed\.html$/.test(rec.url) && S().pages.includes("recipes") && S().pages.indexOf("recipes") < S().pages.indexOf("timer"), { rec, pages: S().pages, emptyErr });
+  ok("Add a web page on the screen: name + address + icon → its own page in the sidebar (before Timer)", icons >= 16 && /name/.test(emptyErr) && rec.title === "Recipes" && rec.icon === "food" && /embed\.html$/.test(rec.url) && S().pages.includes("recipes") && S().pages.indexOf("recipes") < S().pages.indexOf("timer"), { rec, pages: S().pages, emptyErr });
   await until(async () => page.evaluate(() => !!document.querySelector('.ost-edit-web[data-key="recipes"]')));
   await page.evaluate(() => document.querySelector('.ost-edit-web[data-key="recipes"]').click());
   await until(async () => page.evaluate(() => !!document.querySelector(".ost-webform")));

@@ -68,7 +68,7 @@ screen (the Pi's display settings) and restart OpenSky. With **Extra large** tex
 `textSize`: `"small"`, `"normal"` (the default), `"large"` or `"xlarge"`: makes everything on the screen smaller or bigger
 (0.9×, 1.15×, 1.3×) on top of the fitted size, e.g. for a screen you read from across the kitchen. Larger sizes show less
 at once, like a smaller screen. This setting is the **default for every screen** (set it on the phone: Extras → Text size).
-Each screen can pick its **own** size in Settings → Look & extras → Text size (applied at once; "Default" follows the setting
+Each screen can pick its **own** size in Settings → This screen → Look → Text size (applied at once; "Default" follows the setting
 above). That choice is remembered by that screen's browser only, so a kitchen screen and a hallway tablet can differ, and it
 isn't saved in `opensky.json`.
 
@@ -78,7 +78,7 @@ screen itself, no internet needed) and back to light in the morning; without a l
 Dark mode darkens every page, popup and the on-screen keyboard; the screensaver stays as it is (it is dark
 already). Photos, and web pages you added (Smart Home, Vault...), are shown as they are, so a light website stays light.
 This is the **default for every screen** (phone: Extras → Dark mode); each screen can pick its **own** (Default / Light /
-Dark / Auto / System) in Settings → Look & extras → Dark mode, remembered by that screen's browser only (like the text size) and not
+Dark / Auto / System) in Settings → This screen → Look → Dark mode, remembered by that screen's browser only (like the text size) and not
 saved in `opensky.json`. It works with "Dim in the evening": dark mode changes the colors, the dim lowers the brightness; use
 both if you like. `lightSensor`: `true` lets an ambient light sensor overrule the sun in Auto (a dark room turns it dark, a bright
 one light), but only on a screen whose browser exposes one; where there is none it is ignored and Auto follows the sun. It is
@@ -91,7 +91,7 @@ never used in Docker (time and sun only).
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
 default peach. This setting is the **default for every screen** (set it on the phone: Extras: a chip, the color picker, or
-a code). Each screen can pick its **own** in Settings → Look & extras (a chip, or type a code under "Or a color code";
+a code). Each screen can pick its **own** in Settings → This screen → Look (a chip, or type a code under "Or a color code";
 "Default" follows the setting above). That choice is remembered by that screen's browser only and isn't saved in
 `opensky.json`. A very light color gets a warning: the text on buttons is white.
 
@@ -172,7 +172,7 @@ A **screen profile** is a named set of these, so you don't repeat the choices on
 - `person` (optional): a person from `profiles`; their circle is on when the screen starts, so it shows only their calendars and lists (tap it to change).
 - `textSize`, `accent` (optional): as under Accent color and size.
 
-Make them on the phone: Set up from your phone, **Screens**. Then on each screen: Settings, Look & extras, **Screen profile**,
+Make them on the phone: Set up from your phone, **Screens**. Then on each screen: Settings, This screen → Look, **Screen profile**,
 and pick one (it is remembered by that screen only). Order of precedence for every setting: what you pick on that screen
 (Text size, Accent color, Hide here) beats its screen profile, which beats the default for every screen. Choosing a screen
 profile drops that screen's own page, text size and color choices so the profile applies as it is; **None** goes back to the defaults.
@@ -594,7 +594,7 @@ goes after 90 seconds). Each event reminds once, also after a reload or a restar
 - `allDay`: all-day events too. They remind once, at 8 in the morning. Off by default.
 - `people`: only the calendars linked to these people (or named like them). Empty or left out = every calendar.
 - A sleeping screen (Sleep, or the night schedule) is left alone: nothing plays, and the reminder comes when someone wakes it if the event hasn't started yet.
-- Set it from the phone page (Extras -> Event reminders) or on the screen (Settings -> Look & extras -> Event reminders, with a **Test** button; a restart applies it).
+- Set it from the phone page (Extras -> Event reminders) or on the screen (Settings -> Reminders -> Event reminders, with a **Test** button; a restart applies it).
   The chime and who it is for are on the phone page.
 - In Docker the chime plays in the browser that shows the dashboard (the same Web Audio bell as the timer), so it needs that browser to have been touched once and not be muted; the banner always works.
 
@@ -618,7 +618,12 @@ A keyboard slides up whenever you tap a text box (adding a list item, naming an 
 if you use a real keyboard. Dates and times use pickers instead. The keyboard takes 40 % of the screen height, but never more than 440 px (design size), so on a portrait screen its keys stay normal-sized instead of stretching.
 
 ## The Settings panel (on the screen)
-| Setting | What it does |
+The panel has a list of sections down its left side (across the top on a narrow screen), and shows one at a time:
+**This screen**, **Pages**, **Home**, **Reminders**, **Backups** and **System**. *This screen* holds everything that is
+about the screen you are holding (brightness, sleep, sound, screen profile, accent color, text size, dark mode); the
+button at the bottom of the list opens phone setup. The "Some changes show after a restart" bar stays visible on every section.
+
+| Setting (section) | What it does |
 |---|---|
 | Brightness | In Docker (no screen hardware) it dims the picture of **this browser only**, and "Dim in the evening" and "Sleep at night" are also kept per browser (in that browser, like the text size), so a tablet and a wall display can differ. On a Pi it uses the display's backlight (Pi touch displays), the monitor's own brightness over HDMI (most monitors; the installer sets this up), or — if neither works — dims the picture. The panel says which. |
 | Dim in the evening | From the time you pick until the morning, brightness goes down to the level you pick. |
@@ -627,7 +632,9 @@ if you use a real keyboard. Dates and times use pickers instead. The keyboard ta
 | Volume / Test | The Pi's speaker volume; Test plays the timer chime. Not shown in Docker. |
 | Pages | Turn pages on/off and change their order (also on the phone) for every screen. **Hide here** hides a page's button on the screen you're holding only (kept in that browser, like the text size) — handy when a tablet and a wall display should show different pages. |
 | Home cards | Show or hide the cards on the right of Home and change their order (grip or arrows); applies after a restart. |
-| Look & extras | **Screen profile** (a saved set of pages, person, text size and color, see [Several screens](#several-screens-screen-profiles)), accent color, text size (both for this screen only), word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Look (This screen) | **Screen profile** (a saved set of pages, person, text size and color, see [Several screens](#several-screens-screen-profiles)), accent color, text size, dark mode (all for this screen only). |
+| Extras (Home) | Word game (NYT's word or OpenSky's), photo slideshow on/off, trash day. |
+| Event reminders (Reminders) | How long before an event the chime and banner come; **Test**. |
 | Backups | Every night to a USB stick, a network folder or the Pi itself — the list shows what the Pi can reach right now (in Docker: folders you mount into the container, e.g. `/backups`, and the config folder); keep 7–90; passwords included only if you switch it on; **Back up now**. |
 | System | Internet, the Pi's address, the OpenSky version (and **Update** when there is one), Reload, Restart OpenSky, Restart Pi, Shut down. The last three ask you to tap twice. |
 

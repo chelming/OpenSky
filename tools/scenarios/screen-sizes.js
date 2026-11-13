@@ -15,7 +15,7 @@ module.exports = async (page, h) => {
     });
     ok(`${w}×${hh}: ${g.layout} layout, scaled ${g.zoom.toFixed(2)}×, every sidebar tile and the whole Home page on screen`, g.layout === (w / g.zoom < 1600 || hh / g.zoom < 880 ? "compact" : "full") && Math.abs(g.zoom - expectZoom(w, hh)) < 0.01 && g.lastTile <= g.H + 1 && g.home <= g.H + 1 && g.right <= g.W + 1 && (w < 1024 || g.eventPx >= 10), g);   // (event names stay readable: 10 real px from 1024 wide up)
   }
-  // Text size (Settings → Look & extras): bigger text on top of the fitted scale; every sidebar tile and the Home page still fit
+  // Text size (Settings → This screen → Look): bigger text on top of the fitted scale; every sidebar tile and the Home page still fit
   for (const [w, hh, size, mult] of [[1920, 1080, "large", 1.15], [1920, 1080, "xlarge", 1.3], [1920, 1080, "small", 0.9], [1280, 720, "xlarge", 1.3], [1024, 600, "large", 1.15], [800, 480, "xlarge", 1.3]]) {
     await page.setViewportSize({ width: w, height: hh });
     await page.evaluate((s) => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].setTextSize(s), size);
