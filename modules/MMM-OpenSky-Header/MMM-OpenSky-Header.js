@@ -73,6 +73,10 @@ Module.register("MMM-OpenSky-Header", {
     const wx = document.createElement("div");
     wx.className = "hb-weather";
     wx.innerHTML = this._formatWeather();
+    if (Number.isInteger(this.config.weatherPage)) {   // tap the weather: the Weather page opens
+      wx.classList.add("hb-weather-link");
+      wx.onclick = () => this.sendNotification("PAGE_CHANGED", this.config.weatherPage);
+    }
     row.appendChild(wx);
 
     // Weather alerts: a quiet green pill, or an amber / red one with the alert (tap: the Weather page opens with the text)
