@@ -144,6 +144,6 @@ module.exports = async (page, h) => {
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };
-module.exports.patchSettings = (s) => { s.pages = ["home", "calendar", "lists", "music", "timer"]; s.music = { speakers: ["media_player.kitchen", "media_player.attic"] }; };
+module.exports.patchSettings = (s) => { s.pages = ["home", "lists", "music", "timer"]; s.music = { speakers: ["media_player.kitchen", "media_player.attic"] }; };
 module.exports.patchSecrets = (x) => { x.homeassistant = { url: `http://127.0.0.1:${HA}`, token: "ha-test-token" }; };
 module.exports.env = { OPENSKY_SPOTIFY_API: `http://127.0.0.1:${PORT}`, OPENSKY_BUSCTL: BUSCTL, OPENSKY_MUSIC_INSTALLED: "spotify,airplay" };

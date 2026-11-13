@@ -93,7 +93,7 @@ module.exports = async (page, h) => {
 };
 
 module.exports.patchSettings = (s) => {
-  s.pages = ["home", "calendar", "devices", "timer"];
+  s.pages = ["home", "devices", "timer"];
   s.devices = { tiles: [{ entity: "light.hall", name: "Hall" }, { entity: "switch.fan" }, { entity: "lock.front" }, { entity: "sensor.temp" }, { entity: "light.attic" }] };
 };
 module.exports.patchSecrets = (s) => { s.homeassistant = { url: `http://127.0.0.1:${PORT}`, token: TOKEN }; };

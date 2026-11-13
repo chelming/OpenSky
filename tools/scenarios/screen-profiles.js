@@ -28,9 +28,9 @@ module.exports = async (page, h) => {
   ok("Settings lists None + the profiles from opensky.json", names.join() === "None,Kitchen,Hall", names);
   await close();
 
-  // Kitchen: home + calendar, Kid's calendars, Large text, teal
+  // Kitchen: home + lists, Kid's calendars, Large text, teal
   await choose("Kitchen");
-  ok("Kitchen: only its pages are shown", (await tiles()).join() === "home,calendar", await tiles());
+  ok("Kitchen: only its pages are shown", (await tiles()).join() === "home,lists", await tiles());
   ok("Kitchen: Large text (1.15x) and its accent (teal)", Math.abs(await zoom() - 1.15) < 0.01 && (await accent()) === "#11998e", { z: await zoom(), a: await accent() });
   ok("Kitchen: Kid's circle is on", (await picked()).join() === "Kid", await picked());
   ok("remembered by this browser only", await page.evaluate(() => localStorage.getItem("opensky.screenProfile")) === "Kitchen");
@@ -42,13 +42,13 @@ module.exports = async (page, h) => {
 
   await reload();
   ok("after a refresh the profile still applies (pages, size, accent, person)",
-    (await tiles()).join() === "home,calendar" && Math.abs(await zoom() - 1.15) < 0.01 && (await accent()) === "#11998e" && (await picked()).join() === "Kid", { t: await tiles(), p: await picked() });
+    (await tiles()).join() === "home,lists" && Math.abs(await zoom() - 1.15) < 0.01 && (await accent()) === "#11998e" && (await picked()).join() === "Kid", { t: await tiles(), p: await picked() });
 
   // this screen's own choice beats the profile
   await open();
   await page.evaluate(() => document.querySelector('[data-seg="textSize"] button[data-v="xlarge"]').click()); await h.sleep(600);
   ok("an own text size (Extra large) beats the profile's", Math.abs(await zoom() - 1.3) < 0.01, await zoom());
-  await page.evaluate(() => document.querySelector('[data-here="calendar"]').click()); await h.sleep(500);
+  await page.evaluate(() => document.querySelector('[data-here="lists"]').click()); await h.sleep(500);
   ok("Hide here on a profile page: that screen's own list wins (only Home is left)", (await tiles()).join() === "home", await tiles());
   await close();
 
@@ -69,7 +69,7 @@ module.exports = async (page, h) => {
 };
 module.exports.patchSettings = (st) => {
   st.screens = [
-    { name: "Kitchen", pages: ["home", "calendar"], person: "Kid", textSize: "large", accent: "teal" },
+    { name: "Kitchen", pages: ["home", "lists"], person: "Kid", textSize: "large", accent: "teal" },
     { name: "Hall", pages: ["lists", "timer"], accent: "#3b82f6" }
   ];
 };

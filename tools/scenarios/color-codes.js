@@ -1,6 +1,6 @@
 // Color codes for calendars, keyword rules and lists (a user put "#8cbfc4" in "color" and got automatic colors —
 // only palette names worked there). The fixture's Family calendar gets "#8CBFC4" (upper case), a rule "#e32a36",
-// Groceries "#5f8f38"; checked on the Home week, the month view and the list columns.
+// Groceries "#5f8f38"; checked on the Home week, Home's month view and the list columns.
 module.exports = async (page, h) => {
   const R = {}; const ok = (k, v, i) => { R[k] = v; h.log(`${v ? "PASS" : "FAIL"}  ${k}${i !== undefined ? "  — " + JSON.stringify(i) : ""}`); };
   const until = async (fn, n = 40) => { for (let i = 0; i < n && !(await fn()); i++) await h.sleep(250); return fn(); };
@@ -25,10 +25,10 @@ module.exports = async (page, h) => {
   ok("the list's Add popup uses its color code", pop === "#5f8f38", pop);
   await page.evaluate(() => [...document.querySelectorAll(".osl-btn")].find((b) => b.textContent === "Cancel").click()); await h.sleep(400);
 
-  // the month view (CalendarExt3)
-  await h.tap(".os-page-calendar"); await h.sleep(2500);
-  const month = await page.evaluate(() => { const e = [...document.querySelectorAll(".CX3 .event")].find((x) => /Soccer practice/.test(x.textContent)); if (!e) return null; const cs = getComputedStyle(e); return { cls: e.className, bar: cs.getPropertyValue("--evc-bar").trim(), cal: cs.getPropertyValue("--calendarColor").trim() }; });
-  ok("month view: the event has the code's color (evc-custom + CX3's --calendarColor)", month && /evc-custom/.test(month.cls) && month.cal === "#8cbfc4", month);
+  // the month view (Home → Month)
+  await h.tap(".hd-seg-month"); await h.sleep(800);
+  const month = await page.evaluate(() => { const e = [...document.querySelectorAll(".hd-m-chip")].find((x) => /Soccer practice/.test(x.textContent)); if (!e) return null; const cs = getComputedStyle(e); return { bar: cs.getPropertyValue("--evc-bar").trim(), bg: cs.backgroundColor }; });
+  ok("month view: the event has the code's color (the bar in that color, a pale background of it)", month && month.bar.toLowerCase() === "#8cbfc4" && month.bg !== rgb("#8cbfc4") && !/rgba?\(0, 0, 0/.test(month.bg), month);
   await h.shot("color-codes-month");
 
   // the shared rule: codes in any case or short form; anything else isn't a color

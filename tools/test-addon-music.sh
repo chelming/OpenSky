@@ -42,7 +42,7 @@ cat > "$T/bin/sha256sum" <<EOF
 echo "sha256sum \$*" >> "$LOG"; cat > /dev/null; exit 0
 EOF
 chmod +x "$T/bin/"*
-echo '{ "family": { "name": "The Testers" }, "pages": ["home", "calendar", "timer"] }' > "$T/config/opensky.json"
+echo '{ "family": { "name": "The Testers" }, "pages": ["home", "timer"] }' > "$T/config/opensky.json"
 
 run() { HOME="$T/home" OPENSKY_HOME="$T/runtime" OPENSKY_CONFIG_DIR="$T/config" PATH="$T/bin:$PATH" timeout 60 bash "$REPO/tools/addons/music.sh" "$@" < /dev/null 2>&1; }
 apt_expected=1; type -P shairport-sync >/dev/null && apt_expected=0   # (already on this computer: no apt install)
@@ -57,7 +57,7 @@ U="$T/home/.config/systemd/user"
 check "4 AirPlay service: settings, config written first, shairport-sync with it" bash -c "grep -q 'Environment=OPENSKY_SETTINGS=$T/config/opensky.json' '$U/opensky-airplay.service' && grep -q 'render.js airplay $T/runtime/music' '$U/opensky-airplay.service' && grep -q 'ExecStart=/usr/bin/shairport-sync -c $T/runtime/music/shairport-sync.conf' '$U/opensky-airplay.service'"
 check "5 Spotify service: config written first, go-librespot with it" bash -c "grep -q 'render.js spotify $T/runtime/music' '$U/opensky-spotify.service' && grep -q 'ExecStart=$T/runtime/music/go-librespot --config_dir $T/runtime/music/spotify' '$U/opensky-spotify.service'"
 check "6 the package's own AirPlay speaker is switched off; ours are enabled" bash -c "grep -q 'disable --now shairport-sync.service' '$LOG' && grep -q 'enable -q --now opensky-airplay.service opensky-spotify.service' '$LOG'"
-check "7 the Music page added before the Timer (old settings kept as .bak)" bash -c "node -e 'const s=require(\"$T/config/opensky.json\"); process.exit(JSON.stringify(s.pages)===JSON.stringify([\"home\",\"calendar\",\"music\",\"timer\"])?0:1)' && [ -f '$T/config/opensky.json.bak' ]"
+check "7 the Music page added before the Timer (old settings kept as .bak)" bash -c "node -e 'const s=require(\"$T/config/opensky.json\"); process.exit(JSON.stringify(s.pages)===JSON.stringify([\"home\",\"music\",\"timer\"])?0:1)' && [ -f '$T/config/opensky.json.bak' ]"
 tmp_after=$(find /tmp -maxdepth 1 -name 'tmp.*' -user "$(id -u)" 2>/dev/null | wc -l)
 ok "8 no download folders left behind in /tmp" "$([ "$tmp_after" -le "$tmp_before" ]; echo $?)" "$tmp_before → $tmp_after"
 

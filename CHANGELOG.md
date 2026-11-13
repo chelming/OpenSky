@@ -4,7 +4,10 @@
 - **Fewer sidebar buttons:** put pages in a group (one button with a small menu) or in a compact **More** grid that also
   holds Sleep and Settings. Set per page in phone setup → Pages (where groups are made) or Settings → Pages
   ([docs/configure.md](docs/configure.md#fewer-buttons-groups-and-more)).
-- **Month button on Home:** the week card opens the Calendar (month) page, so its sidebar button can go in More.
+- **The Calendar page is retired.** Home's Week | Month toggle covers it, and the third-party MMM-CalendarExt3 module it needed
+  is no longer installed. Older settings that still list `calendar` under pages are quietly ignored.
+- **Month view on Home:** a Week | Month toggle on the calendar card swaps the week for a month grid in place (arrows move
+  by month, tap a day or event as in the week), without leaving Home.
 
 ## 1.1.0 — 2026-11-10
 - **Container image:** OpenSky is published as `ghcr.io/chelming/opensky` (amd64 and arm64) with every release, so Docker

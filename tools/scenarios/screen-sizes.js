@@ -37,11 +37,11 @@ module.exports = async (page, h) => {
   ok("keyboard keeps 40% of the screen; the form sits above it", Math.abs(kb.kbTop - kb.H * 0.6) < 4 && kb.modalBottom <= kb.kbTop, kb);
   await page.evaluate(() => { document.querySelector(".event-close-btn")?.click(); document.activeElement && document.activeElement.blur(); });
   await h.sleep(400);
-  await h.tap(".os-page-calendar"); await h.sleep(1500);
-  const cal = await page.evaluate(() => { const b = document.querySelector(".CX3 .bodice") || document.querySelector(".CX3"); const r = b.getBoundingClientRect(); return { bottom: Math.round(r.bottom), height: Math.round(r.height), H: innerHeight }; });
-  ok("the month grid fills the page and ends on screen", cal.bottom <= cal.H + 1 && cal.height > cal.H * 0.6, cal);
+  await h.tap(".os-page-home"); await h.sleep(600); await h.tap(".hd-seg-month"); await h.sleep(900);
+  const cal = await page.evaluate(() => { const b = document.querySelector(".hd-m-grid"), r = b.getBoundingClientRect(); const cells = [...document.querySelectorAll(".hd-m-day")]; return { bottom: Math.round(r.bottom), height: Math.round(r.height), H: innerHeight, spill: cells.filter((c) => { const l = c.querySelector(".hd-m-events").lastElementChild; return l && l.getBoundingClientRect().bottom > c.getBoundingClientRect().bottom + 1; }).length }; });
+  ok("the month grid fills the card and ends on screen, nothing spills out of a day", cal.bottom <= cal.H + 1 && cal.height > cal.H * 0.5 && cal.spill === 0, cal);
   await h.shot("screen-1280");
-  await page.setViewportSize({ width: 1920, height: 1080 }); await h.tap(".os-page-home"); await h.sleep(500);
+  await h.tap(".hd-seg-week"); await page.setViewportSize({ width: 1920, height: 1080 }); await h.tap(".os-page-home"); await h.sleep(500);
   const f = Object.entries(R).filter(([, v]) => !v).map(([k]) => k);
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
 };

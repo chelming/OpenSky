@@ -56,9 +56,9 @@ module.exports = async (page, h) => {
   ok("10 all done: 'All done', the last event ('ended …'), a 'N done' pill, and the taller photo strip", /All done/.test(d.txt) && /ended/.test(d.txt) && d.chip && d.photoH === 250, d);
   await h.shot("portrait-home-done");
 
-  for (const p of ["calendar", "lists", "timer", "wordgame"]) {
+  for (const p of ["lists", "timer", "wordgame"]) {
     await h.tap(`.os-page-${p}`); await h.sleep(1200);
-    const f = await page.evaluate(() => { const els = [...document.querySelectorAll(".MMM-OpenSky-Calendar,.lp-root,.timer-wrapper,.wg-root,.CX3")].filter((n) => n.getBoundingClientRect().height); const nav = document.querySelector(".os-side-wrap").getBoundingClientRect().top; return { right: Math.max(...els.map((n) => n.getBoundingClientRect().right)), W: innerWidth, nav, keys: (() => { const k = document.querySelector(".wg-keys"); return k ? k.getBoundingClientRect().right : 0; })() }; });
+    const f = await page.evaluate(() => { const els = [...document.querySelectorAll(".lp-root,.timer-wrapper,.wg-root")].filter((n) => n.getBoundingClientRect().height); const nav = document.querySelector(".os-side-wrap").getBoundingClientRect().top; return { right: Math.max(...els.map((n) => n.getBoundingClientRect().right)), W: innerWidth, nav, keys: (() => { const k = document.querySelector(".wg-keys"); return k ? k.getBoundingClientRect().right : 0; })() }; });
     ok(`11 ${p}: fits the portrait screen`, f.right <= f.W + 1 && (!f.keys || f.keys <= f.W), f);
     await h.shot(`portrait-${p}`);
   }

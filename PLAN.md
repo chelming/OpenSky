@@ -68,7 +68,7 @@ Legend: **default** = what a new install uses; ✅ = in the reference build alre
    ✅ Home (events from any calendar source, named color palette + rules, shared weather, provider-neutral lists
    card, photos from a folder/USB stick or Immich, generic pickup schedule + New Bedford preset).
    ✅ Calendar sources (public links in settings, private links in secrets.json, MagicMirror's own fetcher),
-   ✅ Calendar page (MMM-CalendarExt3 pinned + patch, toolbar, taps, two-line fitting, palette colors).
+   ✅ Calendar: Home's Week | Month toggle (the separate Calendar page and its MMM-CalendarExt3 dependency were retired).
    ✅ On-device calendar (default, no account) + event editor (day list, view, add, edit, delete; linked calendars
    read-only; changes go through the node helper).
    ✅ CalDAV calendar service (services/calendar-service: iCloud/Fastmail/Nextcloud…, add/edit/delete, offline

@@ -55,17 +55,11 @@ html[data-layout="compact"] {
 
 /* Hidden modules must never catch taps.
    MMM-pages hides modules with opacity:0 (they stay in the layout), and some
-   rules below force pointer-events:auto (e.g. .CX3 .cellDate). */
+   rules below force pointer-events:auto. */
 .module.hidden,
 .module.hidden * {
   pointer-events: none !important;
 }
-
-/* The default calendar module is only an event source for CalendarExt3 */
-.module.calendar { display: none !important; }
-
-/* CalendarExt3's own popover is replaced by the OpenSky event editor's popups */
-#CX3_POPOVER { display: none !important; }
 
 /* MMM-Remote-Control's overlay must never swallow taps */
 #remote-control-overlay-temp,
@@ -127,7 +121,6 @@ html[data-os-theme="dark"] .hd-nextweek { background: #f4f4f5; }
 html[data-os-theme="dark"] .hd-countdowns, html[data-os-theme="dark"] .hd-pill { --os-accent-tint: #f4f4f5; }
 /* ...and the same for the pale peach tints the other pages share (!important: the accent setting writes these inline) */
 html[data-os-theme="dark"] { --os-accent-soft: #e4e4e7 !important; --os-accent-tint: #f4f4f5 !important; }
-html[data-os-theme="dark"] .CX3 .cell.today { background-color: #f4f4f5 !important; }   /* the Calendar page's Today cell */
 html[data-os-theme="dark"] .hb-countdown:not([class*="hb-theme-"]), html[data-os-theme="dark"] .hb-theme-birthday, html[data-os-theme="dark"] .hb-theme-halloween { --cd-bg: #f4f4f5; }
 /* Dark mode has no orange/brown by default: the default (peach) accent becomes blue (Sidebar.applyAccent), and the few hard-coded
    warm colors follow. A color a person picked (accent, list or event colors) is never touched. */

@@ -38,7 +38,7 @@ opensky/
 | MMM-OpenSky-Screensaver | — | idle photo slideshow + clock, weather, "Up next" (CALENDAR_EVENTS, OPENSKY_WEATHER); idle time from the Sidebar; own photo route `/opensky-saver-photo/<id>` (same source as Home, `next({single:true})`); styled with the dashboard's event-pill tokens (`--evc-*`) |
 | MMM-OpenSky-Header | MMM-HeaderBar | family name, clock, weather provider, countdown + sports pills |
 | MMM-OpenSky-Home | MMM-HomeDashboard | week tiles, lists card, photos card (providers), pickup icons |
-| MMM-OpenSky-CalendarNav / -CalendarHelper / -EventEditor | MMM-CalendarNav / -CalendarHelper / -CalendarEditor | month/week view uses MMM-CalendarExt3 (pinned + patch) |
+| MMM-OpenSky-CalendarNav / -CalendarHelper / -EventEditor | MMM-CalendarNav / -CalendarHelper / -CalendarEditor | the week and the month are Home's own views (Week \| Month toggle); popups by the event editor |
 | MMM-OpenSky-Lists ✅ | MMM-Todoist / MMM-TaskEditor / MMM-TodoistQuickAdd | `lib/lists.js` providers: on-device (default, `config/lists.json`), Todoist (token in secrets.json), Home Assistant, Mealie (`lib/mealie.js`, also the `mealie` calendar source = meal plan); add / edit / check-off-with-Undo popups; broadcasts `OPENSKY_LISTS` |
 | MMM-OpenSky-WeatherPage ✅ | (none) | Weather page: Right now + Next 24 hours + Plan around it (one Open-Meteo call, `fetchForecast`: hours, current feels-like/wind/humidity, daily rain chance), This week (the header's shared `OPENSKY_WEATHER` forecast, so highs and icons match Home), US weather alerts (NWS) shown as the header's pill (`OPENSKY_WX_ALERTS`; tap → `PAGE_CHANGED` + `OPENSKY_WX_ALERTS_OPEN`), rain radar inset + full-screen radar (RainViewer frame list; the page lays out 256 px tiles itself over a Esri light-gray basemap; one map element moves between the inset and the full view). Words, tips and the curve are computed in `lib/client/weather-copy.js` (`tools/test-weather-copy.js`). `lib/weather-extras.js`; node helper `OS_WX_INIT` / `OS_WX_REFRESH` → `OS_WX_DATA` (each part independent, last good data kept on failure; a part is only redrawn when its data changed); settings `weather.hourly/.radar/.alerts`; no keys |
 | MMM-OpenSky-Meals ✅ + MMM-OpenSky-MealsPage ✅ | (none) | meal plan from Mealie (`lib/mealie.js`) or on-device (`meals.provider: "local"`, `lib/local-meals.js`, `meals.json`, edited with `OS_MEALS_SAVE` / `OS_MEALS_DELETE`; calendar source type `localmeals`): data + recipe popup + picture route (`/opensky-meal-image/<id>`, the token stays on the Pi); the page shows the week (a row per day on portrait); Home's "Dinner tonight" card; broadcasts `OPENSKY_MEALS`, tap → `OPENSKY_MEAL_OPEN` |
@@ -56,7 +56,7 @@ opensky/
 | MMM-OpenSky-Devices ✅ | — | page `devices` (`opensky.json → devices.tiles [{entity,name?}]`, validated + capped at 48 by `config.js`); `lib/ha-tiles.js` reads `GET /api/states` once for all tiles and calls `light|switch/turn_on|turn_off`, `lock/lock|unlock` (sensors read-only; `ENTITY` regexp allows only light/switch/lock/sensor/binary_sensor); the node helper polls 4 s while shown else 60 s and only acts on entities that are configured tiles; address + token from `secrets.json → homeassistant` (shared with the HA lists and Music speakers), never in config.js; page: tap toggles at once (optimistic, Home Assistant's answer follows), a lock needs a second tap within 4 s, colors from `OpenSkyEventColors.pair`; phone setup lists entities via `GET /api/devices/entities` |
 | MMM-OpenSky-Keyboard ✅ | MMM-Keyboard (heavily modified fork) | own, dependency-free: follows focus (text boxes only), hides when the box goes away (MutationObserver — Chromium sends no focus event when a focused node is removed), `body.kb-open` moves popups up |
 
-Community modules used (all MIT): MMM-CalendarExt3 (MMRIZE), MMM-Keyboard (lavolp3), MMM-Todoist (cbrooker),
+Community modules used (all MIT): MMM-Keyboard (lavolp3), MMM-Todoist (cbrooker),
 MMM-pages (edward-shen), MMM-Remote-Control (Jopyth), MMM-HomeAssistant (ambarusa), MMM-EmbedURL (Tom-Hirschberger).
 
 ## Google Calendar (lib/google-calendar.js)
@@ -165,7 +165,7 @@ Phone page: `modules/MMM-OpenSky-Setup/phone/` (no libraries). QR: `lib/client/v
 - Things that can only be polled (Google, Mealie, Greenlight, CalDAV, weather) still are: those services don't call us.
 
 - Events broadcast as `CALENDAR_EVENTS` must look like MagicMirror's calendar output — including `symbol` (an array):
-  MMM-CalendarExt3 calls `event.symbol.join()` and stops drawing the month without it.
+  some calendar consumers call `event.symbol.join()` and stop drawing without it.
 
 ## Lessons from the reference build (keep these true)
 - MagicMirror serves `config.js` to the network → secrets live in `secrets.json`, read server-side.

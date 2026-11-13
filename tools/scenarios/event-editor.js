@@ -45,9 +45,9 @@ module.exports = async (page, h) => {
   m = await modal();
   ok("linked calendar event: read-only (no Edit/Delete)", m && !m.edit && !m.del, m && m.title);
   await page.evaluate(() => document.querySelector(".event-close-btn").click()); await h.sleep(200);
-  // day list on the Calendar page
-  await h.tap(".os-page-calendar"); await h.sleep(1500);
-  const cell = await page.evaluate(() => { const c = document.querySelector(".CX3 .cell.today"); const b = c.getBoundingClientRect(); return { x: b.x + 12, y: b.y + 20 }; });
+  // day list from Home's Month view
+  await h.tap(".hd-seg-month"); await h.sleep(900);
+  const cell = await page.evaluate(() => { const c = document.querySelector(".hd-m-today"); const b = c.getBoundingClientRect(); return { x: b.x + 12, y: b.y + 14 }; });
   await page.mouse.click(cell.x, cell.y); await h.sleep(400);
   m = await modal();
   ok("tap a day → that day's list with + Add Event", m && /\+ Add Event/.test(m.text), m && m.title);
