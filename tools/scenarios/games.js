@@ -64,6 +64,16 @@ module.exports = async (page, h) => {
   ok("another real word counts toward a hint (not a theme word)", ((await mod("MMM-OpenSky-Strands")) || {}).extras === 1 && ((await mod("MMM-OpenSky-Strands")) || {}).found.length === 1);
   await h.shot("games-strands");
 
+  /* ---------- leaving and coming back ---------- */
+  await h.tap(".os-page-home");
+  await h.sleep(500);
+  await h.tap(".os-page-wordgame");
+  await until(async () => shown(".gh-person"));
+  ok("opening the Games page again asks 'Who's playing?' again (no game visible, no tabs)", !(await shown(".gh-tab")) && !(await shown(".st-root")) && !(await shown(".cn-root")) && !(await shown(".wg-root")));
+  await page.evaluate(() => document.querySelectorAll(".gh-person")[0].click());
+  await until(async () => shown(".gh-tab"));
+  ok("and it starts on the Word Game tab", await page.evaluate(() => document.querySelector(".gh-tab.on").dataset.g === "word"));
+
   /* ---------- switch player ---------- */
   await click(".gh-switch");
   await until(async () => shown(".gh-person"));
