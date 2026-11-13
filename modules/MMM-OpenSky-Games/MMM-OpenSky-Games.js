@@ -6,7 +6,7 @@
 Module.register("MMM-OpenSky-Games", {
   defaults: { people: [] },   // family profiles [{ name, color, photo }]
 
-  GAMES: [["word", "Word Game", "W"], ["connections", "Connections", "C"], ["strands", "Strands", "S"]],
+  GAMES: [["word", "Word Game", "W"], ["connections", "Connections", "C"], ["strands", "Strands", "S"], ["quartiles", "Quartiles", "Q"]],
 
   getStyles() { return ["MMM-OpenSky-Games.css"]; },
 

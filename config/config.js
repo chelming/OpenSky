@@ -63,7 +63,7 @@ const PAGE_INFO = {
   countdowns: { label: "Countdowns", icon: "countdowns" },
   smarthome: { label: "Smart Home" },
   chores: { label: "Chores" },
-  wordgame: { label: "Games" },   // key kept for existing settings: Word Game + Connections + Strands
+  wordgame: { label: "Games" },   // key kept for existing settings: Word Game + Connections + Strands + Quartiles
   timer: { label: "Timer" },
   music: { label: "Music" },
   devices: { label: "Devices" }
@@ -313,7 +313,8 @@ const PAGES = {
       }
     },
     { module: "MMM-OpenSky-Connections", position: "fullscreen_above", config: { people: profiles } },
-    { module: "MMM-OpenSky-Strands", position: "fullscreen_above", config: { people: profiles } }
+    { module: "MMM-OpenSky-Strands", position: "fullscreen_above", config: { people: profiles } },
+    { module: "MMM-OpenSky-Quartiles", position: "fullscreen_above", config: { people: profiles } }
   ],
   timer: () => [{
     module: "MMM-OpenSky-Timer",

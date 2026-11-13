@@ -34,7 +34,8 @@ fs.rmSync(FAMILY_CD, { force: true });
 fs.rmSync(NOTES, { force: true });
 const WORDGAME = path.join(OUT, "wordgame.test.json");
 const CONNECTIONS = path.join(OUT, "connections.test.json"), STRANDS = path.join(OUT, "strands.test.json");
-fs.rmSync(CONNECTIONS, { force: true }); fs.rmSync(STRANDS, { force: true });
+const QUARTILES = path.join(OUT, "quartiles.test.json");
+fs.rmSync(CONNECTIONS, { force: true }); fs.rmSync(STRANDS, { force: true }); fs.rmSync(QUARTILES, { force: true });
 fs.rmSync(WORDGAME, { force: true });
 // on-device lists, seeded fresh each run (Groceries: Milk, Apples · Chores: empty)
 const LOCAL_LISTS = path.join(OUT, "lists.test.json");
@@ -91,7 +92,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       OPENSKY_COUNTDOWN_PHOTOS: COUNTDOWN_PHOTOS,
       OPENSKY_DEVICE_SETTINGS: DEVICE,
       OPENSKY_WORDGAME: WORDGAME,
-      OPENSKY_CONNECTIONS: CONNECTIONS, OPENSKY_STRANDS: STRANDS,
+      OPENSKY_CONNECTIONS: CONNECTIONS, OPENSKY_STRANDS: STRANDS, OPENSKY_QUARTILES: QUARTILES,
+      OPENSKY_QUARTILES_URL: "http://127.0.0.1:9",
       OPENSKY_NYT_GAMES_URL: "http://127.0.0.1:9/svc",   // Connections / Strands: unreachable unless a scenario starts a fake
       OPENSKY_NOTES: NOTES,
       OPENSKY_FAMILY_COUNTDOWNS: FAMILY_CD,
