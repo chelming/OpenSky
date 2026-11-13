@@ -24,7 +24,25 @@
 .ost-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 28px 14px; border-bottom: 1px solid #eef0f3; }
 .ost-title { font-size: 28px; font-weight: 800; }
 .ost-x { width: 52px; height: 52px; border: 0; border-radius: 50%; background: #f3f4f6; color: #4b5563; font-size: 30px; line-height: 1; cursor: pointer; }
-.ost-body { overflow-y: auto; padding: 6px 28px 26px; overscroll-behavior: contain; }
+.ost-main { display: flex; flex: 1; min-height: 0; }
+.ost-body { flex: 1; min-width: 0; overflow-y: auto; padding: 6px 28px 26px; overscroll-behavior: contain; }
+/* one tab at a time: sections carry data-tab, the body says which is open (the restart banner has none and always shows) */
+.ost-body[data-tab="screen"] .ost-section:not([data-tab="screen"]),
+.ost-body[data-tab="pages"] .ost-section:not([data-tab="pages"]),
+.ost-body[data-tab="home"] .ost-section:not([data-tab="home"]),
+.ost-body[data-tab="reminders"] .ost-section:not([data-tab="reminders"]),
+.ost-body[data-tab="backups"] .ost-section:not([data-tab="backups"]),
+.ost-body[data-tab="system"] .ost-section:not([data-tab="system"]) { display: none; }
+.ost-nav { flex: 0 0 200px; display: flex; flex-direction: column; gap: 6px; padding: 14px 14px 18px 20px; border-right: 1px solid #eef0f3; overflow-y: auto; }
+.ost-tab { min-height: 54px; padding: 0 16px; border: 0; border-radius: 14px; background: transparent; color: #4b5563; font: inherit; font-size: 18px; font-weight: 700; text-align: left; cursor: pointer; }
+.ost-tab.on { background: var(--os-accent-tint); color: var(--os-accent-dark); }
+.ost-nav .ost-phone { margin-top: auto; min-height: 60px; padding: 8px 14px; border-radius: 16px; font-size: 16px; line-height: 1.2; }
+@media (max-width: 700px) {
+  .ost-main { flex-direction: column; }
+  .ost-nav { flex: none; flex-direction: row; flex-wrap: wrap; padding: 10px 16px; border-right: 0; border-bottom: 1px solid #eef0f3; }
+  .ost-tab { min-height: 46px; padding: 0 14px; font-size: 16px; }
+  .ost-nav .ost-phone { margin: 0 0 0 auto; min-height: 46px; }
+}
 .ost-loading { padding: 40px; font-size: 20px; color: #6b7280; }
 
 .ost-section { padding: 16px 0; border-bottom: 1px solid #eef0f3; }

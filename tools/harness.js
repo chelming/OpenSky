@@ -125,7 +125,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     shot: (n) => page.screenshot({ path: path.join(OUT, `${n}.png`) }),
     log: (...a) => console.log(...a),
     serverLog: () => serverLog,   // MagicMirror's own output (node helpers)
-    box: async (sel) => (await page.$(sel))?.boundingBox(),
+    // an element inside a Settings tab that isn't the open one has no box: open its tab first
+    box: async (sel) => {
+      await page.evaluate((sel) => { const t = document.querySelector(sel)?.closest(".ost-body [data-tab]"); const m = t && MM.getModules().withClass("MMM-OpenSky-Settings")[0]; if (m && m.tab !== t.dataset.tab) m.showTab(t.dataset.tab); }, sel).catch(() => {});
+      return (await page.$(sel))?.boundingBox();
+    },
     tap: async (sel) => { const b = await h.box(sel); if (!b) throw new Error("no element " + sel); await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); }
   };
   try {

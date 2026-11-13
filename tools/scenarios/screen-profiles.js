@@ -1,5 +1,5 @@
 // Screen profiles: opensky.json -> screens are named presets (pages, person, text size, accent). A screen picks one in Settings
-// (Look & extras -> Screen profile); the pick is this browser's localStorage only. The page list in opensky.json stays shared.
+// (This screen -> Look -> Screen profile); the pick is this browser's localStorage only. The page list in opensky.json stays shared.
 // Order of precedence: this screen's own choice (Settings) > its screen profile > the default. Fixture people: Mom, Kid.
 const fs = require("fs"), path = require("path");
 module.exports = async (page, h) => {

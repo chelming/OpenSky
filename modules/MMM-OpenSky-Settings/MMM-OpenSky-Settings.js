@@ -28,6 +28,18 @@ Module.register("MMM-OpenSky-Settings", {
 
   getDom() { return document.createElement("div"); },
 
+  // The panel's sections, one tab each. Every section carries data-tab; CSS shows only the open tab's (nothing is rebuilt on a switch).
+  TABS: [["screen", "This screen"], ["pages", "Pages"], ["home", "Home"], ["reminders", "Reminders"], ["backups", "Backups"], ["system", "System"]],
+  tab: "screen",
+  showTab(k) {
+    if (!this.TABS.some(([t]) => t === k)) return;
+    this.tab = k;
+    if (!this.panel) return;
+    const body = this.panel.querySelector(".ost-body");
+    if (body) { body.dataset.tab = k; body.scrollTop = 0; }
+    this.panel.querySelectorAll(".ost-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === k));
+  },
+
   notificationReceived(n, p) {
     if (n === "OPENSKY_SETTINGS_OPEN") this.open();
     else if ((n === "OPENSKY_IDLE_RESET" || n === "PAGE_CHANGED") && this.isOpen()) this.close();
@@ -177,6 +189,7 @@ Module.register("MMM-OpenSky-Settings", {
     this.confirming = null;
     this.inflight = 0;
     this.hexDraft = null;   // the color-code box starts from the saved color
+    this.tab = "screen";
     this.panel.hidden = false;
     this.render();
     this.sendSocketNotification("OS_SET_STATUS");
@@ -216,8 +229,13 @@ Module.register("MMM-OpenSky-Settings", {
     this.panel.innerHTML = `
       <div class="ost-panel" role="dialog" aria-label="Settings">
         <div class="ost-head"><span class="ost-title">Settings</span><button class="ost-x" aria-label="Close">×</button></div>
-        <div class="ost-body">
-          <section class="ost-section">
+        <div class="ost-main">
+          <nav class="ost-nav" aria-label="Settings sections">
+            ${this.TABS.map(([k, label]) => `<button class="ost-tab${k === this.tab ? " on" : ""}" data-tab="${k}">${label}</button>`).join("")}
+            <button class="ost-btn ost-phone" data-act="phone">Set up from your phone</button>
+          </nav>
+        <div class="ost-body" data-tab="${this.tab}">
+          <section class="ost-section" data-tab="screen">
             <h3>Screen</h3>
             <div class="ost-row"><span class="ost-label">Brightness</span>${this.slider("brightness", s.brightness, 10, 100)}</div>
             <div class="ost-note">${methodText}</div>
@@ -229,7 +247,7 @@ Module.register("MMM-OpenSky-Settings", {
               <div class="ost-row"><span class="ost-label">Level</span>${this.slider("dimLevel", s.eveningDim.level, 10, 100)}</div>
             </div>
           </section>
-          <section class="ost-section">
+          <section class="ost-section" data-tab="screen">
             <h3>Sleep at night</h3>
             <div class="ost-row">${this.toggle("sleep", s.sleep.enabled)}<span class="ost-label">Turn the screen off at night</span></div>
             <div class="ost-sub" ${s.sleep.enabled ? "" : "hidden"}>
@@ -238,18 +256,18 @@ Module.register("MMM-OpenSky-Settings", {
               <div class="ost-note">A touch wakes it; it goes back to sleep after ${this.config.resleepMinutes} quiet minutes. A running timer keeps it on.</div>
             </div>
           </section>
-          ${st.docker ? "" : `<section class="ost-section ost-sound">
+          ${st.docker ? "" : `<section class="ost-section ost-sound" data-tab="screen">
             <h3>Sound</h3>
             ${st.audio ? `
               <div class="ost-row"><span class="ost-label">Volume</span>${this.slider("volume", st.audio.volume, 0, 100)}<button class="ost-btn ost-test">Test</button></div>
               <div class="ost-note"></div>` : `<div class="ost-note">No speaker found. Plug one in (USB, HDMI or the headphone socket) and restart OpenSky.</div>`}
           </section>`}
           <div class="ost-prefs"></div>
-          <section class="ost-section">
+          <section class="ost-section" data-tab="system">
             <h3>System</h3>
             <div class="ost-status"></div>
+            <div class="ost-note">People, calendars, lists and passwords are set up from your phone (the button at the bottom of the left-hand list), which has the keyboard-friendly forms.</div>
             <div class="ost-buttons">
-              <button class="ost-btn ost-phone" data-act="phone">Set up from your phone</button>
               <button class="ost-btn" data-act="reload">Reload screen</button>
               ${st.canRestart ? `<button class="ost-btn" data-act="restart-app">Restart OpenSky</button>` : ""}
               <button class="ost-btn ost-update" data-act="update" hidden>Update</button>
@@ -258,10 +276,12 @@ Module.register("MMM-OpenSky-Settings", {
             </div>
           </section>
         </div>
+        </div>
       </div>`;
     const q = (sel) => this.panel.querySelector(sel);
     if (st.audio) q(".ost-sound .ost-note").textContent = st.audio.name;
     q(".ost-x").onclick = () => this.close();
+    this.panel.querySelectorAll(".ost-tab").forEach((b) => { b.onclick = () => this.showTab(b.dataset.tab); });
     this.bindSlider("brightness", (v) => this.change({ brightness: v }));
     this.bindSlider("dimLevel", (v) => this.change({ eveningDim: { level: v } }));
     this.bindSlider("volume", (v) => this.change({ volume: v }));
@@ -299,7 +319,7 @@ Module.register("MMM-OpenSky-Settings", {
   homeCardsHtml(P, esc) {
     if (!P.homeCards) return "";
     const { H, shown, all } = this.homeCardsList(P);
-    return `<section class="ost-section ost-homecards">
+    return `<section class="ost-section ost-homecards" data-tab="home">
         <h3>Home cards</h3>
         <div class="ost-note">The cards on the right of the Home page, top to bottom. The week stays on the left.</div>
         ${all.map((k) => { const on = shown(k), i = H.order.indexOf(k); return `
@@ -380,7 +400,7 @@ Module.register("MMM-OpenSky-Settings", {
     box.innerHTML = `
       ${this.restartNeeded ? `<div class="ost-restart"><span>Some changes show after a restart.</span><button class="ost-btn ost-primary" data-act="${(this.state && this.state.canRestart) ? "restart-app" : "reload"}">Restart now</button></div>` : ""}
       ${this.webForm ? this.webFormHtml(P, esc) : ""}
-      <section class="ost-section">
+      <section class="ost-section" data-tab="pages">
         <h3>Pages</h3>
         <div class="ost-note">The buttons down the left side, top to bottom, on every screen. <b>Hide here</b> hides a button on this screen only.</div>
         ${all.map((k) => { const on = P.pages.includes(k), i = P.pages.indexOf(k); return `
@@ -398,8 +418,8 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-note">A web page gets its own button down the side — a Home Assistant dashboard, a camera, a school portal, any website.</div>
       </section>
       ${this.homeCardsHtml(P, esc)}
-      <section class="ost-section">
-        <h3>Look &amp; extras</h3>
+      <section class="ost-section" data-tab="screen">
+        <h3>Look</h3>
         <div class="ost-row"><span class="ost-label">Screen profile</span>${profiles.length ? `<span class="ost-seg ost-profiles" data-seg="screenProfile"><button data-v="" class="${curProfile ? "" : "on"}">None</button>${profiles.map((x) => `<button data-v="${esc(x.name)}" class="${curProfile && curProfile.name === x.name ? "on" : ""}">${esc(x.name)}</button>`).join("")}</span>` : `<span class="ost-note">None made yet</span>`}</div>
         <div class="ost-note">${profiles.length ? "A saved set of pages, person, text size and color for this screen. Choosing one drops this screen's own page, text size and color choices below." : "A screen profile is a saved set of pages, person, text size and color (a kitchen screen, a bedroom screen). Make them from your phone: Set up from your phone, Screens."}</div>
         <div class="ost-row"><span class="ost-label">Accent color</span><span class="ost-chips"><button class="ost-btn ost-small ost-accent-default${mine ? "" : " on"}" data-accent-default="1">Default</button>${[...accents, ...(custom ? [custom] : [])].map((c) => `<button class="ost-chip${c === mine ? " on" : ""}" data-accent="${c}" aria-label="${c}"></button>`).join("")}</span></div>
@@ -410,14 +430,19 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-note">This screen only; other screens keep their own. Default follows ${curProfile && curProfile.textSize ? `the screen profile (${window.OpenSkyTextSize.LABELS[curProfile.textSize]})` : `the setting from the phone page (now ${window.OpenSkyTextSize.LABELS[P.prefs.textSize] || "Normal"})`}.</div>
         <div class="ost-row"><span class="ost-label">Dark mode</span><span class="ost-seg" data-seg="theme">${[["default", "Default"], ...Object.entries(window.OpenSkyTheme.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceTheme() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
         <div class="ost-note">This screen only. Auto is dark from sunset to sunrise (19:00 to 07:00 if no location is set). System follows this device's own light/dark setting. Default follows the setting from the phone page (now ${window.OpenSkyTheme.LABELS[P.prefs.theme] || "Light"}).</div>
+      </section>
+      <section class="ost-section" data-tab="home">
+        <h3>Extras</h3>
         <div class="ost-row"><span class="ost-label">Word game</span><span class="ost-seg" data-seg="wordgame"><button data-v="nyt" class="${P.prefs.wordgame === "nyt" ? "on" : ""}">NYT's daily word</button><button data-v="opensky" class="${P.prefs.wordgame === "opensky" ? "on" : ""}">OpenSky's words</button></span></div>
         <div class="ost-row">${this.toggle("photos", P.prefs.photos)}<span class="ost-label">Photo slideshow on Home</span></div>
         <div class="ost-row"><span class="ost-label">Trash day</span><select class="ost-select" data-pref="trashDay">${[["", "No pickup icons"], ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"]].map(([v, l]) => `<option value="${v}" ${v === P.prefs.trashDay ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-        <div class="ost-row"><span class="ost-label">Event reminders</span><select class="ost-select" data-pref="reminders">${[[0, "Off"], [5, "5 minutes before"], [10, "10 minutes before"], [15, "15 minutes before"], [30, "30 minutes before"]].concat([0, 5, 10, 15, 30].includes(P.prefs.reminders) ? [] : [[P.prefs.reminders, `${P.prefs.reminders} minutes before`]]).map(([v, l]) => `<option value="${v}" ${v === P.prefs.reminders ? "selected" : ""}>${l}</option>`).join("")}</select>${P.prefs.reminders && !this.restartNeeded ? `<button class="ost-btn ost-test-rem">Test</button>` : ""}</div>
-        <div class="ost-note">A chime and a banner before an event starts. Which calendars, the chime and the banner: Set up from your phone.</div>
-        <div class="ost-note">People, calendars, lists and passwords: Set up from your phone (below), which has the keyboard-friendly forms.</div>
       </section>
-      <section class="ost-section">
+      <section class="ost-section" data-tab="reminders">
+        <h3>Event reminders</h3>
+        <div class="ost-row"><span class="ost-label">Remind me</span><select class="ost-select" data-pref="reminders">${[[0, "Off"], [5, "5 minutes before"], [10, "10 minutes before"], [15, "15 minutes before"], [30, "30 minutes before"]].concat([0, 5, 10, 15, 30].includes(P.prefs.reminders) ? [] : [[P.prefs.reminders, `${P.prefs.reminders} minutes before`]]).map(([v, l]) => `<option value="${v}" ${v === P.prefs.reminders ? "selected" : ""}>${l}</option>`).join("")}</select>${P.prefs.reminders && !this.restartNeeded ? `<button class="ost-btn ost-test-rem">Test</button>` : ""}</div>
+        <div class="ost-note">A chime and a banner before an event starts. Which calendars, the chime and the banner: Set up from your phone.</div>
+      </section>
+      <section class="ost-section" data-tab="backups">
         <h3>Backups</h3>
         <div class="ost-row"><span class="ost-label">Every night to</span><select class="ost-select ost-wide" data-backup="destination">${placeOpts.map(([v, l]) => `<option value="${esc(v)}" ${v === (P.backup.destination || "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>
         <div class="ost-row"><span class="ost-label">At</span><select class="ost-select" data-backup="time">${["01:00", "02:00", "03:00", "04:00", "05:00"].map((t) => `<option value="${t}" ${t === P.backup.time ? "selected" : ""}>${this.fmt(t)}</option>`).join("")}</select>
@@ -471,8 +496,8 @@ Module.register("MMM-OpenSky-Settings", {
       };
     });
     this.bindHomeCards(box, P);
-    box.querySelector(".ost-add-web").onclick =() => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.renderPrefs(); this.focusWebForm(); };
-    box.querySelectorAll(".ost-edit-web").forEach((b) => { b.onclick = () => { const e = P.embeds.find((x) => x.key === b.dataset.key); this.webForm = { key: e.key, title: e.title, url: e.url || "", icon: e.icon, locked: e.locked, pin: null }; this.renderPrefs(); this.focusWebForm(); }; });
+    box.querySelector(".ost-add-web").onclick =() => { this.webForm = { title: "", url: "", icon: "globe", pin: "" }; this.showTab("pages"); this.renderPrefs(); this.focusWebForm(); };
+    box.querySelectorAll(".ost-edit-web").forEach((b) => { b.onclick = () => { const e = P.embeds.find((x) => x.key === b.dataset.key); this.webForm = { key: e.key, title: e.title, url: e.url || "", icon: e.icon, locked: e.locked, pin: null }; this.showTab("pages"); this.renderPrefs(); this.focusWebForm(); }; });
     if (this.webForm) this.bindWebForm(box);
     const pickAccent = (c) => { const sb = this.sidebar(); if (sb) sb.setAccent(c); this.renderPrefs(); };   // this screen only: nothing is saved on the Pi
     const dflt = box.querySelector("[data-accent-default]");
@@ -498,6 +523,8 @@ Module.register("MMM-OpenSky-Settings", {
       this.sendNotification("HIDE_KEYBOARD");
       pickAccent(c);
     };
+    // the on-screen keyboard shrinks the panel: keep the box (and its Use button) in view once it is up
+    hexIn.onfocus = () => setTimeout(() => { if (document.activeElement === hexIn) hexIn.scrollIntoView({ block: "center" }); }, 400);
     hexIn.oninput = () => { this.hexDraft = hexIn.value; preview(); };
     hexIn.onkeydown = (e) => { if (e.key === "Enter") useHex(); };
     box.querySelector(".ost-hex-use").onclick = useHex;
@@ -528,7 +555,7 @@ Module.register("MMM-OpenSky-Settings", {
   webFormHtml(P, esc) {
     const f = this.webForm;
     return `
-      <section class="ost-section ost-webform">
+      <section class="ost-section ost-webform" data-tab="pages">
         <h3>${f.key ? "Edit web page" : "Add a web page"}</h3>
         <div class="ost-row"><span class="ost-label">Name</span><input class="ost-input" data-wf="title" maxlength="24" placeholder="e.g. Smart Home, Cameras, School" value="${esc(f.title)}"></div>
         <div class="ost-row"><span class="ost-label">Address</span><input class="ost-input" data-wf="url" inputmode="url" data-okb-caps="off" placeholder="${f.locked && !f.url ? "Kept private — type to change" : "https://… or http://192.168.1.20:8123"}" value="${esc(f.url)}"></div>
