@@ -122,6 +122,28 @@ A word you know is real but isn't accepted? Add it: `"wordgame": { "extraWords":
 <a id="games"></a>
 **Games page:** four daily games under one page (the page key is still `wordgame`). With family profiles set up it first asks **who is playing** (once, for all three games) and each person has their own boards and stats; "Switch", the idle reset, and opening the Games page again all go back to the question. Without profiles there is one shared family board. **Connections** and **Strands** come from the New York Times' public daily puzzles, fetched by OpenSky; the answers stay on OpenSky until a group or word is found. If NYT can't be reached the page says so and tries again every 10 minutes (there is no built-in backup puzzle for these two). Strands: tap letters side by side (diagonals too), tap the last one again to check; three other real words earn a hint. **Quartiles** (20 letter tiles; tap one to four in order to spell words, find the five hidden four-tile words) uses the day's puzzle from the independent site quartileswordgame.com (one request a day; not a feed that site promises, so it can break). Its hints are the theme, word counts, first letters and "show a word" (the site's written crossword-style clues are not used). Stats are kept in `connections.json`, `strands.json` and `quartiles.json` beside `wordgame.json` (all included in backups). Earlier shared word-game stats stay in the file but are not shown once profiles exist.
 
+### Fewer buttons: groups and "More"
+With a dozen pages the left strip gets crowded. Two ways to fold pages away, both set in Settings:
+- a **group**: one button that opens a small menu of its pages (a *House* button for Home Assistant and Cameras);
+- **More**: one button that opens a compact grid of the pages you put there. **Sleep** and **Settings** move into it too.
+
+**Phone setup → Pages:** every page except Home has a menu under its name: *In the sidebar* (the default), *In <a group>* or
+*In More*. Under the list, **Groups → Add a group** makes one (a name of up to 14 characters, an icon); tap a group to rename it,
+change its icon or remove it (its pages go back to the sidebar). Up to four groups.
+**Settings on the screen → Pages** has the same menu per page; make the groups themselves from the phone page.
+The change shows after a restart, like the other Pages settings.
+
+- A group's button sits where its first page is in the list, and the pages inside a group (or More) follow the list's order,
+  so dragging pages in Pages orders them everywhere. Home always stays on the strip.
+- The group or More button lights up while you are on one of its pages. A menu closes when you pick something, tap anywhere
+  else, or the screen goes back to Home after being idle.
+- **Hide here** still works: a group left with one visible page shows as that page's own button.
+- Put nothing in a group or More and the strip is one button per page again, with Sleep and Settings at the bottom.
+
+Behind the scenes this is `nav` in `opensky.json` (you never need to edit it):
+`"nav": { "groups": [{ "label": "House", "icon": "smarthome", "pages": ["home-assistant", "cams"] }], "more": ["meals", "timer"] }`.
+A page is in one place only (a group wins over `more`), and unknown pages are ignored.
+
 ### Home cards
 ```json
 "home": { "cards": ["notes", "tonight", "lists", "photos"] }

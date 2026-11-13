@@ -263,6 +263,13 @@ const qaText = JSON.stringify(qaOn);
 ok("31 quick add: the AI addresses and people's emails are not in the built config (MagicMirror serves it to the whole network)",
   !qaText.includes("ai.example.test") && !qaText.includes("asr.example.test") && !qaText.includes("mia.secret@example.com") && mod(qaOn, "MMM-OpenSky-Header").config.profiles.length === 2 && mod(qaOn, "MMM-OpenSky-Header").config.profiles.every((p) => !("email" in p)), qaText.length);
 
+// sidebar grouping (opensky.json → nav): none by default; a page is in one place (groups first, then More); Home stays; unknown pages dropped
+const navOf = (v) => mod(build({ pages: ["home", "calendar", "lists", "timer", "weather", "smarthome", "embedcam"], embeds: { smarthome: { title: "Smart Home", url: "http://ha.test" }, embedcam: { title: "Cams", url: "http://cam.test" } }, ...(v === undefined ? {} : { nav: v }) }), "MMM-OpenSky-Sidebar").config.nav;
+const nv = navOf({ groups: [{ label: " House ", pages: ["smarthome", "embedcam", "nope", "home"] }, { label: "House", pages: ["lists"] }, { label: "Empty", pages: ["nope"] }, { pages: ["timer"] }, null], more: ["timer", "weather", "smarthome", "calendar", "weather", "ghost"] });
+ok("32 nav: off by default (no groups, no More); a group keeps its label/key/icon and only real pages; Home never moves; a page lives in one place; blank/empty/repeated groups dropped",
+  JSON.stringify(navOf()) === '{"groups":[],"more":[]}' && nv.groups.length === 1 && nv.groups[0].key === "house" && nv.groups[0].label === "House" && nv.groups[0].icon === "grid" &&
+  nv.groups[0].pages.join() === "smarthome,embedcam" && nv.more.join() === "calendar,timer,weather", nv);
+
 delete global.window; delete global.document;
 
 

@@ -2,6 +2,8 @@
  *
  * - One tile per page, in the order of `pages` in opensky.json (config.js builds `config.pages`).
  *   The Home tile shows the family's initial as a badge.
+ * - `nav` (opensky.json → nav, built by config.js) cuts the rail down: a group is one button that opens a small flyout of its pages,
+ *   and `more` pages (plus Sleep and Settings) live in a "More" grid behind one last button. No `nav` = the plain rail above.
  * - Sleep: asks the OpenSky screen service to turn the screen off when one is configured (`screenServiceUrl`);
  *   otherwise it shows a black "soft sleep" cover that the next touch removes. Works on any screen.
  * - Auto-return: after `idleReturnMinutes` without a touch, popups close, views reset and it goes back to the
@@ -21,6 +23,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     showSettings: false,         // true once a settings page/module is installed
     accent: null,                // opensky.json → look.accent: a palette color name ("teal") or "#rrggbb"; null = peach
     scale: "auto",               // opensky.json → look.scale: "auto" fits the 1920×1080 design to the screen; or a number (e.g. 1.2)
+    nav: { groups: [], more: [] },   // opensky.json → nav: groups = [{ key, label, icon, pages }] (a flyout each), more = [page keys] (the More grid)
     screens: [],                 // opensky.json → screens: [{ name, pages?, person?, textSize?, accent? }] — "screen profiles" a screen can pick (Settings)
     textSize: "normal",          // opensky.json → look.textSize: the default for every screen; a screen can pick its own (deviceTextSize)
     theme: "light",              // opensky.json → look.theme: "light" | "dark" | "auto" (by sun): the default for every screen; a screen can pick its own (deviceTheme)
@@ -38,6 +41,8 @@ Module.register("MMM-OpenSky-Sidebar", {
     this.idleHandled = false;
     const touch = () => { this.lastActivity = Date.now(); this.idleHandled = false; };
     ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => document.addEventListener(ev, touch, { capture: true, passive: true }));
+    // Escape closes a flyout / the More grid (a tap elsewhere closes it through the scrim / the dimmed layer: taps inside an embedded page never reach this page)
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") this.closeMenus(); }, true);
     if (this.config.idleReturnMinutes > 0) setInterval(() => this.checkIdle(), 10 * 1000);
     this.applyAccent(this.effectiveAccent());
     this.applyTheme();
@@ -81,7 +86,7 @@ Module.register("MMM-OpenSky-Sidebar", {
       // the sidebar becomes a bar along the bottom (css: html[data-layout="portrait"]); the pages keep 40 px at the sides
       st.setProperty("--os-nav-height", "112px");
       st.setProperty("--os-content-left", "40px");
-      const n = this.visiblePages().length + 1 + (this.config.showSettings ? 1 : 0);
+      const n = this.railCount();
       st.setProperty("--tile-size", "96px");
       st.setProperty("--tile-gap", "0px");
       st.setProperty("--icon-size", "34px");
@@ -92,7 +97,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const compact = layout === "compact", k = compact ? 0.82 : 1, px = (n) => `${Math.round(n * k)}px`;
     st.setProperty("--os-nav-height", "0px");
     const side = Math.round(ui.width * (compact ? 0.87 : 1));
-    const gap = compact ? 4 : ui.gap, n = this.visiblePages().length + 1 + (this.config.showSettings ? 1 : 0);   // pages + Sleep (+ Settings)
+    const gap = compact ? 4 : ui.gap, n = this.railCount();   // buttons on the rail (pages, groups, More; or Sleep and Settings)
     // every tile still fits when the page is short (big text on a small screen, or many pages): shrink them, down to 44 px
     const tile = Math.max(44, Math.min(Math.round(ui.tile * k), Math.floor((pageHeight - 26 - (n - 1) * gap) / n)));
     const squeeze = tile < Math.round(ui.tile * k);
@@ -103,6 +108,30 @@ Module.register("MMM-OpenSky-Sidebar", {
     st.setProperty("--icon-size", squeeze ? `${Math.max(20, Math.round(ui.icon * k * tile / (ui.tile * k)))}px` : px(ui.icon));
     st.setProperty("--label-size", compact ? "11px" : `${ui.font}px`);
     document.documentElement.dataset.nav = tile < 52 ? "icons" : "labels";   // too squeezed for a label under the icon: icons only
+  },
+
+  // What the rail shows on this screen: { items: [{ page } | { group }], hasMore, morePages, groups }. `visiblePages()` already left out
+  // what is hidden here. A group sits where its first page is in `pages`; a group left with one visible page is just that page's button.
+  navLayout() {
+    const vis = this.visiblePages(), keys = new Set(vis.map((p) => p.key)), nav = this.config.nav || {};
+    const byKey = (k) => this.config.pages.find((p) => p.key === k);
+    const groups = (nav.groups || []).map((g) => ({ ...g, members: g.pages.filter((k) => keys.has(k)).map(byKey) }));
+    const groupOf = {}; groups.forEach((g) => g.pages.forEach((k) => { groupOf[k] = g; }));
+    const more = new Set(nav.more || []), seen = new Set(), items = [];
+    vis.forEach((p) => {
+      const g = groupOf[p.key];
+      if (g) {
+        if (seen.has(g.key)) return;
+        seen.add(g.key);
+        items.push(g.members.length > 1 ? { group: g } : { page: g.members[0] });
+      } else if (!more.has(p.key)) items.push({ page: p });
+    });
+    return { items, groups, hasMore: more.size > 0, morePages: (nav.more || []).filter((k) => keys.has(k)).map(byKey) };
+  },
+  // How many buttons the rail has: the pages / groups, then More, or (no More) Sleep and Settings
+  railCount() {
+    const L = this.navLayout();
+    return L.items.length + (L.hasMore ? 1 : 1 + (this.config.showSettings ? 1 : 0));
   },
 
   // Pages hidden on THIS screen only (Settings → Pages → "Hide here"): this browser remembers its own list (localStorage, never
@@ -256,6 +285,7 @@ Module.register("MMM-OpenSky-Sidebar", {
       setTimeout(() => { this.ensureVisiblePage(); this.applyPresetPerson(); }, 800);
     } else if (n === "PAGE_CHANGED" && Number.isInteger(payload)) {
       this.activeIndex = payload;
+      this.closeMenus();
       this.syncActive();
     } else if (n === "OPENSKY_WAKE") {
       this.wake();
@@ -290,6 +320,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     const timerPage = this.config.pages.find((p) => p.key === "timer");
     if (timerPage && this.activeIndex === timerPage.index && this.timerBusy()) return;
     Log.info(`${this.name}: idle, returning to the first page`);
+    this.closeMenus();
     this.sendNotification("OPENSKY_IDLE_RESET");
     this.sendNotification("HIDE_KEYBOARD");
     const first = this.visiblePages()[0].index;
@@ -302,19 +333,33 @@ Module.register("MMM-OpenSky-Sidebar", {
     wrap.className = "os-side-wrap";
     wrap.innerHTML = `<div class="os-side-track"></div><div class="os-side-col"></div>`;
     const col = wrap.querySelector(".os-side-col");
+    this.wrap = wrap; this.moreEl = null;
+    // a see-through layer behind an open flyout: a tap anywhere else closes it, and (over an embedded page) doesn't also hit the page
+    const scrim = this.scrim = document.createElement("div");
+    scrim.className = "os-scrim";
+    scrim.hidden = true;
+    scrim.onclick = () => this.closeMenus();
+    wrap.appendChild(scrim);
+    const L = this.layout = this.navLayout();
 
-    this.visiblePages().forEach((p) => {
-      const icon = p.key === "home" ? `<span class="os-badge">${this.escape(this.config.familyInitial)}</span>` : this.icon(p.icon || p.key);
-      col.appendChild(this.tile(`page-${p.key}`, icon, p.label, () => this.goPage(p.index)));
-    });
+    L.items.forEach((it) => col.appendChild(it.group ? this.groupSlot(it.group) : this.pageTile(it.page)));
     const spacer = document.createElement("div");
     spacer.className = "os-side-spacer";
     col.appendChild(spacer);
-    col.appendChild(this.tile("sleep", this.icon("sleep"), "Sleep", () => this.sleep(), true));
-    if (this.config.showSettings) col.appendChild(this.tile("settings", this.icon("settings"), "Settings", () => this.sendNotification("OPENSKY_SETTINGS_OPEN"), true));
+    if (L.hasMore) {
+      col.appendChild(this.tile("more", this.icon("grid"), "More", () => this.toggleMore()));
+    } else {
+      col.appendChild(this.tile("sleep", this.icon("sleep"), "Sleep", () => this.sleep(), true));
+      if (this.config.showSettings) col.appendChild(this.tile("settings", this.icon("settings"), "Settings", () => this.sendNotification("OPENSKY_SETTINGS_OPEN"), true));
+    }
     this.col = col;
     this.syncActive();
     return wrap;
+  },
+
+  pageTile(p) {
+    const icon = p.key === "home" ? `<span class="os-badge">${this.escape(this.config.familyInitial)}</span>` : this.icon(p.icon || p.key);
+    return this.tile(`page-${p.key}`, icon, p.label, () => this.goPage(p.index));
   },
 
   tile(key, iconHtml, label, handler, utility = false) {
@@ -326,20 +371,98 @@ Module.register("MMM-OpenSky-Sidebar", {
     return b;
   },
 
+  // A group: one rail button, and beside it (above it in portrait) a small flyout with the group's pages
+  groupSlot(g) {
+    const slot = document.createElement("div");
+    slot.className = "os-slot";
+    slot.dataset.group = g.key;
+    const fly = document.createElement("div");
+    fly.className = "os-flyout";
+    fly.hidden = true;
+    g.members.forEach((p) => {
+      const b = document.createElement("button");
+      b.className = "os-fly-item";
+      b.dataset.page = p.key;
+      b.innerHTML = `<span class="os-fly-icon">${this.icon(p.icon || p.key)}</span><span class="os-fly-label">${this.escape(p.label)}</span>`;
+      b.onclick = () => { this.closeMenus(); this.goPage(p.index); };
+      fly.appendChild(b);
+    });
+    slot.appendChild(this.tile(`group-${g.key}`, this.icon(g.icon), g.label, () => this.toggleFlyout(slot)));
+    slot.appendChild(fly);
+    return slot;
+  },
+
+  toggleFlyout(slot) {
+    const wasOpen = slot.classList.contains("open");
+    this.closeMenus();
+    if (wasOpen) return;
+    slot.classList.add("open");
+    slot.querySelector(".os-flyout").hidden = false;
+    if (this.scrim) this.scrim.hidden = false;
+    // low on the rail: grow upward so the flyout never runs off the bottom of the screen
+    slot.classList.toggle("up", !!this.col && slot.offsetTop > this.col.clientHeight / 2);
+  },
+
+  // The More grid: a dimmed layer beside the rail with a compact card of small icon + label buttons (the More pages, then Sleep and Settings)
+  toggleMore() {
+    if (this.moreEl && !this.moreEl.hidden) return this.closeMenus();
+    this.closeMenus();
+    if (!this.moreEl) {
+      const el = document.createElement("div");
+      el.className = "os-moremenu";
+      el.innerHTML = `<div class="os-more-panel" role="dialog" aria-label="More"><div class="os-more-head"><span>More</span><button class="os-more-x" aria-label="Close">${this.icon("close")}</button></div><div class="os-more-grid"></div></div>`;
+      const grid = el.querySelector(".os-more-grid");
+      const item = (icon, label, handler, extra) => {
+        const b = document.createElement("button");
+        b.className = "os-more-item" + (extra ? ` ${extra.cls}` : "");
+        if (extra && extra.page) b.dataset.page = extra.page;
+        b.innerHTML = `<span class="os-more-chip">${icon}</span><span class="os-more-label">${this.escape(label)}</span>`;
+        b.onclick = handler;
+        grid.appendChild(b);
+      };
+      this.layout.morePages.forEach((p) => item(this.icon(p.icon || p.key), p.label, () => { this.closeMenus(); this.goPage(p.index); }, { page: p.key, cls: "" }));
+      if (this.config.showSettings) item(this.icon("settings"), "Settings", () => { this.closeMenus(); this.sendNotification("OPENSKY_SETTINGS_OPEN"); }, { cls: "util" });
+      item(this.icon("sleep"), "Sleep", () => { this.closeMenus(); this.sleep(); }, { cls: "util" });
+      el.onclick = (e) => { if (e.target === el || e.target.closest(".os-more-x")) this.closeMenus(); };   // the dimmed area or the × closes it
+      el.querySelector(".os-more-grid").style.setProperty("--cols", String(Math.max(1, Math.min(4, grid.children.length))));
+      this.wrap.appendChild(el);
+      this.moreEl = el;
+    }
+    this.moreEl.hidden = false;
+    this.syncActive();
+  },
+
+  closeMenus() {
+    if (!this.wrap) return;
+    this.wrap.querySelectorAll(".os-slot.open").forEach((s) => { s.classList.remove("open", "up"); s.querySelector(".os-flyout").hidden = true; });
+    if (this.scrim) this.scrim.hidden = true;
+    if (this.moreEl) this.moreEl.hidden = true;
+  },
+
+  // The tile that stands for the current page: its own button, else its group's, else More
   syncActive() {
     if (!this.col) return;
-    const page = this.config.pages.find((p) => p.index === this.activeIndex);
-    this.col.querySelectorAll(".os-tile").forEach((el) => el.classList.toggle("active", !!page && el.dataset.key === `page-${page.key}`));
+    const page = this.config.pages.find((p) => p.index === this.activeIndex), L = this.layout || this.navLayout();
+    let key = null;
+    if (page) {
+      const g = L.groups.find((x) => x.members.length > 1 && x.pages.includes(page.key));
+      key = this.col.querySelector(`.os-tile[data-key="page-${page.key}"]`) ? `page-${page.key}`
+        : g ? `group-${g.key}` : (L.hasMore && L.morePages.includes(page)) ? "more" : null;
+    }
+    this.col.querySelectorAll(".os-tile").forEach((el) => el.classList.toggle("active", el.dataset.key === key));
+    this.wrap.querySelectorAll(".os-fly-item, .os-more-item[data-page]").forEach((el) => el.classList.toggle("active", !!page && el.dataset.page === page.key));
   },
 
   goPage(index) {
     this.activeIndex = index;
+    this.closeMenus();
     this.sendNotification("PAGE_CHANGED", index);
     this.syncActive();
   },
 
   /* ---------------- sleep / wake ---------------- */
   async sleep() {
+    this.closeMenus();
     this.sendNotification("HIDE_KEYBOARD");
     if (this.config.screenServiceUrl) {
       try {

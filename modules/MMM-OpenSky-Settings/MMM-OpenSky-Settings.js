@@ -344,6 +344,20 @@ Module.register("MMM-OpenSky-Settings", {
     });
   },
 
+  // Where a page's button lives (opensky.json → nav): "" = the sidebar, "g:<n>" = group n, "more" = the More grid. Groups are made on the phone page.
+  navOf(P) { const n = P.nav || {}; return { groups: Array.isArray(n.groups) ? n.groups : [], more: Array.isArray(n.more) ? n.more : [] }; },
+  placeOf(P, k) {
+    const n = this.navOf(P), gi = n.groups.findIndex((g) => (g.pages || []).includes(k));
+    return gi >= 0 ? `g:${gi}` : n.more.includes(k) ? "more" : "";
+  },
+  placeOptions(P) { return [["", "In the sidebar"], ...this.navOf(P).groups.map((g, i) => [`g:${i}`, `In ${g.label}`]), ["more", "In More"]]; },
+  withPlace(P, k, v) {
+    const n = this.navOf(P);
+    const groups = n.groups.map((g) => ({ ...g, pages: (g.pages || []).filter((x) => x !== k) })), more = n.more.filter((x) => x !== k);
+    if (v === "more") more.push(k); else if (v.startsWith("g:") && groups[Number(v.slice(2))]) groups[Number(v.slice(2))].pages.push(k);
+    return { groups, more };
+  },
+
   renderPrefs() {
     const box = this.panel && this.panel.querySelector(".ost-prefs");
     if (!box) return;
@@ -374,10 +388,12 @@ Module.register("MMM-OpenSky-Settings", {
             ${on ? `<span class="ost-grip" aria-label="Drag to reorder" title="Drag to reorder"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg></span>` : ""}
             <span class="ost-label">${(P.embeds || []).some((e) => e.key === k) ? `<span class="ost-page-ic">${window.OpenSkyIcons.svg(P.embeds.find((e) => e.key === k).icon)}</span>` : ""}${esc(P.names[k])}</span>
             ${(P.embeds || []).some((e) => e.key === k) ? `<button class="ost-btn ost-small ost-edit-web" data-key="${esc(k)}">Edit</button>` : ""}
+            ${on && k !== "home" ? `<select class="ost-select ost-where" data-where="${esc(k)}" aria-label="Where ${esc(P.names[k])} goes">${this.placeOptions(P).map(([v, l]) => `<option value="${esc(v)}" ${v === this.placeOf(P, k) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>` : ""}
             <span class="ost-order">${on ? `<button class="ost-mini" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="Up">▲</button><button class="ost-mini" data-move="1" ${i === P.pages.length - 1 ? "disabled" : ""} aria-label="Down">▼</button>` : ""}</span>
             ${on && P.pages.length > 1 ? `<button class="ost-btn ost-small ost-here" data-here="${esc(k)}">${hidden.includes(k) ? "Hidden here" : "Hide here"}</button>` : ""}
             ${this.toggle(`page-${k}`, on)}
           </div>`; }).join("")}
+        <div class="ost-note">Too many buttons? <b>Where</b> puts a page in a group (like House) or in More. Make groups from your phone: Set up from your phone, Pages.</div>
         <div class="ost-buttons"><button class="ost-btn ost-add-web">+ Add a web page</button></div>
         <div class="ost-note">A web page gets its own button down the side — a Home Assistant dashboard, a camera, a school portal, any website.</div>
       </section>
@@ -419,6 +435,8 @@ Module.register("MMM-OpenSky-Settings", {
         if (!pages.length) return window.OpenSkyToast("Keep at least one page", "error");
         this.savePrefs({ pages });
       };
+      const where = row.querySelector("[data-where]");
+      if (where) where.onchange = () => this.savePrefs({ nav: this.withPlace(P, k, where.value) });
       const here = row.querySelector("[data-here]");
       if (here) here.onclick = () => {
         const sb = this.sidebar(), now = sb.effectiveHiddenPages();

@@ -219,3 +219,9 @@ ol.steps li { margin: 4px 0; }
 .remember input:checked { background: var(--good); }
 .remember input:checked::after { transform: translateX(20px); }
 .remember input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Pages: where a page goes (sidebar / a group / More), and the groups list */
+.row-main select.where { margin-top: 6px; height: 38px; min-height: 0; padding-top: 0; padding-bottom: 0; font-size: 14px; font-weight: 600; max-width: 100%; }
+.groups { margin-top: 18px; }
+.row-ic { flex: none; display: inline-flex; width: 26px; height: 26px; color: var(--muted); }
+.row-ic svg { width: 100%; height: 100%; }
