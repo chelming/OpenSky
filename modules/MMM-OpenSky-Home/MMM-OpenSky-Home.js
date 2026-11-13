@@ -4,6 +4,7 @@
  * Calendar card: today + the next 6 days as tiles, plus a "Next Week" tile.
  *   - events: any calendar source that broadcasts CALENDAR_EVENTS (MagicMirror's standard)
  *   - colors: window.OpenSkyEventColors (calendar.colors in opensky.json)
+ *   - "Month" in the week card's header opens the Calendar page (calendarPage), even when that page's own button is tucked into More
  *   - tap an event → CALENDAR_EVENT_CLICKED, a day → CALENDAR_DAY_CLICKED, "Add Event" → CALENDAR_ADD_EVENT
  *     (the event editor module answers these; "Add Event" only shows when one is installed)
  *   - daily high + icon from the header's shared forecast (OPENSKY_WEATHER)
@@ -22,6 +23,7 @@
 Module.register("MMM-OpenSky-Home", {
   defaults: {
     listsPage: null,
+    calendarPage: null,          // MMM-pages index of the Calendar (month) page: the "Month" button on the week card; null = no button
     mealsPage: null,             // MMM-pages index of the Meals page ("See week"); null = no button
     countdowns: { items: [], keepDays: 0, page: null },   // the big days (opensky.json → countdowns); page = MMM-pages index of the Countdowns page
     tonight: false,            // show "Dinner tonight" (needs the Meals module)
@@ -162,6 +164,7 @@ Module.register("MMM-OpenSky-Home", {
             <button class="hd-nav-btn hd-prev" aria-label="Previous week">${this.icon("left")}</button>
             <button class="hd-nav-btn hd-today">Today</button>
             <button class="hd-nav-btn hd-next" aria-label="Next week">${this.icon("right")}</button>
+            ${Number.isInteger(this.config.calendarPage) ? `<button class="hd-nav-btn hd-month" aria-label="Open the month calendar">${this.icon("calendar")} Month</button>` : ""}
           </span>
         </header>
         <div class="hd-week"></div>
@@ -185,6 +188,8 @@ Module.register("MMM-OpenSky-Home", {
     root.querySelector(".hd-prev").onclick = () => { this.weekOffset--; this.renderCalendar(); };
     root.querySelector(".hd-next").onclick = () => { this.weekOffset++; this.renderCalendar(); };
     root.querySelector(".hd-today").onclick = () => { this.weekOffset = 0; this.renderCalendar(); };
+    const month = root.querySelector(".hd-month");
+    if (month) month.onclick = () => this.sendNotification("PAGE_CHANGED", this.config.calendarPage);
     const add = root.querySelector(".hd-add");
     if (add) add.onclick = () => this.sendNotification("CALENDAR_ADD_EVENT", { date: new Date() });
     const seeAll = root.querySelector(".hd-see-all");

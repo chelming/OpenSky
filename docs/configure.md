@@ -104,7 +104,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | Page | What it is |
 |---|---|
 | `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
-| `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it |
+| `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it. Home's calendar card has a **Month** button that opens it, so the page's own button can live in More |
 | `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |

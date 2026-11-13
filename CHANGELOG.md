@@ -4,6 +4,7 @@
 - **Fewer sidebar buttons:** put pages in a group (one button with a small menu) or in a compact **More** grid that also
   holds Sleep and Settings. Set per page in phone setup → Pages (where groups are made) or Settings → Pages
   ([docs/configure.md](docs/configure.md#fewer-buttons-groups-and-more)).
+- **Month button on Home:** the week card opens the Calendar (month) page, so its sidebar button can go in More.
 
 ## 1.1.0 — 2026-11-10
 - **Container image:** OpenSky is published as `ghcr.io/chelming/opensky` (amd64 and arm64) with every release, so Docker
