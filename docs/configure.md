@@ -108,7 +108,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |
-| `wordgame` | a daily five-letter word puzzle (with family profiles: pick who is playing first, each person has their own board and stats; without, one shared board) |
+| `wordgame` | the **Games** page: the daily five-letter word puzzle, NYT's **Connections** and **Strands**, each person with their own board and stats — see [Games](#games) |
 | `timer` | kitchen timers with a chime |
 | `devices` | Home Assistant **lights, switches, locks and sensors** as tappable tiles — see [Devices](#devices-home-assistant-tiles) |
 | `music` | **add-on**: what's playing on the screen's speakers, with play / pause / skip and the volume — see [Music add-on](music.md) |
@@ -119,7 +119,8 @@ You can also add your own **web pages** as pages (next section).
 (fetched by the Pi). If NYT can't be reached, OpenSky's own word for the day is used (the page says so) and NYT is
 tried again until someone guesses. For OpenSky's own words only: `"wordgame": { "source": "opensky" }`.
 A word you know is real but isn't accepted? Add it: `"wordgame": { "extraWords": ["emoji"] }`.
-With family profiles set up, the page first asks **who is playing**; each person has their own board and stats (kept in `wordgame.json`), and "Switch player" (or the idle reset) goes back to the question. Earlier shared stats stay in the file but are not shown once profiles exist.
+<a id="games"></a>
+**Games page:** three daily games under one page (the page key is still `wordgame`). With family profiles set up it first asks **who is playing** (once, for all three games) and each person has their own boards and stats; "Switch" (or the idle reset) goes back to the question. Without profiles there is one shared family board. **Connections** and **Strands** come from the New York Times' public daily puzzles, fetched by OpenSky; the answers stay on OpenSky until a group or word is found. If NYT can't be reached the page says so and tries again every 10 minutes (there is no built-in backup puzzle for these two). Strands: tap letters side by side (diagonals too), tap the last one again to check; three other real words earn a hint. Stats are kept in `connections.json` and `strands.json` beside `wordgame.json` (all included in backups). Earlier shared word-game stats stay in the file but are not shown once profiles exist.
 
 ### Home cards
 ```json

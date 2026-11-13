@@ -1,7 +1,7 @@
 /* MMM-OpenSky-WordGame — the family's daily five-letter word game (one shared board per day).
  * The answer stays on the server (node_helper.js checks every guess); the page only gets colored patterns.
- * With family profiles each person plays their own board with their own stats: nobody is selected at first, the page asks
- * who is playing, and "Switch player" (or the idle reset) goes back to that question. No profiles = one shared board.
+ * Lives on the Games page (MMM-OpenSky-Games): the hub asks who is playing and which game is open (OS_GAMES_STATE);
+ * with family profiles each person has their own board and stats. No profiles = one shared board.
  * Board + big touch keyboard (the wireless keyboard works too), tile flip animation, family stats card,
  * countdown to the next puzzle. New puzzle at midnight. */
 Module.register("MMM-OpenSky-WordGame", {
@@ -22,7 +22,8 @@ Module.register("MMM-OpenSky-WordGame", {
     this.typed = "";
     this.busy = false;
     this.revealRow = -1;             // row currently flipping (animation)
-    this.player = this.config.people.length ? null : "";   // null = nobody picked yet
+    this.player = this.config.people.length ? null : "";   // null = nobody picked yet (the hub tells us)
+    this.game = "word";
     this.sendSocketNotification("OS_WG_INIT", { source: this.config.source, extraWords: this.config.extraWords, people: this.config.people.map((x) => x.name) });
     this.lastDate = this.ymd();
     setInterval(() => {              // midnight → new puzzle; countdown tick
@@ -30,7 +31,7 @@ Module.register("MMM-OpenSky-WordGame", {
       this.tickCountdown();
     }, 1000);
     document.addEventListener("keydown", (e) => {
-      if (!this.visible || this.player === null || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!this.visible || !this.active() || e.ctrlKey || e.metaKey || e.altKey) return;
       const a = document.activeElement;
       if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
       if (/^[a-zA-Z]$/.test(e.key)) this.press(e.key.toLowerCase());
@@ -41,26 +42,24 @@ Module.register("MMM-OpenSky-WordGame", {
 
   ymd(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; },
 
+  active() { return this.player !== null && this.game === "word"; },
+
+  applyVisibility() { if (this.root) this.root.style.display = this.active() ? "" : "none"; },
+
   sync() { if (this.player !== null) this.sendSocketNotification("OS_WG_SYNC", { player: this.player }); },
 
-  // Back to "who is playing?" (the next person starts fresh)
-  forgetPlayer() {
-    if (!this.config.people.length) return;
-    this.player = null; this.state = null; this.typed = ""; this.revealRow = -1; this.busy = false;
-    this.render();
-  },
-
-  choose(name) {
-    this.player = name; this.state = null; this.typed = "";
-    this.render();
-    this.sync();
-  },
-
   suspend() { this.visible = false; },
-  resume() { this.visible = true; this.sync(); },
+  resume() { this.visible = true; this.sendNotification("OS_GAMES_HELLO"); this.sync(); },
 
-  notificationReceived(n) {
-    if (n === "OPENSKY_IDLE_RESET") { this.typed = ""; this.forgetPlayer(); this.render(); }
+  notificationReceived(n, p) {
+    if (n === "OPENSKY_IDLE_RESET") { this.typed = ""; this.render(); }
+    if (n === "OS_GAMES_STATE") {                        // the hub: who is playing, which game is open
+      const changed = p.player !== this.player;
+      this.player = p.player; this.game = p.game;
+      if (changed) { this.state = null; this.typed = ""; this.revealRow = -1; this.busy = false; this.render(); }
+      this.applyVisibility();
+      if (this.active() && (changed || !this.state)) this.sync();
+    }
   },
 
   socketNotificationReceived(n, p) {
@@ -114,14 +113,12 @@ Module.register("MMM-OpenSky-WordGame", {
   render() {
     const r = this.root;
     if (!r) return;
-    if (this.player === null) return this.renderPicker();
-    if (!this.state) { r.innerHTML = `<div class="wg-loading">Loading today's puzzle…</div>`; return; }
+    this.applyVisibility();
+    if (!this.state) { r.innerHTML = `<div class="wg-loading">${this.active() ? "Loading today's puzzle…" : ""}</div>`; return; }
     const s = this.state;
     const day = new Date(s.date + "T12:00:00").toLocaleDateString(config.locale || "en-US", { weekday: "long", month: "long", day: "numeric" });
     r.innerHTML = `
       <div class="wg-head">
-        <div class="wg-title"><span class="wg-logo"><i class="g">W</i></span>Word Game</div>
-        ${this.player ? `<button class="wg-switch">Switch player</button>` : ""}
         <div class="wg-sub">${s.number != null ? `#${s.number} · ` : ""}${day} · ${this.player ? `${this.esc(this.player)}'s puzzle` : "today's family puzzle"}${s.backup ? " (NYT's word unavailable — OpenSky's word)" : ""}</div>
       </div>
       <div class="wg-body">
@@ -132,23 +129,12 @@ Module.register("MMM-OpenSky-WordGame", {
         </div>
         <aside class="wg-side"></aside>
       </div>`;
-    const sw = r.querySelector(".wg-switch");
-    if (sw) sw.onclick = () => this.forgetPlayer();
     this.renderBoard();
     this.renderKeys();
     this.renderStats();
   },
 
   esc(t) { return String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); },
-
-  renderPicker() {
-    this.root.innerHTML = `
-      <div class="wg-head"><div class="wg-title"><span class="wg-logo"><i class="g">W</i></span>Word Game</div></div>
-      <div class="wg-who"><div class="wg-who-q">Who's playing?</div>
-        <div class="wg-who-row">${this.config.people.map((x, i) => `<button class="wg-person" data-i="${i}">
-          <span class="wg-av" style="background:${x.color || "#9ca3af"}">${x.photo ? `<img src="${x.photo}" alt="">` : this.esc(x.name.charAt(0).toUpperCase())}</span>${this.esc(x.name)}</button>`).join("")}</div></div>`;
-    this.root.querySelectorAll(".wg-person").forEach((b) => { b.onclick = () => this.choose(this.config.people[Number(b.dataset.i)].name); });
-  },
 
   renderBoard() {
     const s = this.state, b = this.root && this.root.querySelector(".wg-board");

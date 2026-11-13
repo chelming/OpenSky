@@ -63,7 +63,7 @@ const PAGE_INFO = {
   countdowns: { label: "Countdowns", icon: "countdowns" },
   smarthome: { label: "Smart Home" },
   chores: { label: "Chores" },
-  wordgame: { label: "Word Game" },
+  wordgame: { label: "Games" },   // key kept for existing settings: Word Game + Connections + Strands
   timer: { label: "Timer" },
   music: { label: "Music" },
   devices: { label: "Devices" }
@@ -300,15 +300,21 @@ const PAGES = {
     position: "fullscreen_above",
     config: { kids: choreKids, refreshMinutes: Math.max(1, Number(s.chores && s.chores.refreshMinutes) || 5), badges: !!(s.chores && s.chores.badges) }
   }],
-  wordgame: () => [{
-    module: "MMM-OpenSky-WordGame",
-    position: "fullscreen_above",
-    config: {
-      source: (s.wordgame && s.wordgame.source === "opensky") ? "opensky" : "nyt",
-      extraWords: (s.wordgame && Array.isArray(s.wordgame.extraWords)) ? s.wordgame.extraWords : [],
-      people: profiles   // each person plays their own board; none configured = one shared family board
-    }
-  }],
+  // the Games page: a hub (who's playing + tabs) and the three games, all on this one page
+  wordgame: () => [
+    { module: "MMM-OpenSky-Games", position: "fullscreen_above", config: { people: profiles } },
+    {
+      module: "MMM-OpenSky-WordGame",
+      position: "fullscreen_above",
+      config: {
+        source: (s.wordgame && s.wordgame.source === "opensky") ? "opensky" : "nyt",
+        extraWords: (s.wordgame && Array.isArray(s.wordgame.extraWords)) ? s.wordgame.extraWords : [],
+        people: profiles   // each person plays their own board; none configured = one shared family board
+      }
+    },
+    { module: "MMM-OpenSky-Connections", position: "fullscreen_above", config: { people: profiles } },
+    { module: "MMM-OpenSky-Strands", position: "fullscreen_above", config: { people: profiles } }
+  ],
   timer: () => [{
     module: "MMM-OpenSky-Timer",
     position: "fullscreen_below",

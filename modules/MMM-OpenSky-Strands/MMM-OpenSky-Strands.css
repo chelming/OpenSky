@@ -1,0 +1,25 @@
+/* MMM-OpenSky-Strands */
+.st-root { --st-theme: #aedfee; --st-span: #f8cd05; }
+.st-clue { font-size: 22px; font-weight: 800; background: var(--st-theme); border-radius: 12px; padding: 8px 22px; }
+.st-word { min-height: 34px; font-size: 28px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.st-word.shake { animation: st-shake .45s ease; }
+@keyframes st-shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-8px); } 40%, 60% { transform: translateX(8px); } }
+.st-board { position: relative; flex: none; }
+.st-lines { position: absolute; left: 0; top: 0; pointer-events: none; }
+.st-line { fill: none; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+.st-line.theme { stroke: var(--st-theme); }
+.st-line.span { stroke: var(--st-span); }
+.st-line.pick { stroke: #c9ced6; }
+.st-cell {
+  position: absolute; box-sizing: border-box; border: 0; border-radius: 50%; padding: 0; background: transparent; color: #1f2937;
+  font: inherit; font-size: 28px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; justify-content: center;
+}
+.st-cell.pick { background: #c9ced6; }
+.st-cell.theme { background: var(--st-theme); }
+.st-cell.span { background: var(--st-span); }
+.st-cell.hint { box-shadow: inset 0 0 0 3px #1f2937; border-style: dashed; }
+.st-foot { min-height: 56px; }
+.st-hint { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.st-pips { display: flex; gap: 8px; }
+.st-pips i { width: 18px; height: 18px; border-radius: 50%; background: #e5e7eb; }
+.st-pips i.on { background: var(--st-theme); box-shadow: inset 0 0 0 2px #7fc3d6; }

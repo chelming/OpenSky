@@ -19,11 +19,11 @@ module.exports = async (page, h) => {
   const toast = () => page.evaluate(() => { const t = document.querySelector(".wg-toast"); return t && !t.hidden ? t.textContent : ""; });
 
   await h.tap(".os-page-wordgame");
-  await until(async () => await page.evaluate(() => !!document.querySelector(".wg-person")));
+  await until(async () => await page.evaluate(() => !!document.querySelector(".gh-person")));
   ok("with family profiles nobody is selected: 'Who's playing?' with a button per person, no board yet",
-    await page.evaluate(() => /Who's playing/.test(document.body.textContent) && document.querySelectorAll(".wg-person").length === 2 && !document.querySelector(".wg-board")));
-  ok("the person's photo is shown on their button", await page.evaluate(() => !!document.querySelectorAll(".wg-person")[1].querySelector("img")));
-  await page.evaluate(() => document.querySelectorAll(".wg-person")[0].click());   // Mom
+    await page.evaluate(() => /Who's playing/.test(document.body.textContent) && document.querySelectorAll(".gh-person").length === 2 && !document.querySelector(".wg-board")));
+  ok("the person's photo is shown on their button", await page.evaluate(() => !!document.querySelectorAll(".gh-person")[1].querySelector("img")));
+  await page.evaluate(() => document.querySelectorAll(".gh-person")[0].click());   // Mom
   await until(async () => !!(await st()));
   ok("picking Mom shows Mom's puzzle and stats", await page.evaluate(() => /Mom's puzzle/.test(document.querySelector(".wg-sub").textContent) && /Mom's stats/.test(document.querySelector(".wg-side").textContent)));
   let s = await st();
@@ -58,10 +58,10 @@ module.exports = async (page, h) => {
   await h.shot("wordgame");
   const saved = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "out", "wordgame.test.json"), "utf8"));
   ok("board + stats saved on the Pi, under Mom", saved.players.Mom.today.status === "won" && saved.players.Mom.stats.played === 1 && !saved.players.Kid);
-  await page.evaluate(() => document.querySelector(".wg-switch").click());
-  await until(async () => await page.evaluate(() => !!document.querySelector(".wg-person")));
-  ok("Switch player → back to 'Who's playing?'", await page.evaluate(() => document.querySelectorAll(".wg-person").length === 2 && !document.querySelector(".wg-board")));
-  await page.evaluate(() => document.querySelectorAll(".wg-person")[1].click());   // Kid
+  await page.evaluate(() => document.querySelector(".gh-switch").click());
+  await until(async () => await page.evaluate(() => !!document.querySelector(".gh-person")));
+  ok("Switch player → back to 'Who's playing?'", await page.evaluate(() => document.querySelectorAll(".gh-person").length === 2 && !document.querySelector(".wg-board")));
+  await page.evaluate(() => document.querySelectorAll(".gh-person")[1].click());   // Kid
   await until(async () => (await st()) && (await st()).player === "Kid");
   s = await st();
   ok("Kid starts their own fresh board and zero stats", s.player === "Kid" && s.guesses.length === 0 && s.status === "playing" && s.stats.played === 0, { p: s.player, g: s.guesses.length });
