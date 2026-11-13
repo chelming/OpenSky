@@ -254,7 +254,7 @@ const PAGES = {
     position: "fullscreen_above",
     config: {
       listsPage: pages.indexOf("lists") >= 0 ? pages.indexOf("lists") : null,
-      calendarPage: pages.indexOf("calendar") >= 0 ? pages.indexOf("calendar") : null,   // the Month button on the week card
+      firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0,   // the Month view's first column
       mealsPage: pages.indexOf("meals") >= 0 ? pages.indexOf("meals") : null,
       tonight: mealsOn && mealSettings.home !== false && mealTypes.includes("dinner") && homeCards.includes("tonight"),
       cards: homeCards,

@@ -4,7 +4,7 @@
  * Calendar card: today + the next 6 days as tiles, plus a "Next Week" tile.
  *   - events: any calendar source that broadcasts CALENDAR_EVENTS (MagicMirror's standard)
  *   - colors: window.OpenSkyEventColors (calendar.colors in opensky.json)
- *   - "Month" in the week card's header opens the Calendar page (calendarPage), even when that page's own button is tucked into More
+ *   - Week | Month in the card's header: Month swaps the week for a month grid in place (the arrows then move by month; same taps)
  *   - tap an event → CALENDAR_EVENT_CLICKED, a day → CALENDAR_DAY_CLICKED, "Add Event" → CALENDAR_ADD_EVENT
  *     (the event editor module answers these; "Add Event" only shows when one is installed)
  *   - daily high + icon from the header's shared forecast (OPENSKY_WEATHER)
@@ -23,7 +23,7 @@
 Module.register("MMM-OpenSky-Home", {
   defaults: {
     listsPage: null,
-    calendarPage: null,          // MMM-pages index of the Calendar (month) page: the "Month" button on the week card; null = no button
+    firstDayOfWeek: 0,           // the Month view's first column: 0 = Sunday, 1 = Monday (locale.firstDayOfWeek)
     mealsPage: null,             // MMM-pages index of the Meals page ("See week"); null = no button
     countdowns: { items: [], keepDays: 0, page: null },   // the big days (opensky.json → countdowns); page = MMM-pages index of the Countdowns page
     tonight: false,            // show "Dinner tonight" (needs the Meals module)
@@ -44,6 +44,8 @@ Module.register("MMM-OpenSky-Home", {
     this.pools = new Map();      // sender identifier → events
     this.lists = new Map();      // list provider → lists
     this.weekOffset = 0;
+    this.view = "week";          // the calendar card shows the "week" or the "month"
+    this.monthOffset = 0;        // months from this month (Month view)
     this.forecast = {};          // "YYYY-MM-DD" → { high, id }
     this.doneOpen = false;       // today's "N done" list is expanded (always back to tidy at midnight / idle / wake)
     this.lastDay = new Date(this.nowMs()).toDateString();
@@ -73,7 +75,7 @@ Module.register("MMM-OpenSky-Home", {
 
   tick() {
     const today = new Date(this.nowMs()).toDateString();
-    if (today !== this.lastDay) { this.lastDay = today; this.weekOffset = 0; this.doneOpen = false; this.render(); return; }
+    if (today !== this.lastDay) { this.lastDay = today; this.weekOffset = 0; this.monthOffset = 0; this.doneOpen = false; this.render(); return; }
     const tile = this.todayTile;
     if (this.weekOffset !== 0 || !tile || !tile.isConnected) return;
     const sig = window.OpenSkyDayAgenda.signature(this.todayAgenda(tile, this.maxEvents()));
@@ -126,12 +128,12 @@ Module.register("MMM-OpenSky-Home", {
       this.sendNotification("OPENSKY_LISTS_REFRESH");
       if (this.config.tonight) this.sendNotification("OPENSKY_MEALS_REFRESH");
     } else if (n === "OPENSKY_IDLE_RESET") {
-      if (this.weekOffset !== 0 || this.doneOpen) { this.weekOffset = 0; this.doneOpen = false; this.renderCalendar(); }
+      if (this.weekOffset !== 0 || this.monthOffset !== 0 || this.view !== "week" || this.doneOpen) { this.weekOffset = 0; this.monthOffset = 0; this.view = "week"; this.doneOpen = false; this.renderCalendar(); }
     } else if (n === "OPENSKY_LAYOUT_CHANGED") {   // the screen size, text size or orientation changed (Sidebar)
       clearTimeout(this._layoutTimer);
       this._layoutTimer = setTimeout(() => { this.renderCalendar(); this.renderCountdowns(); }, 200);
     } else if (n === "PAGE_CHANGED") {
-      setTimeout(() => { this.fitDays(); this.fitToday(); this.fitTitles(); }, 150);   // sizes are only measurable while the page is visible
+      setTimeout(() => { this.fitDays(); this.fitToday(); this.fitTitles(); this.fitMonth(); }, 150);   // sizes are only measurable while the page is visible
     }
   },
 
@@ -164,10 +166,11 @@ Module.register("MMM-OpenSky-Home", {
             <button class="hd-nav-btn hd-prev" aria-label="Previous week">${this.icon("left")}</button>
             <button class="hd-nav-btn hd-today">Today</button>
             <button class="hd-nav-btn hd-next" aria-label="Next week">${this.icon("right")}</button>
-            ${Number.isInteger(this.config.calendarPage) ? `<button class="hd-nav-btn hd-month" aria-label="Open the month calendar">${this.icon("calendar")} Month</button>` : ""}
+            <span class="hd-seg" role="group" aria-label="Calendar view"><button class="hd-seg-btn hd-seg-week on" data-view="week">Week</button><button class="hd-seg-btn hd-seg-month" data-view="month">Month</button></span>
           </span>
         </header>
         <div class="hd-week"></div>
+        <div class="hd-month" hidden></div>
       </section>
       <div class="hd-nw-slot"></div>
       <div class="hd-right">
@@ -185,11 +188,10 @@ Module.register("MMM-OpenSky-Home", {
           <div class="hd-photo-empty">${this.icon("image")}<span class="hd-photo-msg">Photos will appear here</span></div>
         </section>` : ""}
       </div>`;
-    root.querySelector(".hd-prev").onclick = () => { this.weekOffset--; this.renderCalendar(); };
-    root.querySelector(".hd-next").onclick = () => { this.weekOffset++; this.renderCalendar(); };
-    root.querySelector(".hd-today").onclick = () => { this.weekOffset = 0; this.renderCalendar(); };
-    const month = root.querySelector(".hd-month");
-    if (month) month.onclick = () => this.sendNotification("PAGE_CHANGED", this.config.calendarPage);
+    root.querySelector(".hd-prev").onclick = () => { if (this.view === "month") this.monthOffset--; else this.weekOffset--; this.renderCalendar(); };
+    root.querySelector(".hd-next").onclick = () => { if (this.view === "month") this.monthOffset++; else this.weekOffset++; this.renderCalendar(); };
+    root.querySelector(".hd-today").onclick = () => { this.weekOffset = 0; this.monthOffset = 0; this.renderCalendar(); };
+    root.querySelectorAll(".hd-seg-btn").forEach((b) => { b.onclick = () => { if (this.view !== b.dataset.view) { this.view = b.dataset.view; this.renderCalendar(); } }; });
     const add = root.querySelector(".hd-add");
     if (add) add.onclick = () => this.sendNotification("CALENDAR_ADD_EVENT", { date: new Date() });
     const seeAll = root.querySelector(".hd-see-all");
@@ -482,9 +484,12 @@ Module.register("MMM-OpenSky-Home", {
     this.root.querySelector(".hd-week-range").textContent =
       `${fmt(first, { month: "short", day: "numeric" })} – ${fmt(last, { month: first.getMonth() === last.getMonth() ? undefined : "short", day: "numeric" })}`;
     this.root.querySelector(".hd-today").classList.toggle("active", this.weekOffset === 0);
-    week.innerHTML = "";
     const todaySlot = this.root.querySelector(".hd-today-slot"), nwSlot = this.root.querySelector(".hd-nw-slot");
     todaySlot.innerHTML = ""; nwSlot.innerHTML = "";
+    this.syncView();
+    if (this.view === "month") { week.innerHTML = ""; this.todayTile = null; return this.renderMonth(events); }
+    this.root.querySelector(".hd-month").innerHTML = "";
+    week.innerHTML = "";
     const portrait = this.portrait();
     this.todayTile = null;
     for (let i = 0; i < 7; i++) {
@@ -499,6 +504,86 @@ Module.register("MMM-OpenSky-Home", {
     this.fitDays();
     this.fitToday();
     this.fitTitles();
+  },
+
+  // Week | Month: which one is showing (the toggle, the arrows' labels, the card's class)
+  syncView() {
+    const month = this.view === "month", sec = this.root.querySelector(".hd-calendar");
+    sec.classList.toggle("hd-view-month", month);
+    this.root.classList.toggle("hd-month-mode", month);   // (portrait: Next Week is not shown, so Lists takes its room)
+    this.root.querySelector(".hd-week").hidden = month;
+    this.root.querySelector(".hd-month").hidden = !month;
+    this.root.querySelectorAll(".hd-seg-btn").forEach((b) => { const on = b.dataset.view === this.view; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+    this.root.querySelector(".hd-prev").setAttribute("aria-label", month ? "Previous month" : "Previous week");
+    this.root.querySelector(".hd-next").setAttribute("aria-label", month ? "Next month" : "Next week");
+  },
+
+  /* ---------- month view: a grid of the month (the weeks it touches), the same taps as the week ---------- */
+  renderMonth(events) {
+    const box = this.root.querySelector(".hd-month");
+    const today = this.dayStart(new Date(this.nowMs())), todayKey = today.getTime();
+    const first = new Date(today.getFullYear(), today.getMonth() + this.monthOffset, 1);
+    const lead = (first.getDay() - (this.config.firstDayOfWeek === 1 ? 1 : 0) + 7) % 7;
+    const weeks = Math.ceil((lead + new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()) / 7);
+    const start = new Date(first.getFullYear(), first.getMonth(), 1 - lead);
+    const at = (i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);   // (calendar days: a clock change can't shift one)
+    this.root.querySelector(".hd-week-range").textContent = first.toLocaleDateString(this.locale(), { month: "long", year: "numeric" });
+    this.root.querySelector(".hd-today").classList.toggle("active", this.monthOffset === 0);
+    box.style.setProperty("--weeks", String(weeks));
+    box.innerHTML = `<div class="hd-m-dow"></div><div class="hd-m-grid"></div>`;
+    const dow = box.querySelector(".hd-m-dow"), grid = box.querySelector(".hd-m-grid");
+    for (let i = 0; i < 7; i++) { const s = document.createElement("span"); s.textContent = at(i).toLocaleDateString(this.locale(), { weekday: "short" }); dow.appendChild(s); }
+    for (let i = 0; i < weeks * 7; i++) {
+      const day = at(i), evs = this.eventsBetween(events, day, at(i + 1));
+      const cell = document.createElement("div");
+      cell.className = "hd-m-day" + (day.getMonth() !== first.getMonth() ? " out" : "") + (day.getTime() === todayKey ? " hd-m-today" : "");
+      // the 1st of a month says which month (the grid shows the end of one and the start of the next)
+      const num = day.getDate() === 1 ? day.toLocaleDateString(this.locale(), { month: "short", day: "numeric" }) : String(day.getDate());
+      cell.innerHTML = `<div class="hd-m-head"><span class="hd-m-num">${num}</span>${this.pickupIcons(day)}</div><div class="hd-m-events"></div>`;
+      cell._events = evs; cell._day = day;
+      cell.onclick = (e) => { if (!e.target.closest(".hd-m-chip")) this.sendNotification("CALENDAR_DAY_CLICKED", { date: day.getTime(), events: evs }); };
+      this.drawMonthDay(cell, Math.min(evs.length, 6));
+      grid.appendChild(cell);
+    }
+    this.fitMonth();
+  },
+
+  // the first <k> events of a month cell as one-line chips, then "+N more" (a tap on it opens the day, like the cell)
+  drawMonthDay(cell, k) {
+    const list = cell.querySelector(".hd-m-events"), evs = cell._events;
+    list.innerHTML = "";
+    evs.slice(0, k).forEach((ev) => list.appendChild(this.monthChip(ev, cell._day)));
+    if (evs.length > k) {
+      const more = document.createElement("button");
+      more.className = "hd-m-more";
+      more.textContent = k ? `+${evs.length - k} more` : `${evs.length} event${evs.length > 1 ? "s" : ""}`;
+      list.appendChild(more);
+    }
+  },
+
+  monthChip(ev, day) {
+    const chip = document.createElement("button");
+    chip.className = "hd-m-chip" + (ev.endDate < this.nowMs() && !ev.allDay ? " passed" : "");
+    this.colored(chip, ev);
+    const timed = !ev.allDay && new Date(ev.startDate).toDateString() === day.toDateString();
+    chip.innerHTML = `${timed ? `<span class="hd-m-time"></span>` : ""}<span class="hd-m-title"></span>`;
+    if (timed) chip.querySelector(".hd-m-time").textContent = this.clock(new Date(ev.startDate));
+    chip.querySelector(".hd-m-title").textContent = ev.title;
+    chip.onclick = () => this.sendNotification("CALENDAR_EVENT_CLICKED", ev);
+    return chip;
+  },
+
+  // a busy day, a small screen or big text: show as many chips as fit, then "+N more" (never clipped silently)
+  fitMonth() {
+    if (!this.root || this.view !== "month") return;
+    this.root.querySelectorAll(".hd-m-day").forEach((cell) => {
+      if (!cell._events || !cell._events.length || cell.getBoundingClientRect().height === 0) return;
+      const list = cell.querySelector(".hd-m-events");
+      const inner = () => cell.getBoundingClientRect().bottom - parseFloat(getComputedStyle(cell).paddingBottom);
+      const fits = () => { const last = list.lastElementChild; return !last || last.getBoundingClientRect().bottom <= inner() + 0.5; };
+      let k = list.querySelectorAll(":scope > .hd-m-chip").length;
+      while (!fits() && k > 0) this.drawMonthDay(cell, --k);
+    });
   },
 
   dayTile(day, events, isToday) {

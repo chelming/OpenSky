@@ -104,7 +104,7 @@ These are the buttons on the left, in this order. The first one is where the scr
 | Page | What it is |
 |---|---|
 | `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
-| `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it. Home's calendar card has a **Month** button that opens it, so the page's own button can live in More |
+| `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it. Home's calendar card also has a **Week | Month** toggle, so you can see the month without leaving Home |
 | `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |
@@ -143,6 +143,13 @@ The change shows after a restart, like the other Pages settings.
 Behind the scenes this is `nav` in `opensky.json` (you never need to edit it):
 `"nav": { "groups": [{ "label": "House", "icon": "smarthome", "pages": ["home-assistant", "cams"] }], "more": ["meals", "timer"] }`.
 A page is in one place only (a group wins over `more`), and unknown pages are ignored.
+
+### Week | Month on Home
+The calendar card on Home has a **Week | Month** toggle. **Month** swaps the week for a grid of the month (the weeks it touches, the first
+column follows your *week starts on* setting) without leaving Home, so the lists and photos stay in view. The arrows then move by
+month and **Today** comes back. Tap a day to see or add to it, tap an event to open it; a busy day shows as many events as fit and
+"+N more". Past events are dimmed, pickup icons (trash day) show beside the date, and after a few idle minutes it goes back to the week.
+The separate Calendar page still works; Month on Home covers the same view.
 
 ### Home cards
 ```json

@@ -305,10 +305,6 @@ html[data-layout="compact"] .hd-note-x { width: 38px; height: 38px; padding: 10p
 }
 .hd-add .hd-icon { width: 18px; height: 18px; }
 
-/* "Month" (opens the Calendar page): a quiet pill after the week arrows */
-.hd-nav-btn.hd-month { gap: 6px; margin-left: 6px; padding: 0 16px 0 12px; }
-.hd-month .hd-icon { width: 18px; height: 18px; }
-
 /* ---------- lists ---------- */
 .hd-see-all {
   margin-left: auto;
@@ -548,7 +544,7 @@ html[data-layout="portrait"] .hd-nw-slot > .hd-nextweek { height: 100%; min-heig
 .hd-right { container-type: size; container-name: hdright; }
 @container hdright (max-height: 560px) { .hd-photo { display: none; } .hd-right > .hd-lists { flex: 1 1 auto; } }
 .hd-calendar { container-type: inline-size; container-name: hdcal; }
-@container hdcal (max-width: 700px) { .hd-calendar .hd-nav-btn.hd-add, .hd-calendar .hd-nav-btn.hd-month { font-size: 0; gap: 0; padding: 0; width: 42px; min-width: 42px; margin-right: 0; margin-left: 0; } }
+@container hdcal (max-width: 700px) { .hd-calendar .hd-nav-btn.hd-add { font-size: 0; gap: 0; padding: 0; width: 42px; min-width: 42px; margin-right: 0; } }
 @container hdcal (max-width: 520px) { .hd-week-range { display: none; } }
 @container hdcal (max-width: 440px) { .hd-card-label { font-size: 0; gap: 0; } }
 @container (max-width: 150px) { .hd-day-count { display: none; } .hd-day-wx > span:not(.hd-wx-icon) { display: none; } .hd-day-head { margin-bottom: 8px; } }
@@ -618,3 +614,89 @@ html[data-layout="portrait"] .hd-cd-text b { font-size: 21px; -webkit-line-clamp
 html[data-layout="portrait"] .hd-cd-count { min-width: 68px; padding: 6px 8px; }
 html[data-layout="portrait"] .hd-root.hd-has-cd { grid-template-rows: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "cd cd" "today today" "cal cal" "lists nw" "photo photo"; }
 html[data-layout="portrait"] .hd-root.hd-has-cd.hd-has-tonight { grid-template-rows: auto auto minmax(0, 1fr) auto auto auto; grid-template-areas: "cd cd" "today today" "cal cal" "tonight tonight" "lists nw" "photo photo"; }
+
+
+/* ---------- Week | Month toggle (the calendar card's header) ---------- */
+.hd-seg { display: inline-flex; gap: 2px; margin-left: 6px; padding: 3px; border-radius: 22px; background: #f3f4f6; }
+.hd-seg-btn {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  color: #4b5563;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .12s ease, color .12s ease;
+}
+.hd-seg-btn.on { background: #ffffff; color: var(--os-accent-dark, #7a3419); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.hd-seg-btn:active { transform: scale(.96); }
+html[data-layout="compact"] .hd-seg-btn { height: 30px; padding: 0 11px; font-size: 13px; }
+html[data-layout="portrait"] .hd-seg-btn { height: 42px; padding: 0 16px; font-size: 16px; border-radius: 21px; }
+@container hdcal (max-width: 700px) { .hd-calendar .hd-seg-btn { padding: 0 10px; } }
+
+/* ---------- month view: the week grid's place, a grid of the month ---------- */
+.hd-week[hidden], .hd-month[hidden] { display: none; }
+.hd-month { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.hd-m-dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 0 2px; }
+.hd-m-dow span { text-align: center; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #9ca3af; }
+.hd-m-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(var(--weeks, 5), minmax(0, 1fr)); gap: 6px; }
+.hd-m-day {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 7px 7px 6px;
+  border-radius: 14px;
+  background: #f7f8fa;
+  cursor: pointer;
+}
+.hd-m-day.out { opacity: .5; }
+.hd-m-day.hd-m-today { background: var(--os-accent-tint); box-shadow: inset 0 0 0 2px var(--os-accent-soft); opacity: 1; }
+.hd-m-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 26px; margin-bottom: 3px; }
+.hd-m-num { font-size: 15px; font-weight: 800; color: #374151; }
+.hd-m-today .hd-m-num {
+  min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 13px; background: var(--os-accent); color: #fff;
+}
+.hd-m-head .hd-pickups { display: inline-flex; gap: 3px; }
+.hd-m-head .hd-pickup svg { width: 15px; height: 15px; }
+.hd-m-events { display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.hd-m-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 7px;
+  border: none;
+  border-radius: 8px;
+  background: var(--evc-bg, #e5e7eb);
+  color: #1f2937;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+.hd-m-chip[style*="--evc-multi"] { background: var(--evc-multi); }
+.hd-m-chip.passed { opacity: .6; }
+.hd-m-time { flex: 0 0 auto; font-weight: 400; font-size: 11.5px; color: #374151; }
+.hd-m-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-m-more { align-self: flex-start; padding: 2px 8px; border: none; border-radius: 8px; background: #e9ecf1; color: #3b4452; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.hd-m-chip:active, .hd-m-more:active { transform: scale(.97); }
+/* smaller screens, big text and portrait: names only (no times), tighter cells */
+html[data-layout="compact"] .hd-m-day { padding: 5px 5px 4px; border-radius: 12px; }
+html[data-layout="compact"] .hd-m-chip { font-size: 11.5px; padding: 2px 6px; }
+html[data-layout="compact"] .hd-m-time, html[data-layout="portrait"] .hd-m-time { display: none; }
+html[data-layout="portrait"] .hd-m-chip { font-size: 13px; padding: 3px 6px; }
+html[data-layout="portrait"] .hd-m-num { font-size: 16px; }
+html[data-os-theme="dark"] .hd-m-day.hd-m-today { background: #f4f4f5; }
+/* portrait + Month: no Next Week tile, so Lists takes the whole row */
+html[data-layout="portrait"] .hd-root.hd-month-mode:not(.hd-no-lists) .hd-lists { grid-column: 1 / -1; }
