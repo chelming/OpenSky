@@ -50,6 +50,20 @@ module.exports = async (page, h, app) => {
   await phone.fill(".code-input", code);
   await until(() => phone.evaluate(() => !!document.querySelector("#family")));
 
+  // ---- the page is in tabs: one at a time ----
+  const goTab = (t) => phone.evaluate((t) => document.querySelector(`.tabs button[data-tab="${t}"]`).click(), t);
+  const shown = () => phone.evaluate(() => [...document.querySelectorAll(".card")].filter((c) => !c.hidden).map((c) => c.id));
+  const tabs = await phone.evaluate(() => [...document.querySelectorAll(".tabs button")].map((b) => b.textContent));
+  ok("setup has tabs", JSON.stringify(tabs) === JSON.stringify(["Family", "Calendar", "Lists & meals", "Photos", "Screens", "Connections", "Backup"]), tabs);
+  ok("it opens on Family: only that card shows", JSON.stringify(await shown()) === '["family"]', await shown());
+  await goTab("calendar");
+  ok("Calendar tab: calendars, weather, reminders, trash, (AI helper)", JSON.stringify(await shown()) === '["calendars","weather","reminders","pickup","ai"]', await shown());
+  await goTab("connections");
+  ok("Connections tab: Home Assistant + word game (Music / Devices only once their page is on)", JSON.stringify(await shown()) === '["ha","games"]', await shown());
+  await goTab("screens");
+  ok("Screens tab: pages, home cards, web pages, screens, look", JSON.stringify(await shown()) === '["pages","homecards","web","screens","look"]', await shown());
+  await goTab("family");
+
   // ---- tap helpers (by visible text / label, like a person) ----
   const tap = async (scope, selector, label) => {
     const done = await phone.evaluate(([sc, sel, t]) => {
@@ -70,7 +84,7 @@ module.exports = async (page, h, app) => {
     if (!done) throw new Error(`no choice "${value}" in ${scope} "${label}"`);
     await h.sleep(200);
   };
-  const type = async (selector, value) => { await phone.fill(selector, value); await h.sleep(100); };
+  const type = async (selector, value) => { await phone.evaluate((sel) => { const c = document.querySelector(sel)?.closest(".card"); const b = c && document.querySelector(`.tabs button[data-tab="${c.dataset.tab}"]`); if (b) b.click(); }, selector); await phone.fill(selector, value); await h.sleep(100); };
   const sheetButton = (label) => tap(".sheet", ".sheet-foot .btn", label);
   const row = async (scope, title) => {   // a list row (calendar, list, web page) by its title
     const done = await phone.evaluate(([sc, t]) => { const r = [...document.querySelector(sc).querySelectorAll(".row")].find((x) => x.querySelector("b")?.textContent === t); if (r) r.click(); return !!r; }, [scope, title]);
@@ -343,6 +357,7 @@ module.exports = async (page, h, app) => {
   ok("pages: Timer off, Lists moved up one", !S.pages.includes("timer") && S.pages.indexOf("lists") === 1, S.pages);
 
   // ---- Pages: drag the last page's grip up to fourth place ----
+  await goTab("screens");
   const pagesNow = settings().pages, dragKey = pagesNow[pagesNow.length - 1];
   await phone.evaluate(() => { const rows = [...document.querySelectorAll("#pages .pagerow:not(.off)")]; rows[rows.length - 1].scrollIntoView({ block: "center", behavior: "instant" }); }); await h.sleep(400);
   const pos = await phone.evaluate(() => { const rows = [...document.querySelectorAll("#pages .pagerow:not(.off)")], g = rows[rows.length - 1].querySelector(".grip").getBoundingClientRect(), t = rows[3].getBoundingClientRect(); return { fx: g.x + g.width / 2, fy: g.y + g.height / 2, ty: t.top + 4 }; });
@@ -354,15 +369,15 @@ module.exports = async (page, h, app) => {
   ok("pages: dragging a page by its grip moves it (saved)", S.pages.indexOf(dragKey) === 3, S.pages);
 
   // ---- Extras: accent, trash day, city schedule, pickup link, sports, word game, weather + key ----
-  await tap("#extras", ".chip", "teal");
-  await pick("#extras", "Trash day", "thursday");
-  await pick("#extras", "City pickup schedule", "");
-  await type("#extras input[inputmode=url]", "https://recollect.example/ics/abc123");
-  await pick("#extras", "Sports league", "nba");
-  await type("#extras input[maxlength='5']", "bos");
-  await tap("#extras", ".seg button", "OpenSky's words");
-  await tap("#extras", ".seg button", "OpenWeatherMap");
-  await type("#extras input[placeholder='Paste the key']", "owm-key-123456");
+  await tap("#look", ".chip", "teal");
+  await pick("#pickup", "Trash day", "thursday");
+  await pick("#pickup", "City pickup schedule", "");
+  await type("#pickup input[inputmode=url]", "https://recollect.example/ics/abc123");
+  await pick("#family", "Sports league", "nba");
+  await type("#family input[maxlength='5']", "bos");
+  await tap("#games", ".seg button", "OpenSky's words");
+  await tap("#weather", ".seg button", "OpenWeatherMap");
+  await type("#weather input[placeholder='Paste the key']", "owm-key-123456");
   await save();
   S = settings(); sec = secrets();
   ok("extras: accent teal, Thursday trash, no city schedule, pickup link (secret), NBA/BOS, OpenSky's words, OpenWeatherMap + key (secret)",
@@ -371,63 +386,62 @@ module.exports = async (page, h, app) => {
     { look: S.look, pickup: S.pickup, sports: S.header.sports, wordgame: S.wordgame, weather: S.weather });
 
   // ---- Screensaver: after N minutes / off, and the Up next toggle ----
-  await pick("#extras", "Screensaver", 30);
-  await tap("#extras", ".toggle", "Show what's up next on the screensaver");
+  await pick("#screensaver", "Screensaver", 30);
+  await tap("#screensaver", ".toggle", "Show what's up next on the screensaver");
   await save();
   S = settings();
   ok("extras: screensaver after 30 minutes, Up next off", S.screensaver?.enabled === true && S.screensaver.afterMinutes === 30 && S.screensaver.upNext === false, S.screensaver);
-  await pick("#extras", "Screensaver", 0);
-  await tap("#extras", ".toggle", "Show what's up next on the screensaver");
+  await pick("#screensaver", "Screensaver", 0);
+  await tap("#screensaver", ".toggle", "Show what's up next on the screensaver");
   await save();
   S = settings();
   ok("extras: screensaver Off, Up next back on", S.screensaver?.enabled === false && S.screensaver.upNext === undefined, S.screensaver);
 
   // ---- Event reminders: lead time, chime / banner / all-day, and who ----
-  await pick("#extras", "Event reminders", 15);
-  await tap("#extras", ".toggle", "Play a chime before an event");
-  await tap("#extras", ".toggle", "Remind about all-day events");
-  await tap("#extras", ".person", "Mom");
+  await pick("#reminders", "Event reminders", 15);
+  await tap("#reminders", ".toggle", "Play a chime before an event");
+  await tap("#reminders", ".toggle", "Remind about all-day events");
   await save();
   S = settings();
-  ok("extras: reminders 15 minutes, chime off, all-day on, for Mom", S.reminders?.minutes === 15 && S.reminders.chime === false && S.reminders.allDay === true && JSON.stringify(S.reminders.people) === '["Mom"]', S.reminders);
-  await pick("#extras", "Event reminders", 0);
+  ok("extras: reminders 15 minutes, chime off, all-day on", S.reminders?.minutes === 15 && S.reminders.chime === false && S.reminders.allDay === true, S.reminders);
+  await pick("#reminders", "Event reminders", 0);
   await save();
   S = settings();
   ok("extras: reminders Off drops the lead time", S.reminders?.minutes === undefined, S.reminders);
 
   // ---- accent: any color as a code (typed, any case) or from the phone's color picker; then back to teal ----
-  await type("#extras .hex-input", "#2E7D32");
-  const chipOff = await phone.evaluate(() => !document.querySelector("#extras .chip.on") && document.querySelector("#extras .color-pick").value === "#2e7d32");
+  await type("#look .hex-input", "#2E7D32");
+  const chipOff = await phone.evaluate(() => !document.querySelector("#look .chip.on") && document.querySelector("#look .color-pick").value === "#2e7d32");
   await save();
   ok("accent: a typed color code → saved as #rrggbb, the chips let go, the color picker follows", settings().look?.accent === "#2e7d32" && chipOff, settings().look);
-  await type("#extras .color-pick", "#fff8dc");
-  const fromPicker = await phone.evaluate(() => ({ code: document.querySelector("#extras .hex-input").value, warn: !document.querySelector("#extras .hint.bad").hidden }));
+  await type("#look .color-pick", "#fff8dc");
+  const fromPicker = await phone.evaluate(() => ({ code: document.querySelector("#look .hex-input").value, warn: !document.querySelector("#look .hint.bad").hidden }));
   await save();
   ok("accent: the phone's color picker → saved, the code box follows, a very light color gets a warning", settings().look?.accent === "#fff8dc" && fromPicker.code === "#fff8dc" && fromPicker.warn, fromPicker);
-  await type("#extras .hex-input", "#12zz45");
-  await phone.evaluate(() => document.querySelector("#extras .hex-input").blur());
-  const bad = await phone.evaluate(() => document.querySelector("#extras .hex-input").classList.contains("bad"));
-  await tap("#extras", ".chip", "teal");
+  await type("#look .hex-input", "#12zz45");
+  await phone.evaluate(() => document.querySelector("#look .hex-input").blur());
+  const bad = await phone.evaluate(() => document.querySelector("#look .hex-input").classList.contains("bad"));
+  await tap("#look", ".chip", "teal");
   await save();
   ok("accent: a code that isn't a color is marked and not used; a chip still works afterwards", bad && settings().look?.accent === "teal", settings().look);
 
   // ---- Music add-on: the page on → its settings appear in Extras (speaker name, AirPlay / Spotify) ----
-  ok("Music settings are hidden until the Music page is on", !(await phone.evaluate(() => /Speaker name/.test(document.querySelector("#extras").textContent))));
+  ok("Music settings are hidden until the Music page is on", !(await phone.evaluate(() => /Speaker name/.test((document.querySelector("#music") || { textContent: "" }).textContent))));
   await tap("#pages", ".toggle", "Music");
-  ok("…then show, with how to install the add-on", await phone.evaluate(() => /Speaker name/.test(document.querySelector("#extras").textContent) && /opensky addon music/.test(document.querySelector("#extras").textContent)));
-  await type("#extras input[maxlength='40']", "Kitchen speaker");
-  await tap("#extras", ".toggle", "AirPlay");
+  ok("…then show, with how to install the add-on", await phone.evaluate(() => /Speaker name/.test(document.querySelector("#music").textContent) && /opensky addon music/.test(document.querySelector("#music").textContent)));
+  await type("#music input[maxlength='40']", "Kitchen speaker");
+  await tap("#music", ".toggle", "AirPlay");
   await save();
   S = settings();
   ok("music: page on, speaker name, AirPlay off, Spotify left on", S.pages.includes("music") && S.music?.name === "Kitchen speaker" && S.music.airplay === false && S.music.spotify !== false, { pages: S.pages, music: S.music });
   // other speakers: Home Assistant address + token, save, Find my speakers, pick one
-  await type("#extras input[placeholder='http://homeassistant.local:8123']", `http://127.0.0.1:${HA}`);
-  await type("#extras input[placeholder='Paste a long-lived access token']", "ha-phone-token");
+  await type("#ha input[placeholder='http://homeassistant.local:8123']", `http://127.0.0.1:${HA}`);
+  await type("#ha input[placeholder='Paste a long-lived access token']", "ha-phone-token");
   await save();
-  await tap("#extras", ".btn.block", "Find my speakers");
-  await until(() => phone.evaluate(() => /Attic/.test(document.querySelector("#extras").textContent)));
-  const found = await phone.evaluate(() => [...document.querySelectorAll("#extras .rows .line b")].map((b) => b.textContent));
-  await tap("#extras", ".toggle", "Kitchen");
+  await tap("#music", ".btn.block", "Find my speakers");
+  await until(() => phone.evaluate(() => /Attic/.test(document.querySelector("#music").textContent)));
+  const found = await phone.evaluate(() => [...document.querySelectorAll("#music .rows .line b")].map((b) => b.textContent));
+  await tap("#music", ".toggle", "Kitchen");
   await save();
   S = settings(); sec = secrets();
   ok("other speakers: Find my speakers lists Home Assistant's speakers; Kitchen picked and saved (address + token only in secrets)",

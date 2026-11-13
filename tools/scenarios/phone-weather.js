@@ -29,7 +29,7 @@ module.exports = async (page, h, app) => {
     return until(() => phone.evaluate(() => /Saved ✓/.test(document.querySelector(".bar")?.textContent || "")));
   };
 
-  ok("a Weather card is on the phone page and in its jump bar", await phone.evaluate(() => !!document.querySelector("#weather") && [...document.querySelectorAll(".jump a")].some((a) => a.textContent === "Weather")));
+  ok("a Weather card is on the phone page and in its tabs", await phone.evaluate(() => !!document.querySelector("#weather") && document.querySelector("#weather").dataset.tab === "calendar" && [...document.querySelectorAll(".tabs button")].some((b) => b.textContent === "Calendar")));
   ok("with the page off, only the page switch shows", JSON.stringify(await toggles()) === '[["Weather page",false]]', await toggles());
   await tap("Weather page");
   ok("Weather page on: the three extras appear, all on", JSON.stringify(await toggles()) === '[["Weather page",true],["Hour by hour",true],["Rain radar",true],["Weather alerts",true]]', await toggles());

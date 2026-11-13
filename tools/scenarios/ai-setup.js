@@ -29,7 +29,7 @@ module.exports = async (page, h, app) => {
   const card = () => phone.evaluate(() => document.querySelector("#ai").textContent);
   const testBtn = () => phone.evaluate(() => { const b = [...document.querySelectorAll("#ai .btn")].find((x) => /Test the connection|Testing/.test(x.textContent)); return b ? { disabled: b.disabled, text: b.textContent } : null; });
   const clickTest = async () => { await phone.evaluate(() => [...document.querySelectorAll("#ai .btn")].find((x) => /Test the connection/.test(x.textContent)).click()); await h.sleep(300); };
-  const type = async (selector, value) => { await phone.fill(selector, value); await h.sleep(100); };
+  const type = async (selector, value) => { await phone.evaluate((sel) => { const c = document.querySelector(sel)?.closest(".card"); const b = c && document.querySelector(`.tabs button[data-tab="${c.dataset.tab}"]`); if (b) b.click(); }, selector); await phone.fill(selector, value); await h.sleep(100); };
   const save = async () => {
     await phone.evaluate(() => [...document.querySelector(".bar").querySelectorAll(".btn")].find((x) => x.textContent.trim() === "Save").click());
     return until(() => phone.evaluate(() => /Saved ✓/.test(document.querySelector(".bar")?.textContent || "")));
