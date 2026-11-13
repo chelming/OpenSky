@@ -1,4 +1,4 @@
-// Games page: one "Who's playing?" for every game, tabs (Word Game · Connections · Strands), and NYT's Connections and
+// Games page: one "Who's playing?" for every game, tabs (Word Game · Connections · Strands · Quartiles), and NYT's Connections and
 // Strands played against a fake NYT (tools/fixtures/fake-nyt-games.js): answers stay on the server, per-person boards.
 const PORT = 8096;
 let fake = null;
@@ -19,7 +19,7 @@ module.exports = async (page, h) => {
   await page.evaluate(() => document.querySelectorAll(".gh-person")[0].click());   // Mom
   await until(async () => shown(".gh-tab"));
   ok("after picking Mom: three tabs, Word Game open, the player shown with Switch",
-    await page.evaluate(() => [...document.querySelectorAll(".gh-tab")].map((t) => t.textContent.trim().slice(1)).join("|") === "Word Game|Connections|Strands" && /Mom/.test(document.querySelector(".gh-switch").textContent) && document.querySelector(".gh-tab.on").dataset.g === "word"));
+    await page.evaluate(() => [...document.querySelectorAll(".gh-tab")].map((t) => t.textContent.trim().slice(1)).join("|") === "Word Game|Connections|Strands|Quartiles" && /Mom/.test(document.querySelector(".gh-switch").textContent) && document.querySelector(".gh-tab.on").dataset.g === "word"));
 
   /* ---------- Connections ---------- */
   await tab("connections");
@@ -64,6 +64,30 @@ module.exports = async (page, h) => {
   ok("another real word counts toward a hint (not a theme word)", ((await mod("MMM-OpenSky-Strands")) || {}).extras === 1 && ((await mod("MMM-OpenSky-Strands")) || {}).found.length === 1);
   await h.shot("games-strands");
 
+  /* ---------- Quartiles ---------- */
+  await tab("quartiles");
+  await until(async () => shown(".qt-tile"));
+  ok("Quartiles: 20 tiles; Strands hidden; the page doesn't know the hidden words or the theme", await page.evaluate(() => document.querySelectorAll(".qt-tile").length === 20) && !(await shown(".st-root"))
+    && !/WATERMELON|Fun/.test(JSON.stringify(await mod("MMM-OpenSky-Quartiles"))));
+  const qtap = async (...ts) => { for (const t of ts) await page.evaluate((t) => [...document.querySelectorAll(".qt-tile:not(.on)")].find((b) => b.firstChild.textContent === t.toUpperCase()).click(), t); };
+  await qtap("wa", "ter");
+  ok("tapped tiles show the word being spelled, numbered in order", await page.evaluate(() => document.querySelector(".qt-word").textContent === "WATER" && document.querySelectorAll(".qt-tile.on i").length === 2));
+  await click(".qt-go");
+  await until(async () => ((await mod("MMM-OpenSky-Quartiles")) || {}).found.length === 1);
+  ok("Submit: a real word scores (+4), the tiles are free again, the word shows in the list", await page.evaluate(() => document.querySelectorAll(".qt-tile.on").length === 0 && /water/i.test(document.querySelector(".qt-found").textContent) && /4 points/.test(document.querySelector(".qt-root .gm-side").textContent)));
+  await qtap("ter", "wa"); await click(".qt-go");
+  await until(async () => /Not in word list/.test(await page.evaluate(() => document.querySelector(".qt-root .gm-toast").textContent)));
+  ok("not a word → 'Not in word list'", true);
+  await click(".qt-clear");
+  await qtap("wa", "ter", "me", "lon"); await click(".qt-go");
+  await until(async () => ((await mod("MMM-OpenSky-Quartiles")) || {}).quartilesFound === 1);
+  ok("a four-tile hidden word is a quartile: 1 of 5, gold chip", await page.evaluate(() => /1 of 5 quartiles/.test(document.querySelector(".qt-root .gm-side").textContent) && !!document.querySelector(".qt-chip.t4")));
+  await page.evaluate(() => document.querySelector('.qt-hint[data-k="theme"]').click());
+  await until(async () => /Theme:\s*Fun/.test(await page.evaluate(() => document.querySelector(".qt-root .gm-side").textContent)));
+  ok("hint 'Show the theme' reveals the theme (and the button is used up)", await page.evaluate(() => document.querySelector('.qt-hint[data-k="theme"]').disabled));
+  await h.shot("games-quartiles");
+  await tab("strands");
+
   /* ---------- leaving and coming back ---------- */
   await h.tap(".os-page-home");
   await h.sleep(500);
@@ -92,4 +116,4 @@ module.exports = async (page, h) => {
   h.log(`SUMMARY: ${f.length ? "FAILED: " + f.join("; ") : "ALL CHECKS PASSED"} (${Object.keys(R).length} checks)`);
   if (fake) fake.close();
 };
-module.exports.env = { OPENSKY_NYT_GAMES_URL: `http://127.0.0.1:${PORT}/svc` };
+module.exports.env = { OPENSKY_NYT_GAMES_URL: `http://127.0.0.1:${PORT}/svc`, OPENSKY_QUARTILES_URL: `http://127.0.0.1:${PORT}` };

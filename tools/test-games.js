@@ -4,6 +4,7 @@ const fs = require("fs"), os = require("os"), path = require("path"), Module = r
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "opensky-games-"));
 process.env.OPENSKY_CONNECTIONS = path.join(tmp, "connections.json");
 process.env.OPENSKY_STRANDS = path.join(tmp, "strands.json");
+process.env.OPENSKY_QUARTILES = path.join(tmp, "quartiles.json");
 const origResolve = Module._resolveFilename;
 Module._resolveFilename = function (req, ...a) { return req === "node_helper" ? path.join(tmp, "nh.js") : origResolve.call(this, req, ...a); };
 fs.writeFileSync(path.join(tmp, "nh.js"), "module.exports = { create: (o) => Object.assign({ sendSocketNotification(n, p) { global.__sent.push([n, p]); } }, o) };");
@@ -17,6 +18,7 @@ const fake = require("./fixtures/fake-nyt-games.js");
 (async () => {
   const nyt = await fake.create(0);
   process.env.OPENSKY_NYT_GAMES_URL = nyt.url;
+  process.env.OPENSKY_QUARTILES_URL = nyt.url.replace(/\/svc$/, "");
   const last = (name) => sent.filter(([n]) => n === name).pop()[1];
   const err = (name) => (sent.filter(([n]) => n === name).pop() || [])[1];
 
@@ -117,6 +119,52 @@ const fake = require("./fixtures/fake-nyt-games.js");
   await S("OS_ST_SYNC", { player: "Kid" });
   t = last("OS_ST_STATE");
   ok("S14 Kid's board is fresh", t.player === "Kid" && t.found.length === 0 && t.stats.won === 0 && t.status === "playing");
+
+  /* ---------------- Quartiles ---------------- */
+  const qt = require("../modules/MMM-OpenSky-Quartiles/node_helper.js");
+  qt.start();
+  const Q = (n, p) => qt.socketNotificationReceived(n, p);
+  await Q("OS_QT_INIT", { people: ["Mom", "Kid"] });
+  ok("Q1 nobody picked: no board", last("OS_QT_STATE").player === null);
+  await Q("OS_QT_SYNC", { player: "Mom" });
+  let q = last("OS_QT_STATE");
+  const dq = q.date;
+  ok("Q2 20 tiles (shuffled, uppercase), counts only; no answers, theme or word lists sent", q.tiles.length === 20 && [...q.tiles].sort().join() === fake.QT_TILES.map((x) => x.toUpperCase()).sort().join() && q.tiles.join() !== fake.QT_TILES.map((x) => x.toUpperCase()).join()
+    && q.quartileTotal === 5 && q.wordTotal === 13 && q.hints.theme === null && q.hints.counts === null && !JSON.stringify(q).includes("WATERMELON") && !("answers" in q) && !("words" in q));
+  const tile = (t) => q.tiles.indexOf(t.toUpperCase());
+  const QG = (...ts) => Q("OS_QT_GUESS", { tiles: ts.map(tile), date: dq, player: "Mom" });
+  await QG("wa", "ter");
+  q = last("OS_QT_STATE");
+  ok("Q3 a real two-tile word scores 4", q.foundNow === "water" && q.points === 4 && q.score === 4 && q.found.length === 1, q.message);
+  await QG("wa", "ter");
+  ok("Q4 the same word again → 'Already found'", /Already found/.test(err("OS_QT_ERROR").message));
+  await QG("ter", "wa");
+  ok("Q5 tiles that don't make a word → 'Not in word list'", /Not in word list/.test(err("OS_QT_ERROR").message));
+  await Q("OS_QT_GUESS", { tiles: [0, 0], date: dq, player: "Mom" });
+  ok("Q6 the same tile twice is refused", /Pick up to four/.test(err("OS_QT_ERROR").message));
+  await QG("wa", "ter", "me", "lon");
+  q = last("OS_QT_STATE");
+  ok("Q7 a hidden four-tile word is a quartile: 20 points, 1 of 5", /Quartile/.test(q.message) && q.points === 20 && q.quartilesFound === 1 && q.score === 24);
+  await Q("OS_QT_HINT", { kind: "theme", date: dq, player: "Mom" });
+  await Q("OS_QT_HINT", { kind: "counts", date: dq, player: "Mom" });
+  await Q("OS_QT_HINT", { kind: "letters", date: dq, player: "Mom" });
+  q = last("OS_QT_STATE");
+  ok("Q8 hints reveal only what they say: theme, words left per tile count, first letters of what's left", q.hints.theme === "Fun" && JSON.stringify(q.hints.counts) === JSON.stringify([1, 5, 1, 4]) && q.hints.letters.join("") === "BCFMR" && q.stats.hints === 3, q.hints);
+  await Q("OS_QT_HINT", { kind: "word", date: dq, player: "Mom" });
+  q = last("OS_QT_STATE");
+  ok("Q9 'show a word' gives the shortest word left (never a quartile)", q.hints.shown.length === 1 && q.hints.shown[0].tiles === 1 && q.hints.shown[0].word === "ball", q.hints.shown);
+  await Q("OS_QT_SYNC", { player: "Kid" });
+  q = last("OS_QT_STATE");
+  ok("Q10 Kid has a fresh board with no hints used", q.player === "Kid" && q.found.length === 0 && q.score === 0 && q.hints.theme === null);
+  const gk = (...ts) => Q("OS_QT_GUESS", { tiles: ts.map((t) => q.tiles.indexOf(t.toUpperCase())), date: dq, player: "Kid" });
+  for (const ws of [["ba", "sk", "et", "ball"], ["cho", "co", "la", "tes"], ["fi", "re", "wo", "rks"], ["ra", "in", "bo", "ws"]]) await gk(...ws);
+  q = last("OS_QT_STATE");
+  ok("Q11 four of five quartiles: not won yet", q.status === "playing" && q.quartilesFound === 4);
+  await Q("OS_QT_GUESS", { tiles: ["wa", "ter", "me", "lon"].map((t) => q.tiles.indexOf(t.toUpperCase())), date: dq, player: "Kid" });
+  q = last("OS_QT_STATE");
+  ok("Q12 all five → won; stats count for Kid (best score 100)", q.status === "won" && q.stats.won === 1 && q.stats.streak === 1 && q.stats.bestScore === 100, q.stats);
+  const qsaved = JSON.parse(fs.readFileSync(process.env.OPENSKY_QUARTILES, "utf8"));
+  ok("Q13 saved per person; Mom is still playing", qsaved.players.Kid.stats.won === 1 && qsaved.players.Mom.today.status === "playing");
 
   /* ---------------- NYT down ---------------- */
   nyt.state.up = false;
