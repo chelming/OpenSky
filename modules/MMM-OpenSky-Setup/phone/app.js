@@ -183,7 +183,8 @@
       const d = await api("GET", "/api/state");
       S = d.settings; secretsSet = new Set(d.secretsSet || []); shown = d.shown || {}; pending = {}; info = d; dirty = false; saved = false;
       for (const k of ["family", "locale", "location", "weather", "header", "calendar", "lists", "photos", "share", "pickup", "wordgame", "embeds"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
-      if (!Array.isArray(S.pages)) S.pages = ["home", "calendar", "lists", "timer"];
+      if (!Array.isArray(S.pages)) S.pages = ["home", "lists", "timer"];
+      S.pages = S.pages.filter((p) => p !== "calendar");   // retired: Home's Week | Month replaced the Calendar page (the next Save drops it)
       if (!Array.isArray(S.profiles)) S.profiles = [];
       if (!S.ai || typeof S.ai !== "object") S.ai = {};
       if (!Array.isArray(S.screens)) S.screens = [];
@@ -714,7 +715,7 @@
     const W = S.weather, hasPage = S.pages.includes("weather"), noTown = S.location.latitude == null;
     const line = (title, sub, flag, onflip) => el("div", { class: "line" }, el("span", {}, el("b", {}, title), sub ? el("small", {}, sub) : null), toggle(flag, onflip, title));
     const body = [line("Weather page", noTown ? "Set your town under Family first, the weather needs it" : "A page with the hours ahead, alerts and the radar", hasPage, (v) => {
-      if (v && !S.pages.includes("weather")) { const at = S.pages.indexOf("calendar"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "weather"); }
+      if (v && !S.pages.includes("weather")) { const at = S.pages.indexOf("home"); S.pages.splice(at >= 0 ? at + 1 : S.pages.length, 0, "weather"); }
       else if (!v && S.pages.length > 1) S.pages.splice(S.pages.indexOf("weather"), 1);
       change(); render();
     })];
@@ -944,7 +945,7 @@
   }
 
   function pageNames() {
-    const names = { home: "Home", calendar: "Calendar", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && ["mealie", "local", "both"].includes(S.meals.provider) ? { meals: "Meals" } : {}), wordgame: "Games", timer: "Timer", music: "Music", devices: "Devices" };
+    const names = { home: "Home", lists: "Lists", chores: "Chores", countdowns: "Countdowns", weather: "Weather", ...(S.meals && ["mealie", "local", "both"].includes(S.meals.provider) ? { meals: "Meals" } : {}), wordgame: "Games", timer: "Timer", music: "Music", devices: "Devices" };
     for (const [k, e] of Object.entries(S.embeds)) names[k] = (e && e.title) || k;
     return names;
   }

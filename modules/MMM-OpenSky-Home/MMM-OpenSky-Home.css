@@ -700,3 +700,10 @@ html[data-layout="portrait"] .hd-m-num { font-size: 16px; }
 html[data-os-theme="dark"] .hd-m-day.hd-m-today { background: #f4f4f5; }
 /* portrait + Month: no Next Week tile, so Lists takes the whole row */
 html[data-layout="portrait"] .hd-root.hd-month-mode:not(.hd-no-lists) .hd-lists { grid-column: 1 / -1; }
+
+/* portrait + Extra large text: the header's buttons must stay on ONE line (a second line would cost the week rows their second event) */
+html[data-layout="portrait"][data-text="xlarge"] .hd-calendar .hd-nav { gap: 6px; }
+html[data-layout="portrait"][data-text="xlarge"] .hd-calendar .hd-nav-btn { height: 42px; min-width: 42px; padding: 0 12px; font-size: 15px; }
+html[data-layout="portrait"][data-text="xlarge"] .hd-calendar .hd-nav-btn.hd-add { font-size: 0; gap: 0; padding: 0; width: 42px; margin-right: 0; }
+html[data-layout="portrait"][data-text="xlarge"] .hd-calendar .hd-seg { margin-left: 2px; }
+html[data-layout="portrait"][data-text="xlarge"] .hd-calendar .hd-seg-btn { height: 34px; padding: 0 9px; font-size: 14px; }

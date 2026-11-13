@@ -13,7 +13,7 @@ timers, photos, weather and smart-home controls on one screen. Built on [MagicMi
 ![The Home page: the week ahead, lists and a photo](docs/assets/screenshots/home.jpg)
 
 <table><tr>
-<td><img src="docs/assets/screenshots/calendar.jpg" alt="Calendar page"></td>
+<td><img src="docs/assets/screenshots/calendar.jpg" alt="Home with the calendar in its Month view"></td>
 <td><img src="docs/assets/screenshots/lists.jpg" alt="Lists page"></td>
 </tr><tr>
 <td><img src="docs/assets/screenshots/settings.jpg" alt="Settings on the screen"></td>

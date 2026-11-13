@@ -24,7 +24,7 @@ const errs = []; const origErr = console.error; console.error = (...a) => errs.p
 const c = build({
   family: { name: "The Testers" }, locale: { timeFormat: 24, units: "metric", locale: "en-GB" },
   profiles: [{ name: "Mom", color: "pink" }, { name: " Zoe ", color: "#3b82f6" }, { name: "mom" }, { name: "Pic", photo: "data:image/jpeg;base64,AAAA" }, { name: "Bad", photo: "javascript:alert(1)" }, { name: "" }],
-  pages: ["home", "calendar", "lists", "smarthome", "money", "chores", "devices", "wordgame", "timer", "nope"],
+  pages: ["home", "lists", "smarthome", "money", "chores", "devices", "wordgame", "timer", "nope"],
   devices: { tiles: [{ entity: "light.hall", name: "Hall" }, { entity: "lock.front" }, { entity: "media_player.tv" }, { entity: "switch.x/../y" }, { entity: "sensor.temp", name: "T" }] },
   calendar: { holidays: "GB", holidaysRegion: "GB-SCT", sources: [
     { name: "Family", type: "local", color: "blue", role: "shared" }, { name: "Shared", type: "caldav", color: "green" },
@@ -79,7 +79,7 @@ ok("6d Chores page: in the order of the people circles at the top (unlinked last
   JSON.stringify(chores.kids.map((k) => [k.id, k.name, k.color])) === JSON.stringify([["103", "Mama", "pink"], ["101", "Zoe", "#3b82f6"], ["102", "Max", "green"]]) && mod(c, "MMM-OpenSky-Sidebar").config.pages.some((p) => p.key === "chores" && p.label === "Chores"), chores.kids);
 const pages = mod(c, "MMM-pages").config.modules;
 ok("7 pages in order; embed pages told apart by class; an unknown page skipped with a message",
-  JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-CalendarExt3", "MMM-OpenSky-Calendar"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-Chores"], ["MMM-OpenSky-Devices"], ["MMM-OpenSky-Games", "MMM-OpenSky-WordGame", "MMM-OpenSky-Connections", "MMM-OpenSky-Strands", "MMM-OpenSky-Quartiles"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);
+  JSON.stringify(pages) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-ListsPage"], ["opensky-embed-smarthome"], ["opensky-embed-money"], ["MMM-OpenSky-Chores"], ["MMM-OpenSky-Devices"], ["MMM-OpenSky-Games", "MMM-OpenSky-WordGame", "MMM-OpenSky-Connections", "MMM-OpenSky-Strands", "MMM-OpenSky-Quartiles"], ["MMM-OpenSky-Timer"]]) && errs.some((e) => /unknown page "nope"/.test(e)), pages);
 const money = c.modules.find((m) => m.classes === "opensky-embed-money").config;
 ok("8 a PIN page: locked, PIN length only, no address", money.locked === true && money.pinLength === 6 && money.url === null);
 ok("9 word game source + extra words; accent; keyboard off; 24 h / metric", mod(c, "MMM-OpenSky-WordGame").config.source === "opensky" && mod(c, "MMM-OpenSky-WordGame").config.extraWords[0] === "emoji" &&
@@ -145,19 +145,14 @@ ok("28 Countdowns: no page in 'pages' → Home has no 'See all' (page null); non
 const d = build({});
 ok("13 empty settings → a working default (home + timer, no crash)", JSON.stringify(mod(d, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-Timer"]]));
 
-// Event names come from anyone who can send an invitation: the month view (CX3 draws them as HTML) gets plain text,
-// and a tapped event reads back exactly as it was named
-const cx3 = mod(c, "MMM-CalendarExt3").config;
-const evil = { title: `Party <img src=x onerror="alert(1)"> & 'cake'`, location: "<b>Gym</b>", description: "<script>x()</script>", startDate: "1", endDate: "2" };
-const shown = cx3.eventTransformer(evil);
-ok("14 month view: event title, place and notes can't carry HTML", !/[<>"']/.test(shown.title + shown.location + shown.description) && evil.title.startsWith("Party <img"),
-  shown.title);
-let calModule = null;
-global.Module = { register: (n, o) => { calModule = o; } };
-require(path.join(__dirname, "..", "modules", "MMM-OpenSky-Calendar", "MMM-OpenSky-Calendar.js"));
-const back = calModule.eventFromElement.call(calModule, { dataset: { ...shown, startDate: "1", endDate: "2", fullDayEvent: "false" } });
-ok("15 tapping that event gives back the real title, place and notes (the editor finds it by title)",
-  back.title === evil.title && back.location === evil.location && back.description === evil.description, back.title);
+// The Calendar page is retired (Home has Week | Month): older settings that still list "calendar" build without it, and without an error
+errs.length = 0;
+console.error = (...a) => errs.push(a.join(" "));
+const legacy = build({ pages: ["home", "calendar", "lists", "timer"] });
+console.error = origErr;
+ok("14b an older page list with 'calendar' still builds: the page is just left out, no error",
+  JSON.stringify(mod(legacy, "MMM-pages").config.modules) === JSON.stringify([["MMM-OpenSky-Home"], ["MMM-OpenSky-ListsPage"], ["MMM-OpenSky-Timer"]]) &&
+  JSON.stringify(mod(legacy, "MMM-OpenSky-Sidebar").config.pages.map((p) => p.key)) === '["home","lists","timer"]' && !errs.some((e) => /calendar/.test(e)), errs);
 
 // Odd but plausible hand edits give a working screen, never a crash (MagicMirror can't start without its config)
 const timerOf = (cfg) => mod(cfg, "MMM-OpenSky-Timer").config.quickAddButtons.map((b) => b.seconds / 60).join(",");
@@ -241,7 +236,7 @@ ok("25 reminders: choices reach the module; no people = every calendar; people =
   !mod(build({ reminders: { minutes: 10 }, calendar: { sources: [] } }), "MMM-OpenSky-Reminders"), [rem && rem.config, rem3 && rem3.config]);
 
 // screen profiles: named presets; unknown pages / people / colors are dropped, repeats and a missing name ignored
-const scr = (v) => mod(build({ profiles: [{ name: "Mom" }, { name: "Kid" }], pages: ["home", "calendar", "lists", "timer"], ...(v === undefined ? {} : { screens: v }) }), "MMM-OpenSky-Sidebar").config.screens;
+const scr = (v) => mod(build({ profiles: [{ name: "Mom" }, { name: "Kid" }], pages: ["home", "lists", "timer"], ...(v === undefined ? {} : { screens: v }) }), "MMM-OpenSky-Sidebar").config.screens;
 const sc = scr([{ name: " Kitchen ", pages: ["home", "lists", "lists", "nope"], person: "mom", textSize: "Extra large", accent: "Teal" },
   { name: "Kids room", pages: ["timer"], person: "Nobody", textSize: "huge", accent: "#3B82F6" }, { name: "kitchen" }, { name: "" }, null, { pages: ["home"] }]);
 ok("29 screen profiles: none by default; names trimmed, pages/person/size/accent checked, repeats and nameless dropped",
@@ -264,11 +259,11 @@ ok("31 quick add: the AI addresses and people's emails are not in the built conf
   !qaText.includes("ai.example.test") && !qaText.includes("asr.example.test") && !qaText.includes("mia.secret@example.com") && mod(qaOn, "MMM-OpenSky-Header").config.profiles.length === 2 && mod(qaOn, "MMM-OpenSky-Header").config.profiles.every((p) => !("email" in p)), qaText.length);
 
 // sidebar grouping (opensky.json → nav): none by default; a page is in one place (groups first, then More); Home stays; unknown pages dropped
-const navOf = (v) => mod(build({ pages: ["home", "calendar", "lists", "timer", "weather", "smarthome", "embedcam"], embeds: { smarthome: { title: "Smart Home", url: "http://ha.test" }, embedcam: { title: "Cams", url: "http://cam.test" } }, ...(v === undefined ? {} : { nav: v }) }), "MMM-OpenSky-Sidebar").config.nav;
+const navOf = (v) => mod(build({ pages: ["home", "lists", "timer", "weather", "smarthome", "embedcam"], embeds: { smarthome: { title: "Smart Home", url: "http://ha.test" }, embedcam: { title: "Cams", url: "http://cam.test" } }, ...(v === undefined ? {} : { nav: v }) }), "MMM-OpenSky-Sidebar").config.nav;
 const nv = navOf({ groups: [{ label: " House ", pages: ["smarthome", "embedcam", "nope", "home"] }, { label: "House", pages: ["lists"] }, { label: "Empty", pages: ["nope"] }, { pages: ["timer"] }, null], more: ["timer", "weather", "smarthome", "calendar", "weather", "ghost"] });
 ok("32 nav: off by default (no groups, no More); a group keeps its label/key/icon and only real pages; Home never moves; a page lives in one place; blank/empty/repeated groups dropped",
   JSON.stringify(navOf()) === '{"groups":[],"more":[]}' && nv.groups.length === 1 && nv.groups[0].key === "house" && nv.groups[0].label === "House" && nv.groups[0].icon === "grid" &&
-  nv.groups[0].pages.join() === "smarthome,embedcam" && nv.more.join() === "calendar,timer,weather", nv);
+  nv.groups[0].pages.join() === "smarthome,embedcam" && nv.more.join() === "timer,weather", nv);
 
 delete global.window; delete global.document;
 

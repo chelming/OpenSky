@@ -97,14 +97,13 @@ a code). Each screen can pick its **own** in Settings → This screen → Look (
 
 ## Pages
 ```json
-"pages": ["home", "calendar", "lists", "timer"]
+"pages": ["home", "lists", "timer"]
 ```
 These are the buttons on the left, in this order. The first one is where the screen returns after a few idle minutes.
 
 | Page | What it is |
 |---|---|
 | `home` | the week ahead, your lists and a photo. Today's tile shows what is left: what is happening now, what is next (with "in 20 min"), and finished events folded into "N done" (tap to see them) |
-| `calendar` | month view (two weeks / one week from its toolbar), tap a day or event to see or edit it. Home's calendar card also has a **Week | Month** toggle, so you can see the month without leaving Home |
 | `weather` | the next 24 hours, weather alerts (US) and a rain radar — see [Weather page](#weather-page-hourly-radar-alerts) |
 | `lists` | every list side by side, each one scrolls (Home shows the first three) |
 | `countdowns` | every [countdown](#countdowns-a-trip-a-birthday-a-big-day) as a large card with its photo (turn it on in phone setup → Countdowns) |
@@ -149,7 +148,7 @@ The calendar card on Home has a **Week | Month** toggle. **Month** swaps the wee
 column follows your *week starts on* setting) without leaving Home, so the lists and photos stay in view. The arrows then move by
 month and **Today** comes back. Tap a day to see or add to it, tap an event to open it; a busy day shows as many events as fit and
 "+N more". Past events are dimmed, pickup icons (trash day) show beside the date, and after a few idle minutes it goes back to the week.
-The separate Calendar page still works; Month on Home covers the same view.
+There is no separate Calendar page any more: Home is the calendar. (Older settings that still list `calendar` under pages are quietly ignored.)
 
 ### Home cards
 ```json
@@ -169,7 +168,7 @@ accent color, pages hidden with **Hide here** (Settings on the screen) and, in D
 A **screen profile** is a named set of these, so you don't repeat the choices on every screen:
 ```json
 "screens": [
-  { "name": "Kitchen", "pages": ["home", "calendar", "lists", "timer"], "person": "Mom", "textSize": "large", "accent": "teal" },
+  { "name": "Kitchen", "pages": ["home", "lists", "timer"], "person": "Mom", "textSize": "large", "accent": "teal" },
   { "name": "Kids' room", "pages": ["home", "chores"], "person": "Zoe" }
 ]
 ```
@@ -189,7 +188,7 @@ Any web page can be a page of its own — a Home Assistant dashboard, a camera, 
 **Easiest:** Settings → Pages → **+ Add a web page** (or the phone page → Web pages): type a name and the address,
 pick an icon, optionally lock it with a PIN, then **Restart now**. Edit or remove it the same way. By hand:
 ```json
-"pages": ["home", "calendar", "lists", "smarthome", "timer"],
+"pages": ["home", "lists", "smarthome", "timer"],
 "embeds": {
   "smarthome": { "title": "Smart Home", "url": "http://homeassistant.local:8123/lovelace/0?kiosk", "zoom": 1 }
 }
@@ -269,7 +268,7 @@ with their initial, in their color; tap a circle to show only that person's cale
   the top bar.
 - Renaming a person updates everything linked to them; removing a person keeps their calendars and lists, they just
   aren't linked to anyone any more.
-- Tapping a circle filters the **calendar page, Home and the lists** to that person. One person at a time: tapping
+- Tapping a circle filters **Home's calendar and the lists** to that person. One person at a time: tapping
   another circle switches to them, and tapping the picked person again shows everyone. An event on several of a
   person's calendars appears once.
 - While someone is picked, a calendar or list that is for nobody is hidden (the Holidays calendar always stays).
@@ -460,7 +459,7 @@ want, type a shorter name if you like, and use the arrows to put them in order.
 
 By hand, in `opensky.json`:
 ```json
-"pages": ["home", "calendar", "devices", "timer"],
+"pages": ["home", "devices", "timer"],
 "devices": { "tiles": [
   { "entity": "light.hall", "name": "Hall" },
   { "entity": "lock.front_door" },
@@ -518,7 +517,7 @@ Settings: `"meals": { "provider": "both", ... }`.
 | **Meals to show** | Breakfast, lunch, dinner, sides. One is enough. |
 | **Meals page** | A page in the sidebar with the whole week, one column per day (a row per day on a portrait screen), with a picture for every dish. Previous / next week go a week back and five weeks ahead. |
 | **Dinner tonight on Home** | A card on Home with tonight's dinner (needs *Dinner* above). Hidden when nothing is planned. |
-| **Meals on the calendar** | Each meal as an all-day entry on the week, the Calendar page and Home, in a color you pick. With one meal chosen an entry reads "Lasagna"; with several, "Dinner: Lasagna". |
+| **Meals on the calendar** | Each meal as an all-day entry on Home's week and month, in a color you pick. With one meal chosen an entry reads "Lasagna"; with several, "Dinner: Lasagna". |
 | **Add a recipe's ingredients to** | Pick one of your Mealie shopping lists, and every recipe gets an **Add ingredients** button that puts its ingredients on that list (Mealie merges what is already there). |
 
 Tap a dish (on Home or the Meals page) to open its recipe: picture, servings and times, ingredients and steps. Entries that are

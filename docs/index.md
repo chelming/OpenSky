@@ -14,7 +14,7 @@ timers, photos, weather and smart-home controls on one screen. Built on [MagicMi
 ![The Home page: the week ahead, lists and a photo](assets/screenshots/home.jpg)
 
 <div class="shots">
-<img src="assets/screenshots/calendar.jpg" alt="Calendar page">
+<img src="assets/screenshots/calendar.jpg" alt="Home with the calendar in its Month view">
 <img src="assets/screenshots/lists.jpg" alt="Lists page">
 <img src="assets/screenshots/settings.jpg" alt="Settings on the screen">
 <img src="assets/screenshots/phone-setup-screen.jpg" alt="Set up from your phone: QR code and pairing code">

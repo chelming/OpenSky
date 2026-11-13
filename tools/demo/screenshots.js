@@ -25,7 +25,8 @@ module.exports = async (page, h, app) => {
   await until(async () => page.evaluate(() => document.querySelectorAll(".hd-ph-layer.shown img").length > 0 && document.querySelectorAll(".hd-day-wx span").length > 3));
   await h.sleep(2500);
   await shot("home"); h.log("home");
-  await h.tap(".os-page-calendar"); await h.sleep(2500); await shot("calendar"); h.log("calendar");
+  await h.tap(".hd-seg-month"); await h.sleep(2000); await shot("calendar"); h.log("month");   // (the file keeps its name: the README and docs show it)
+  await h.tap(".hd-seg-week"); await h.sleep(600);
   await h.tap(".os-page-lists"); await h.sleep(1500); await shot("lists"); h.log("lists");
   await h.tap(".os-page-home"); await h.sleep(800);
   await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].sendNotification("OPENSKY_SETTINGS_OPEN"));
@@ -52,6 +53,6 @@ module.exports.patchSettings = (s) => {
   s.calendar.colors = { calendars: {}, rules: [{ match: "dentist", color: "indigo" }, { match: "soccer", color: "orange" }] };
   s.photos = { provider: "folder", folder: path.join(__dirname, "..", "fixtures", "demo-photos"), usb: false, intervalSeconds: 600 };
   s.header.occasions = [{ name: "Grandma's birthday", month: new Date().getMonth() + 1, day: Math.min(28, new Date().getDate() + 9) }];
-  s.pages = ["home", "calendar", "lists", "smarthome", "wordgame", "timer"];
+  s.pages = ["home", "lists", "smarthome", "wordgame", "timer"];
   delete s.embeds.vault;
 };

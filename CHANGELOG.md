@@ -4,6 +4,8 @@
 - **Fewer sidebar buttons:** put pages in a group (one button with a small menu) or in a compact **More** grid that also
   holds Sleep and Settings. Set per page in phone setup → Pages (where groups are made) or Settings → Pages
   ([docs/configure.md](docs/configure.md#fewer-buttons-groups-and-more)).
+- **The Calendar page is retired.** Home's Week | Month toggle covers it, and the third-party MMM-CalendarExt3 module it needed
+  is no longer installed. Older settings that still list `calendar` under pages are quietly ignored.
 - **Month view on Home:** a Week | Month toggle on the calendar card swaps the week for a month grid in place (arrows move
   by month, tap a day or event as in the week), without leaving Home.
 

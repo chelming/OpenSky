@@ -56,7 +56,6 @@ const locale = s.locale || {};
 // Sidebar label + icon for every page OpenSky knows (order of `pages` in opensky.json = order in the sidebar)
 const PAGE_INFO = {
   home: { label: "Home" },
-  calendar: { label: "Calendar" },
   lists: { label: "Lists" },
   meals: { label: "Meals", icon: "food" },
   weather: { label: "Weather", icon: "cloud" },
@@ -214,41 +213,6 @@ const photosConfig = (defaultSeconds) => ({
 });
 
 const PAGES = {
-  calendar: () => [
-    {
-      module: "MMM-CalendarExt3",          // month view (community module, MIT, pinned + OpenSky patch)
-      position: "fullscreen_above",
-      config: {
-        mode: "month", instanceId: "OPENSKY", animationSpeed: 0,
-        firstDayOfWeek: locale.firstDayOfWeek === 1 ? 1 : 0,
-        showHeader: true, customHeader: true, headerTitleOptions: { month: "long", year: "numeric" },
-        maxEventLines: 3, showMore: true, fontSize: "20px", eventHeight: "38px",
-        eventTimeOptions: { hour: "numeric", minute: "2-digit", hour12: locale.timeFormat !== 24 },
-        cellDateOptions: { day: "numeric" }, displayEndTime: false, useSymbol: false, calendars: [],
-        // CX3 puts an event's title, place and notes into the page as HTML. Anyone who can name an event (a Google
-        // invitation, a shared calendar link) must not be able to run code on the screen, so they go in as plain
-        // text (MMM-OpenSky-Calendar decodes them again). A copy: CX3 hands the same event objects in on every redraw.
-        // Plus a color class from the shared palette (window.OpenSkyEventColors, loaded by MMM-OpenSky-Calendar).
-        eventTransformer: (ev) => {
-          const esc = (v) => (typeof v === "string" ? v.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`) : v);
-          const out = { ...ev, title: esc(ev.title), description: esc(ev.description), location: esc(ev.location) };
-          if (typeof window !== "undefined" && window.OpenSkyEventColors) {
-            const multi = window.OpenSkyEventColors.multi(ev);
-            if (multi) { out.class = "evc-multi"; out.color = multi; return out; }   // shared by several calendars: box shows all their colors
-            const c = window.OpenSkyEventColors.name(ev);
-            // a palette name → its class; a color code → evc-custom, colored through CX3's --calendarColor (= out.color)
-            if (c.startsWith("#")) { out.class = "evc-custom"; out.color = c; } else out.class = `evc-${c}`;
-          }
-          return out;
-        }
-      }
-    },
-    {
-      module: "MMM-OpenSky-Calendar",
-      position: "fullscreen_above",
-      config: { instanceId: "OPENSKY", canAddEvents, eventColors }
-    }
-  ],
   home: () => [{
     module: "MMM-OpenSky-Home",
     position: "fullscreen_above",
@@ -376,6 +340,7 @@ for (const [key, e] of Object.entries(embeds)) {
 }
 
 const pages = (Array.isArray(s.pages) && s.pages.length ? s.pages : ["home", "timer"]).filter((p) => {
+  if (p === "calendar") return false;   // retired: the Calendar page is now Home's Week | Month toggle (older settings may still list it)
   if (p === "meals" && !mealsOn) { console.error(`[OpenSky] the "meals" page needs meals.provider "mealie", "local" or "both" in ${settingsFile} — skipped`); return false; }
   if (PAGES[p]) return true;
   console.error(`[OpenSky] unknown page "${p}" in ${settingsFile} — skipped`);

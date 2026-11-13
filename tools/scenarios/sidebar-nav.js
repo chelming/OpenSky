@@ -13,10 +13,10 @@ module.exports = async (page, h) => {
   const plain = await rail();
   ok("no nav = the plain rail (a button per page, then Sleep and Settings)", plain.includes("sleep") && plain.includes("settings") && !plain.includes("more") && !plain.some((k) => k.startsWith("group-")), plain);
 
-  await sb((s) => { s.config.nav = { groups: [{ key: "house", label: "House", icon: "smarthome", pages: ["smarthome", "vault"] }], more: ["calendar", "timer"] }; s.updateDom(0); s.applyScale(); });
+  await sb((s) => { s.config.nav = { groups: [{ key: "house", label: "House", icon: "smarthome", pages: ["smarthome", "vault"] }], more: ["wordgame", "timer"] }; s.updateDom(0); s.applyScale(); });
   await h.sleep(500);
   const k = await rail();
-  ok("rail: Home, Lists, House (where Smart Home was), Games, More — Sleep/Settings moved into More", JSON.stringify(k) === JSON.stringify(["page-home", "page-lists", "group-house", "page-wordgame", "more"]), k);
+  ok("rail: Home, Lists, House (where Smart Home was), More — Games and Timer, Sleep, Settings are in More", JSON.stringify(k) === JSON.stringify(["page-home", "page-lists", "group-house", "more"]), k);
 
   const mb = await rect(".os-tile[data-key='more']"), rl = await rect(".os-side-wrap");
   ok("the More button sits at the bottom of the rail (inside it, not floating elsewhere)", !!mb && mb.l >= 0 && mb.r <= rl.r && mb.t > rl.vh * 0.6, { mb, rail: rl.r });
@@ -42,7 +42,7 @@ module.exports = async (page, h) => {
   await h.tap(".os-tile[data-key='more']"); await h.sleep(400);
   const panel = await rect(".os-moremenu:not([hidden]) .os-more-panel");
   const mi = await page.evaluate(() => [...document.querySelectorAll(".os-more-item")].map((b) => ({ t: b.textContent.trim(), w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height })));
-  ok("More opens a card with Calendar, Timer, Settings, Sleep", JSON.stringify(mi.map((x) => x.t)) === JSON.stringify(["Calendar", "Timer", "Settings", "Sleep"]), mi);
+  ok("More opens a card with Games, Timer, Settings, Sleep", JSON.stringify(mi.map((x) => x.t)) === JSON.stringify(["Games", "Timer", "Settings", "Sleep"]), mi);
   ok("the card is compact and on screen (not giant boxes)", !!panel && panel.r <= panel.vw && panel.b <= panel.vh && panel.w < 600 && mi.every((x) => x.w <= 112 && x.h <= 110), { panel, mi: mi[0] });
   await h.shot("nav-more");
   await page.evaluate(() => [...document.querySelectorAll(".os-more-item")].find((b) => /Timer/.test(b.textContent)).click()); await h.sleep(500);

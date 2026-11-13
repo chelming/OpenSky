@@ -1,6 +1,6 @@
 /* MMM-OpenSky-Calendars — the family's calendar sources (no screen of its own).
  * Fetches each source on the Pi (node helper) and broadcasts all events together as CALENDAR_EVENTS, the standard
- * MagicMirror notification, so the Home page, the month view and the header's birthday countdown all see them.
+ * MagicMirror notification, so the Home page (week and month) and the header's birthday countdown all see them.
  * Each event carries calendarName (the source's name) and color (its color: palette or code), like MagicMirror's calendar.
  * Status for a settings page: OPENSKY_CALENDAR_STATUS { name: "ok" | "error message" }.
  */
@@ -53,7 +53,7 @@ Module.register("MMM-OpenSky-Calendars", {
       const set = EC ? (EC.colorOf((EC.calendars || {})[src.name]) || EC.colorOf(src.color)) : null;
       const color = set ? EC.pair(set)[1] : "";
       if (src.header) for (const ev of evs) headerEvents.push({ title: ev.title, startDate: ev.startDate, endDate: ev.endDate, fullDayEvent: ev.fullDayEvent, calendarName: src.name, color });
-      // symbol: [] — MagicMirror's calendar always sets it and CalendarExt3 requires it (calls symbol.join)
+      // symbol: [] — MagicMirror's calendar always sets it (calendar consumers may call symbol.join)
       // a calendar shown in the header has its all-day events there (the school's "Day 3"), so they aren't repeated in the calendar
       for (const ev of src.header ? evs.filter((e) => !e.fullDayEvent) : evs) list.push({ ...ev, calendarName: src.name, color, colorName: set || src.color || null, symbol: [] });
     }
