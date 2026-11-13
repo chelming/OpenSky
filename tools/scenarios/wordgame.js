@@ -19,7 +19,8 @@ module.exports = async (page, h) => {
   const toast = () => page.evaluate(() => { const t = document.querySelector(".wg-toast"); return t && !t.hidden ? t.textContent : ""; });
 
   await h.tap(".os-page-wordgame");
-  await until(async () => await page.evaluate(() => !!document.querySelector(".gh-person")));
+  await until(async () => await page.evaluate(() => { const e = document.querySelector(".gh-person"); return !!e && e.offsetParent !== null; }));
+  await h.sleep(600);   // the page's own "open → ask who is playing" reset has happened
   ok("with family profiles nobody is selected: 'Who's playing?' with a button per person, no board yet",
     await page.evaluate(() => /Who's playing/.test(document.body.textContent) && document.querySelectorAll(".gh-person").length === 2 && !document.querySelector(".wg-board")));
   ok("the person's photo is shown on their button", await page.evaluate(() => !!document.querySelectorAll(".gh-person")[1].querySelector("img")));

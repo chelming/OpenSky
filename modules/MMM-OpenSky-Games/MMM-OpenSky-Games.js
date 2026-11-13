@@ -25,7 +25,12 @@ Module.register("MMM-OpenSky-Games", {
 
   announce() { this.sendNotification("OS_GAMES_STATE", { player: this.player, game: this.game }); },
 
-  resume() { this.announce(); },
+  // every time the Games page is opened: back to "Who's playing?" (and the Word Game tab)
+  resume() {
+    this.player = this.config.people.length ? null : "";
+    this.game = "word";
+    this.render(); this.announce();
+  },
 
   notificationReceived(n) {
     if (n === "OS_GAMES_HELLO") this.announce();
