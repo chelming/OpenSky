@@ -82,6 +82,7 @@ module.exports = async (page, h) => {
   await qtap("wa", "ter", "me", "lon"); await click(".qt-go");
   await until(async () => ((await mod("MMM-OpenSky-Quartiles")) || {}).quartilesFound === 1);
   ok("a four-tile hidden word is a quartile: 1 of 5, gold chip", await page.evaluate(() => /1 of 5 quartiles/.test(document.querySelector(".qt-root .gm-side").textContent) && !!document.querySelector(".qt-chip.t4")));
+  ok("Quartiles: the grid is 4 wide (5 tall) and the four tiles of the found quartile are green", await page.evaluate(() => getComputedStyle(document.querySelector(".qt-board")).gridTemplateColumns.split(" ").length === 4 && document.querySelectorAll(".qt-tile.done").length === 4));
   await page.evaluate(() => document.querySelector('.qt-hint[data-k="theme"]').click());
   await until(async () => /Theme:\s*Fun/.test(await page.evaluate(() => document.querySelector(".qt-root .gm-side").textContent)));
   ok("hint 'Show the theme' reveals the theme (and the button is used up)", await page.evaluate(() => document.querySelector('.qt-hint[data-k="theme"]').disabled));

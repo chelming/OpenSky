@@ -123,7 +123,8 @@ Module.register("MMM-OpenSky-Quartiles", {
     if (!s || !b) return;
     b.innerHTML = this.order.map((i) => {
       const at = this.picked.indexOf(i);
-      return `<button class="qt-tile${at >= 0 ? " on" : ""}" data-i="${i}">${this.esc(s.tiles[i])}${at >= 0 ? `<i>${at + 1}</i>` : ""}</button>`;
+      const done = (s.quartileTiles || []).includes(i);
+      return `<button class="qt-tile${at >= 0 ? " on" : ""}${done ? " done" : ""}" data-i="${i}">${this.esc(s.tiles[i])}${at >= 0 ? `<i>${at + 1}</i>` : ""}</button>`;
     }).join("");
     b.querySelectorAll(".qt-tile").forEach((t) => { t.onclick = () => this.tap(Number(t.dataset.i)); });
     const w = this.root.querySelector(".qt-word");
