@@ -49,6 +49,20 @@ module.exports = NodeHelper.create({
     }, "OpenSky (family wall calendar)");
   },
 
+  // is this a real word? asks the puzzle site's dictionary (cached; unreachable = no)
+  async inDictionary(word) {
+    this.dict = this.dict || new Map();
+    if (this.dict.has(word)) return this.dict.get(word);
+    try {
+      const base = process.env.OPENSKY_QUARTILES_URL || "https://quartileswordgame.com";
+      const r = await fetch(`${base}/api/dictionary`, { method: "POST", headers: { "Content-Type": "application/json", "User-Agent": "OpenSky (family wall calendar)" }, body: JSON.stringify({ words: [word] }), signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return false;
+      const d = await r.json(), ok = !!(d.results && d.results[0] && d.results[0].isValid);
+      this.dict.set(word, ok);
+      return ok;
+    } catch (e) { return false; }
+  },
+
   async today(player) {
     const p = await this.getPuzzle();
     if (!p) return null;
@@ -62,9 +76,9 @@ module.exports = NodeHelper.create({
     const t = b.today, h = t.hints, left = [...p.words.keys()].filter((w) => !t.found.includes(w));
     return {
       player, date: t.date, id: p.id, tiles: p.tiles.map((x) => x.toUpperCase()), status: t.status, score: t.score,
-      found: t.found.map((w) => ({ word: w, tiles: p.words.get(w), points: POINTS[p.words.get(w)] })),
+      found: t.found.map((w) => { const n = p.words.get(w) || (t.extra || {})[w] || 1; return { word: w, tiles: n, points: POINTS[n] }; }),
       quartilesFound: p.answers.filter((w) => t.found.includes(w)).length, quartileTotal: p.answers.length,
-      wordTotal: p.words.size,
+      wordTotal: p.words.size, quartileTiles: t.quartileTiles || [],
       // only what a hint has revealed
       hints: {
         theme: h.theme ? p.theme : null,
@@ -110,10 +124,14 @@ module.exports = NodeHelper.create({
     const idx = Array.isArray(payload.tiles) ? payload.tiles : [];
     if (!idx.length || idx.length > 4 || new Set(idx).size !== idx.length || idx.some((i) => !Number.isInteger(i) || i < 0 || i >= p.tiles.length)) return this.sendSocketNotification("OS_QT_ERROR", { message: "Pick up to four tiles" });
     const word = idx.map((i) => p.tiles[i]).join("");
-    if (!p.words.has(word)) return this.sendSocketNotification("OS_QT_ERROR", { message: word.length < 3 ? "Too short" : "Not in word list" });
     if (t.found.includes(word)) return this.sendSocketNotification("OS_QT_ERROR", { message: "Already found" });
-    const size = p.words.get(word), points = POINTS[size];
+    // the puzzle's list is only the words its author knew; any other real word counts too (the site's own dictionary decides)
+    if (!p.words.has(word) && !(await this.inDictionary(word))) return this.sendSocketNotification("OS_QT_ERROR", { message: word.length < 3 ? "Too short" : "Not in word list" });
+    if (t.found.includes(word)) return this.sendSocketNotification("OS_QT_ERROR", { message: "Already found" });
+    const size = p.words.get(word) || idx.length, points = POINTS[size];
+    if (!p.words.has(word)) (t.extra = t.extra || {})[word] = size;
     t.found.push(word); t.score += points;
+    if (idx.length === 4 && p.answers.includes(word)) (t.quartileTiles = t.quartileTiles || []).push(...idx);   // the tiles that made a quartile turn green
     if (p.answers.every((w) => t.found.includes(w))) {
       t.status = "won";
       const st = b.stats;

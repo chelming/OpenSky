@@ -3,12 +3,13 @@
 .qt-word { min-height: 40px; font-size: 32px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .qt-word.shake { animation: qt-shake .45s ease; }
 @keyframes qt-shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-8px); } 40%, 60% { transform: translateX(8px); } }
-.qt-board { display: grid; grid-template-columns: repeat(5, 118px); grid-auto-rows: 84px; gap: 12px; }
+.qt-board { display: grid; grid-template-columns: repeat(4, 118px); grid-auto-rows: 84px; gap: 12px; }
 .qt-tile {
   position: relative; border: 0; border-radius: 16px; background: var(--qt-tile); color: #1f2937;
   font: inherit; font-size: 32px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
   box-shadow: 0 3px 0 rgba(0,0,0,.12); display: flex; align-items: center; justify-content: center;
 }
+.qt-tile.done { background: #3fa564; color: #fff; }
 .qt-tile.on { background: #1f2937; color: #fff; box-shadow: none; transform: translateY(2px); }
 .qt-tile i { position: absolute; top: 6px; right: 10px; font-style: normal; font-size: 14px; font-weight: 700; opacity: .8; }
 .qt-foot { min-height: 60px; }
