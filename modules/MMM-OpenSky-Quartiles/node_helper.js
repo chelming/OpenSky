@@ -4,7 +4,7 @@
  *   If the site can't be reached the page says so and tries again every 10 minutes (there is no built-in puzzle).
  * - A player taps tiles in order to build a word of 1-4 tiles. Points: 1 tile 2, 2 tiles 4, 3 tiles 6, 4 tiles (a quartile) 20.
  *   The game is won when all five hidden quartiles are found. The hidden words are never sent to the page; guesses are checked here.
- * - Hints (made from the puzzle's own data; the site's written crossword-style clues are not used): the theme, how many words
+ * - Hints (made from the puzzle's own data; plus the site's written crossword clues, see clues()): the theme, how many words
  *   are left for each tile count, the first letters of the words not found yet, or one word shown.
  * - The tiles are shuffled with the puzzle number as the seed, so every screen shows them in the same order.
  * - One board + stats per person (lib/game-state.js) in quartiles.json next to opensky.json (OPENSKY_QUARTILES).
@@ -49,6 +49,37 @@ module.exports = NodeHelper.create({
     }, "OpenSky (family wall calendar)");
   },
 
+  // The site's written crossword clues: one JSON catalogue ({daily: {"<puzzle number>|<word>": clue}}) inside one of the page's
+  // script files. Found by looking through the page's scripts (their names change when the site is updated), kept in memory
+  // and in quartiles-clues.json beside quartiles.json. null = not available right now (tried again after 10 minutes).
+  async clues() {
+    if (this.catalog) return this.catalog;
+    const cacheFile = path.join(path.dirname(FILE), "quartiles-clues.json");
+    try { const c = JSON.parse(fs.readFileSync(cacheFile, "utf8")); if (c && c.daily) return (this.catalog = c); } catch (e) { /* not cached yet */ }
+    if (this.cluesTried && Date.now() - this.cluesTried < 600000) return null;
+    this.cluesTried = Date.now();
+    const base = process.env.OPENSKY_QUARTILES_URL || "https://quartileswordgame.com", headers = { "User-Agent": "OpenSky (family wall calendar)" };
+    const get = async (u) => { const r = await fetch(u, { headers, signal: AbortSignal.timeout(20000) }); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); };
+    try {
+      const page = await get(`${base}/`);
+      const urls = [...new Set((page.match(/_next\/static\/chunks\/[^"'\\\s]+\.js/g) || []))];
+      for (const u of urls) {
+        const js = await get(`${base}/${u}`);
+        const at = js.indexOf(`JSON.parse('{"version"`);
+        if (at < 0 || !js.includes('"daily":{', at)) continue;
+        // the JSON sits in a single-quoted JavaScript string: walk to its closing quote, then undo the string escapes
+        const i = at + 12;
+        let j = i;
+        while (j < js.length && js[j] !== "'") j += js[j] === "\\" ? 2 : 1;
+        const esc = { n: "\n", t: "\t", r: "\r", b: "\b", f: "\f" };
+        const text = js.slice(i, j).replace(/\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g, (m, c) => (c[0] === "u" && c.length === 5) || (c[0] === "x" && c.length === 3) ? String.fromCharCode(parseInt(c.slice(1), 16)) : esc[c] !== undefined ? esc[c] : c);
+        const cat = JSON.parse(text);
+        if (cat && cat.daily) { fs.writeFileSync(cacheFile, JSON.stringify({ daily: cat.daily })); return (this.catalog = { daily: cat.daily }); }
+      }
+    } catch (e) { console.warn(`[OpenSky] quartiles clues: ${e.message}`); }
+    return null;
+  },
+
   // is this a real word? asks the puzzle site's dictionary (cached; unreachable = no)
   async inDictionary(word) {
     this.dict = this.dict || new Map();
@@ -84,6 +115,7 @@ module.exports = NodeHelper.create({
         theme: h.theme ? p.theme : null,
         counts: h.counts ? [1, 2, 3, 4].map((n) => left.filter((w) => p.words.get(w) === n).length) : null,
         letters: h.letters ? [...new Set(left.map((w) => w[0].toUpperCase()))].sort() : null,
+        clues: (h.clues || []).filter((c) => !t.found.includes(c.word)).map((c) => ({ clue: c.clue, tiles: c.tiles, letters: c.word.length })),
         shown: h.shown.filter((w) => !t.found.includes(w)).map((w) => ({ word: w, tiles: p.words.get(w) }))
       },
       stats: { ...b.stats, streak: gs.liveStreak(b.stats) }
@@ -116,6 +148,16 @@ module.exports = NodeHelper.create({
         const open = left.filter((w) => p.words.get(w) < 4 && !h.shown.includes(w)).sort((a, c) => p.words.get(a) - p.words.get(c) || a.localeCompare(c));
         if (!open.length) return this.sendSocketNotification("OS_QT_ERROR", { message: "No more words to show" });
         h.shown.push(open[0]); b.stats.hints++;
+      } else if (kind === "clue") {
+        // one of the site's crossword clues for a word not found yet (3-tile words first, then 2, then 1; never a quartile)
+        const cat = await this.clues(), daily = cat && cat.daily;
+        if (!daily) return this.sendSocketNotification("OS_QT_ERROR", { message: "Clues aren't available right now. Try again later." });
+        h.clues = h.clues || [];
+        const open = left.filter((w) => p.words.get(w) < 4 && !h.clues.some((c) => c.word === w) && daily[`${p.id}|${w}`]);
+        const best = [3, 2, 1].map((n) => open.filter((w) => p.words.get(w) === n)).find((l) => l.length);
+        if (!best) return this.sendSocketNotification("OS_QT_ERROR", { message: "No clue available right now" });
+        const w = best[Math.floor(Math.random() * best.length)];
+        h.clues.push({ word: w, clue: daily[`${p.id}|${w}`], tiles: p.words.get(w) }); b.stats.hints++;
       } else return this.sendSocketNotification("OS_QT_ERROR", { message: "Unknown hint" });
       gs.write(FILE, file);
       return send();

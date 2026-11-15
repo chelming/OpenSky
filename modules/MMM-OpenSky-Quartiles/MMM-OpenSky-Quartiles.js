@@ -5,7 +5,7 @@
 Module.register("MMM-OpenSky-Quartiles", {
   defaults: { people: [] },
 
-  HINTS: [["theme", "Show the theme"], ["counts", "Word counts"], ["letters", "First letters"], ["word", "Show a word"]],
+  HINTS: [["theme", "Show the theme"], ["counts", "Word counts"], ["letters", "First letters"], ["word", "Show a word"], ["clue", "Crossword clue"]],
 
   getStyles() { return ["MMM-OpenSky-Quartiles.css"]; },
 
@@ -156,6 +156,7 @@ Module.register("MMM-OpenSky-Quartiles", {
         ${h.theme ? `<div class="qt-reveal"><b>Theme:</b> ${this.esc(h.theme)}</div>` : ""}
         ${h.counts ? `<div class="qt-reveal"><b>Words left:</b> ${h.counts.map((n, i) => `${n} of ${i + 1} tile${i ? "s" : ""}`).join(" · ")}</div>` : ""}
         ${h.letters ? `<div class="qt-reveal"><b>First letters:</b> ${h.letters.join(" ")}</div>` : ""}
+        ${(h.clues || []).map((x) => `<div class="qt-reveal"><b>Clue:</b> ${this.esc(x.clue)} <span class="gm-small">(${x.tiles} tile${x.tiles > 1 ? "s" : ""}, ${x.letters} letters)</span></div>`).join("")}
         ${h.shown.length ? `<div class="qt-reveal"><b>Try:</b> ${h.shown.map((x) => `${this.esc(x.word)} (${x.tiles} tile${x.tiles > 1 ? "s" : ""})`).join(", ")}</div>` : ""}
       </div>`}
       <div class="gm-card">
