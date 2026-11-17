@@ -3,6 +3,7 @@
  *   reached the page says so and tries again every 10 minutes. The groups stay on the server until they are solved.
  * - Guesses are checked HERE: right group / "one away" / wrong (4 mistakes end the game and reveal the rest).
  * - One board + stats per person (see lib/game-state.js) in connections.json next to opensky.json (OPENSKY_CONNECTIONS).
+ * Clues: OS_CN_HINT {date, player} reveals the name of the easiest unsolved group (never its words); at most until one group is left.
  * Socket: OS_CN_INIT {people} / OS_CN_SYNC {player} → OS_CN_STATE; OS_CN_GUESS {words, date, player} → OS_CN_STATE | OS_CN_ERROR {message}
  */
 const NodeHelper = require("node_helper");
@@ -48,8 +49,28 @@ module.exports = NodeHelper.create({
     const left = new Set(groups.flatMap((g) => g.words));
     return {
       player, date: t.date, id: t.id, status: t.status, mistakes: t.mistakes, maxMistakes: MAX_MISTAKES,
+      clues: (t.hints || []).filter((i) => !solvedSet.has(i)).map((i) => p.cats[i].title), cluesLeft: t.status === "playing" && t.solved.length < 3 ? 4 - t.solved.length - (t.hints || []).filter((i) => !solvedSet.has(i)).length : 0,
       groups, cards: p.cards.filter((w) => !left.has(w)), stats: { ...b.stats, streak: gs.liveStreak(b.stats) }
     };
+  },
+
+  // a clue: the name of the easiest group not solved yet (and not hinted yet); nothing else about the group is given away
+  async hint(payload) {
+    const player = gs.who(this.people, payload);
+    if (player === null) return this.sendSocketNotification("OS_CN_ERROR", { message: "Pick who is playing first" });
+    const t = await this.today(player);
+    if (!t) return this.sendSocketNotification("OS_CN_STATE", { player, unavailable: true });
+    const { p, file, b } = t, g = b.today;
+    if (payload.date && payload.date !== g.date) return this.sendSocketNotification("OS_CN_ERROR", { message: "A new puzzle just started" });
+    if (g.status !== "playing") return this.sendSocketNotification("OS_CN_STATE", this.view(p, b, player));
+    g.hints = g.hints || [];
+    const open = [0, 1, 2, 3].filter((i) => !g.solved.includes(i));
+    if (open.length < 2) return this.sendSocketNotification("OS_CN_ERROR", { message: "Only one group left, no clue needed" });
+    const next = open.find((i) => !g.hints.includes(i));
+    if (next === undefined) return this.sendSocketNotification("OS_CN_ERROR", { message: "No more clues" });
+    g.hints.push(next); b.stats.hints = (b.stats.hints || 0) + 1;
+    gs.write(FILE, file);
+    this.sendSocketNotification("OS_CN_STATE", this.view(p, b, player));
   },
 
   async socketNotificationReceived(n, payload) {
@@ -60,6 +81,7 @@ module.exports = NodeHelper.create({
       const t = await this.today(player);
       return this.sendSocketNotification("OS_CN_STATE", t ? this.view(t.p, t.b, player) : { player, unavailable: true });
     }
+    if (n === "OS_CN_HINT") return this.hint(payload);
     if (n !== "OS_CN_GUESS") return;
     const player = gs.who(this.people, payload);
     if (player === null) return this.sendSocketNotification("OS_CN_ERROR", { message: "Pick who is playing first" });
