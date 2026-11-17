@@ -53,7 +53,6 @@ Module.register("MMM-OpenSky-Strands", {
   tap(r, c) {
     const s = this.state;
     if (!s || s.status !== "playing" || this.busy) return;
-    if (s.found.some((f) => f.cells.some(([a, b]) => a === r && b === c))) return;      // already part of a found word
     const at = this.path.findIndex(([a, b]) => a === r && b === c);
     if (at >= 0 && at === this.path.length - 1) return this.submit();                              // the last letter again = check
     if (at >= 0) this.path = this.path.slice(0, at + 1);                                  // back up to an earlier letter
@@ -133,7 +132,7 @@ Module.register("MMM-OpenSky-Strands", {
       .map(([cells, k]) => cells.length > 1 ? `<polyline class="st-line ${k}" points="${cells.map(ctr).join(" ")}"/>` : "").join("");
     let html = `<svg class="st-lines" width="${cols * (S + G) - G}" height="${rows * (S + G) - G}">${lines}</svg>`;
     s.rows.forEach((row, r) => [...row].forEach((ch, c) => {
-      const k = `${r},${c}`, cls = [foundAt[k] || "", !foundAt[k] && pickAt.has(k) ? "pick" : "", !foundAt[k] && hintAt.has(k) ? "hint" : ""].join(" ");
+      const k = `${r},${c}`, cls = [foundAt[k] || "", pickAt.has(k) ? "pick" : "", !foundAt[k] && hintAt.has(k) ? "hint" : ""].join(" ");   // letters of found words can be picked too
       html += `<button class="st-cell ${cls}" data-r="${r}" data-c="${c}" style="left:${c * (S + G)}px;top:${r * (S + G)}px;width:${S}px;height:${S}px">${ch}</button>`;
     }));
     b.style.width = `${cols * (S + G) - G}px`; b.style.height = `${rows * (S + G) - G}px`;
