@@ -1237,6 +1237,24 @@
     );
   }
 
+  // Mat board around the screensaver photo: screensaver.mat { enabled, color, size, shadow }
+  function matFields() {
+    const sv = S.screensaver = S.screensaver || {}, M = () => (sv.mat = sv.mat && typeof sv.mat === "object" ? sv.mat : {});
+    const body = el("div");
+    const COLORS_MAT = ["#f4f1ea", "#efe6d0", "#b9bcc0", "#a9b8a1", "#e8c9c4", "#1f2f4a", "#1c1c1e"];   // warm white, cream, gray, sage, blush, navy, black
+    const draw = () => {
+      const m = sv.mat || {}, cur = /^#[0-9a-f]{6}$/i.test(m.color || "") ? m.color.toLowerCase() : "#f4f1ea";
+      const picker = el("input", { type: "color", class: "color-pick", value: cur, "aria-label": "Pick any mat color", onchange: (e) => { M().color = e.target.value; change(); draw(); } });
+      body.replaceChildren(...(m.enabled === true ? [
+        field("Mat color", el("div", {}, chips(COLORS_MAT.includes(cur) ? cur : "", (c) => { M().color = c; change(); }, COLORS_MAT), el("div", { class: "hex-row" }, picker))),
+        field("Mat size", select([["small", "Small"], ["medium", "Medium"], ["large", "Large"]], m.size || "medium", (v) => { M().size = v; change(); })),
+        field("Mat shadow", toggle(m.shadow !== false, (v) => { if (v) delete M().shadow; else M().shadow = false; change(); }, "Shadow at the outside edge"), "The board floats on a dark wall and casts a soft shadow, like a framed picture.")
+      ] : []));
+    };
+    draw();
+    return el("div", {}, field("Mat board", toggle(!!(sv.mat && sv.mat.enabled === true), (v) => { M().enabled = v; change(); draw(); }, "Show a picture-frame mat around the photo"), "A textured mat board with the photo in a window, like a framed picture."), body);
+  }
+
   function screensaverCard() {
     return section("screensaver", "photos", "Screensaver", "Your photos full screen with the time and what's up next",
       field("Screensaver", select([["0", "Off"], ...[5, 10, 15, 30, 60].map((m) => [String(m), `After ${m} minutes without a touch`])], String(S.screensaver && S.screensaver.enabled === true ? (S.screensaver.afterMinutes || 10) : 0), (v) => {
@@ -1244,6 +1262,7 @@
         if (v === "0") sv.enabled = false; else { sv.enabled = true; sv.afterMinutes = Number(v); }
         change();
       }), "Shows your photos full screen with the time and what's up next. A touch brings the screen back."),
+      matFields(),
       field("Screensaver: show what's up next", toggle(!(S.screensaver && S.screensaver.upNext === false), (v) => { const sv = S.screensaver = S.screensaver || {}; if (v) delete sv.upNext; else sv.upNext = false; change(); }, "Show what's up next on the screensaver")),
     );
   }

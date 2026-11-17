@@ -61,7 +61,8 @@
   "screensaver": {
     "enabled": false,
     "afterMinutes": 10,
-    "upNext": true
+    "upNext": true,
+    "mat": { "enabled": false, "color": "#f4f1ea", "size": "medium", "shadow": true }
   },
 
   "reminders": {

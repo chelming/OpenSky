@@ -395,6 +395,16 @@ const loc = s.location || {};
 const units = locale.units === "metric" ? "metric" : "imperial";
 const header = s.header || {};
 const saver = s.screensaver || {};
+// Mat board around the screensaver photo: screensaver.mat { enabled, color "#rrggbb", size small|medium|large, shadow }
+const saverMat = (() => {
+  const m = (saver.mat && typeof saver.mat === "object") ? saver.mat : {};
+  return {
+    enabled: m.enabled === true,
+    color: /^#[0-9a-f]{6}$/i.test(String(m.color || "")) ? String(m.color).toLowerCase() : "#f4f1ea",
+    size: ["small", "medium", "large"].includes(m.size) ? m.size : "medium",
+    shadow: m.shadow !== false
+  };
+})();
 
 // Event reminders: opensky.json -> reminders { minutes (0/absent = off), chime, banner, allDay, people: [profile names] }.
 // "people" limits it to the calendars linked to those people (or named like them); empty = every calendar.
@@ -419,7 +429,7 @@ const fixed = [
     config: {
       afterMinutes: Number.isFinite(saver.afterMinutes) && saver.afterMinutes > 0 ? saver.afterMinutes : 10,
       upNext: saver.upNext !== false, showClock: saver.showClock !== false, showWeather: saver.showWeather !== false,
-      hour12: locale.timeFormat !== 24, eventColors,
+      hour12: locale.timeFormat !== 24, eventColors, mat: saverMat,
       photos: { ...photosConfig(20), intervalSeconds: Number.isFinite(saver.photoSeconds) && saver.photoSeconds >= 5 ? saver.photoSeconds : 20 }
     }
   }] : []),

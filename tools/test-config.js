@@ -219,6 +219,11 @@ const ss = ssOf({ enabled: true, afterMinutes: 3, upNext: false, photoSeconds: 8
 ok("22 screensaver: settings reach the module; bad numbers → defaults (10 min, 20 s)", ss && ss.config.afterMinutes === 3 && ss.config.upNext === false && ss.config.photos.intervalSeconds === 8 &&
   ss.config.hour12 === false && ssd.config.afterMinutes === 10 && ssd.config.photos.intervalSeconds === 20 && ssd.config.upNext === true, ss && ss.config);
 
+const ssm = (m) => ssOf({ enabled: true, mat: m }).config.mat;
+ok("22b screensaver mat: off by default; color/size/shadow validated (bad → #f4f1ea / medium / shadow on)",
+  ssm().enabled === false && ssm({ enabled: true, color: "#1F2F4A", size: "large", shadow: false }).color === "#1f2f4a" && ssm({ enabled: true, color: "#1F2F4A", size: "large", shadow: false }).size === "large" &&
+  ssm({ enabled: true, color: "red", size: "huge" }).color === "#f4f1ea" && ssm({ enabled: true, size: "huge" }).size === "medium" && ssm({ enabled: true }).shadow === true && ssm({ enabled: "yes" }).enabled === false);
+
 const hcOf = (home) => mod(build({ pages: ["home"], ...(home ? { home } : {}), meals: { provider: "local", types: ["dinner"] } }), "MMM-OpenSky-Home").config;
 const hc0 = hcOf(), hc1 = hcOf({ cards: ["photos", "bogus", "lists", "photos"] }), hc2 = hcOf({ cards: ["lists"] });
 ok("23 Home cards: not set → all four in the old order; a list → that order (unknown/repeats dropped); a missing card is off (photos, tonight)",

@@ -21,6 +21,7 @@ Module.register("MMM-OpenSky-Screensaver", {
     maxCards: 3,
     hour12: true,
     eventColors: null,
+    mat: { enabled: false, color: "#f4f1ea", size: "medium", shadow: true },   // a picture-frame mat board around the photo
     photos: { enabled: true, provider: "folder", folder: null, usb: true, url: null, intervalSeconds: 20 }
   },
 
@@ -146,10 +147,31 @@ Module.register("MMM-OpenSky-Screensaver", {
       const kept = ir < fr ? ir / fr : fr / ir;   // crop at most 20% of the height (heads) or 30% of the width
       const cover = box.height > 0 && kept >= (ir < fr ? 0.8 : 0.7);
       const layer = document.createElement("div");
-      layer.className = "ss-layer" + (cover ? " cover" : "");
-      layer.innerHTML = `<div class="ss-blur"></div><img class="ss-img" alt="">`;
-      layer.querySelector(".ss-blur").style.backgroundImage = `url("${url}")`;
-      layer.querySelector(".ss-img").src = url;
+      const mat = this.config.mat;
+      if (mat && mat.enabled) {
+        // Mat board: the photo sits in a window cut in the board, sized to the photo's own shape (nothing cropped)
+        const side = { small: 56, medium: 110, large: 170 }[mat.size] || 110;   // design px (the body zoom scales it)
+        const margin = mat.shadow !== false ? 40 : 0;   // the board floats on a dark wall, so its shadow shows
+        const z = Number(getComputedStyle(document.body).zoom) || 1;
+        const textCol = box.width > box.height ? 600 : 0;   // landscape: the clock and Up next sit on the board's left, the window goes right of them
+        const bw = box.width / z - margin * 2, bh = box.height / z - margin * 2;
+        const aw = Math.max(50, bw - textCol - side * 2), ah = Math.max(50, bh - side * 2);
+        const k = Math.min(aw / img.naturalWidth, ah / img.naturalHeight);
+        const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+        layer.className = "ss-layer matted" + (mat.shadow !== false ? " mat-shadow" : "");
+        layer.style.setProperty("--mat", mat.color || "#f4f1ea");
+        layer.style.setProperty("--mat-margin", `${margin}px`);
+        layer.style.setProperty("--mat-text", `${textCol}px`);
+        layer.innerHTML = `<div class="ss-board"><div class="ss-window"><img class="ss-img" alt=""></div></div>`;
+        const win = layer.querySelector(".ss-window");
+        win.style.width = `${w}px`; win.style.height = `${h}px`;
+        layer.querySelector(".ss-img").src = url;
+      } else {
+        layer.className = "ss-layer" + (cover ? " cover" : "");
+        layer.innerHTML = `<div class="ss-blur"></div><img class="ss-img" alt="">`;
+        layer.querySelector(".ss-blur").style.backgroundImage = `url("${url}")`;
+        layer.querySelector(".ss-img").src = url;
+      }
       const stack = this.root.querySelector(".ss-photos");
       stack.appendChild(layer);
       this.root.classList.add("has-photo");
