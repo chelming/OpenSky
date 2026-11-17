@@ -95,6 +95,8 @@ const fake = require("./fixtures/fake-nyt-games.js");
   ok("S5 a theme word is locked in with its cells", t.foundNow === "BACON" && t.found.length === 1 && t.found[0].cells.length === 5 && !t.found[0].spangram);
   await G([[0, 5], [0, 4], [0, 3], [0, 2], [0, 1]]);
   ok("S6 the same word again → 'Already found'", /Already found/.test(err("OS_ST_ERROR").message));
+  await G([[0, 1], [0, 2], [0, 3], [0, 5], [0, 4]]);   // BACON's cells in the wrong order, already found
+  ok("S6b another order of a found word's cells → 'Already found'", /Already found/.test(err("OS_ST_ERROR").message));
   await G([[0, 0], [0, 1], [0, 2], [0, 3]]);   // PBAC: not a word
   ok("S7 not a word → 'Not in word list'", /Not in word list/.test(err("OS_ST_ERROR").message));
   await S("OS_ST_HINT", { date: dt, player: "Mom" });
