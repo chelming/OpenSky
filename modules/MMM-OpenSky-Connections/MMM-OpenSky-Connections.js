@@ -78,6 +78,11 @@ Module.register("MMM-OpenSky-Connections", {
     this.renderBoard();
   },
 
+  hint() {
+    if (!this.state || this.state.status !== "playing" || this.busy) return;
+    this.sendSocketNotification("OS_CN_HINT", { date: this.state.date, player: this.player });
+  },
+
   shake() {
     const b = this.root && this.root.querySelector(".cn-grid");
     if (b) { b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); }
@@ -145,6 +150,11 @@ Module.register("MMM-OpenSky-Connections", {
         : `<div class="gm-big">Create four groups</div><div class="gm-small">Tap four words that go together, then Submit</div>`}
         ${done ? `<div class="gm-next">New puzzle at midnight</div>` : ""}
       </div>
+      ${done ? "" : `<div class="gm-card">
+        <div class="gm-card-title">Clues</div>
+        <div class="cn-clues">${s.clues.map((c) => `<div class="cn-clue">${this.esc(c)}</div>`).join("") || `<span class="gm-small">A clue names one group you haven't solved yet</span>`}</div>
+        <button class="gm-btn cn-hint" ${s.cluesLeft > 0 ? "" : "disabled"}>Show a clue</button>
+      </div>`}
       <div class="gm-card">
         <div class="gm-card-title">${this.player ? `${this.esc(this.player)}'s stats` : "Family stats"}</div>
         <div class="gm-nums">
@@ -154,6 +164,12 @@ Module.register("MMM-OpenSky-Connections", {
         <div class="gm-card-title" style="margin-top:16px">Mistakes when solved</div>
         <div class="cn-dist">${st.mistakes.map((n, i) => `<div class="cn-drow"><span>${i}</span><div class="cn-bar" style="width:${Math.max(8, (n / maxD) * 100)}%">${n}</div></div>`).join("")}</div>
       </div>`;
+    this.bindHint();
+  },
+
+  bindHint() {
+    const b = this.root && this.root.querySelector(".cn-hint");
+    if (b) b.onclick = () => this.hint();
   },
 
   toast(msg) {

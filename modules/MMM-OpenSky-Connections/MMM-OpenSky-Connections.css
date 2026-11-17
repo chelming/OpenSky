@@ -20,3 +20,6 @@
 .cn-dist { display: flex; flex-direction: column; gap: 6px; }
 .cn-drow { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: #6b7280; }
 .cn-bar { background: #5b6472; color: #fff; border-radius: 6px; padding: 2px 8px; min-width: 28px; box-sizing: border-box; text-align: right; }
+.cn-clues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cn-clue { border-radius: 12px; padding: 8px 14px; background: #eef0f3; font-size: 18px; font-weight: 700; text-transform: uppercase; }
+.cn-hint { padding: 10px 14px; font-size: 17px; }
