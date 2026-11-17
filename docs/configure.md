@@ -89,7 +89,7 @@ never used in Docker (time and sun only).
 ```
 
 
-**Mat board** (phone setup -> Extras -> Look -> *Mat board*): the whole screen looks like a matted, framed picture. A textured
+**Mat board** (on the screen: Settings -> Screen -> Look -> *Mat board*; it applies at once on every screen): the whole screen looks like a matted, framed picture. A textured
 mat board is drawn around the edge and the dashboard shrinks to fit its opening (the layout adapts to the smaller space, as
 on a smaller screen).
 ```json

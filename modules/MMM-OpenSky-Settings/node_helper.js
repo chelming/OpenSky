@@ -131,7 +131,7 @@ module.exports = NodeHelper.create({
       this.sendState();
       // MagicMirror serves the settings it read at start-up, so a page refresh would bring back the old look: say what the file says now
       const s = this.readSettings();
-      this.sendSocketNotification("OS_LOOK", { theme: theme.normalize(s.look && s.look.theme) || "light", lightSensor: !DOCKER && !!(s.look && s.look.lightSensor === true), textSize: textSize.normalize(s.look && s.look.textSize) || "normal", accent: accent.normalize(s.look && s.look.accent) || "peach" });
+      this.sendSocketNotification("OS_LOOK", { theme: theme.normalize(s.look && s.look.theme) || "light", lightSensor: !DOCKER && !!(s.look && s.look.lightSensor === true), textSize: textSize.normalize(s.look && s.look.textSize) || "normal", accent: accent.normalize(s.look && s.look.accent) || "peach", mat: this.matOf(s.look && s.look.mat) });
     } else if (n === "OS_SET_CHANGE") {
       await this.change(p || {});
     } else if (n === "OS_SET_ASLEEP") {
@@ -312,6 +312,7 @@ module.exports = NodeHelper.create({
         accent: accent.normalize(s.look && s.look.accent) || "peach",   // (checked: it goes into the panel's HTML)
         textSize: textSize.normalize(s.look && s.look.textSize) || "normal",
         theme: theme.normalize(s.look && s.look.theme) || "light",
+        mat: this.matOf(s.look && s.look.mat),
         wordgame: (s.wordgame && s.wordgame.source) === "opensky" ? "opensky" : "nyt",
         photos: !(s.photos && s.photos.enabled === false),
         trashDay: (s.pickup && s.pickup.trashDay) || "",
@@ -398,6 +399,17 @@ module.exports = NodeHelper.create({
     return { groups, more: take(raw.more) };
   },
 
+  // look.mat (same rules as config/config.js → matOf): a mat board around the screen
+  matOf(v) {
+    const m = (v && typeof v === "object") ? v : {};
+    return {
+      enabled: m.enabled === true,
+      color: /^#[0-9a-f]{6}$/i.test(String(m.color || "")) ? String(m.color).toLowerCase() : "#f4f1ea",
+      size: ["small", "medium", "large"].includes(m.size) ? m.size : "medium",
+      shadow: m.shadow !== false
+    };
+  },
+
   savePrefs(patch) {
     let s;
     try { s = this.readSettings(true); } catch (e) { return this.sendSocketNotification("OS_SET_NOTICE", { type: "error", message: e.message }); }
@@ -418,6 +430,11 @@ module.exports = NodeHelper.create({
       restartNeeded = true;
     }
     // (the accent and text size are per screen: each browser keeps its own, see Sidebar; look.accent is only the default)
+    if (patch.mat && typeof patch.mat === "object") {   // applies at once on every screen (OS_LOOK), no restart
+      s.look = s.look && typeof s.look === "object" ? s.look : {};
+      s.look.mat = this.matOf({ ...this.matOf(s.look.mat), ...patch.mat });
+      this.sendSocketNotification("OS_LOOK", { mat: s.look.mat });
+    }
     if ("wordgame" in patch) { s.wordgame = s.wordgame || {}; s.wordgame.source = patch.wordgame === "opensky" ? "opensky" : "nyt"; restartNeeded = true; }
     if ("photos" in patch) { s.photos = s.photos || {}; s.photos.enabled = !!patch.photos; restartNeeded = true; }
     if ("trashDay" in patch) { s.pickup = s.pickup || {}; s.pickup.trashDay = String(patch.trashDay || ""); restartNeeded = true; }

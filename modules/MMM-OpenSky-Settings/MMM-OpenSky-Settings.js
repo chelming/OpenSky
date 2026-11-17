@@ -70,7 +70,8 @@ Module.register("MMM-OpenSky-Settings", {
       }
     } else if (n === "OS_LOOK") {   // the saved look, after a page refresh (the screen's config is from the last restart)
       const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0];
-      if (sb && p) { sb.setDefaultTextSize(p.textSize); sb.setDefaultAccent(p.accent); sb.setDefaultTheme(p.theme, p.lightSensor); }
+      if (sb && p && p.theme !== undefined) { sb.setDefaultTextSize(p.textSize); sb.setDefaultAccent(p.accent); sb.setDefaultTheme(p.theme, p.lightSensor); }
+      if (sb && p && p.mat) sb.setDefaultMat(p.mat);
     } else if (n === "OS_SET_STATUS") {
       this.status = p;
       if (this.isOpen()) this.renderStatus();
@@ -383,6 +384,8 @@ Module.register("MMM-OpenSky-Settings", {
     if (!box) return;
     const P = this.prefs;
     if (!P) { box.innerHTML = ""; return; }
+    const mat = P.prefs.mat || { enabled: false, color: "#f4f1ea", size: "medium", shadow: true };
+    const MAT_COLORS = ["#f4f1ea", "#efe6d0", "#b9bcc0", "#a9b8a1", "#e8c9c4", "#1f2f4a", "#1c1c1e"];   // warm white, cream, gray, sage, blush, navy, black
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
     const sbar = this.sidebar(), hidden = sbar && sbar.effectiveHiddenPages ? sbar.effectiveHiddenPages() : [];   // pages hidden on this screen only (its own list, or its screen profile's)
     const profiles = (sbar && sbar.config.screens) || [], curProfile = sbar && sbar.screenPreset ? sbar.screenPreset() : null;
@@ -430,6 +433,12 @@ Module.register("MMM-OpenSky-Settings", {
         <div class="ost-note">This screen only; other screens keep their own. Default follows ${curProfile && curProfile.textSize ? `the screen profile (${window.OpenSkyTextSize.LABELS[curProfile.textSize]})` : `the setting from the phone page (now ${window.OpenSkyTextSize.LABELS[P.prefs.textSize] || "Normal"})`}.</div>
         <div class="ost-row"><span class="ost-label">Dark mode</span><span class="ost-seg" data-seg="theme">${[["default", "Default"], ...Object.entries(window.OpenSkyTheme.LABELS)].map(([v, l]) => `<button data-v="${v}" class="${(this.deviceTheme() || "default") === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
         <div class="ost-note">This screen only. Auto is dark from sunset to sunrise (19:00 to 07:00 if no location is set). System follows this device's own light/dark setting. Default follows the setting from the phone page (now ${window.OpenSkyTheme.LABELS[P.prefs.theme] || "Light"}).</div>
+        <div class="ost-row"><span class="ost-label">Mat board</span>${this.toggle("mat", mat.enabled)}</div>
+        <div class="ost-note">Shows the whole screen like a matted, framed picture: a textured mat board around the edge, and everything shrinks to fit its opening. The same on every screen.</div>
+        ${mat.enabled ? `<div class="ost-row"><span class="ost-label">Mat color</span><span class="ost-chips">${MAT_COLORS.map((c) => `<button class="ost-chip${c === mat.color ? " on" : ""}" data-mat-color="${c}" style="--c:${c}" aria-label="Mat color ${c}"></button>`).join("")}<input type="color" class="ost-mat-pick" value="${mat.color}" aria-label="Pick any mat color"></span></div>
+        <div class="ost-row"><span class="ost-label">Mat size</span><span class="ost-seg" data-seg="matSize">${[["small", "Small"], ["medium", "Medium"], ["large", "Large"]].map(([v, l]) => `<button data-v="${v}" class="${mat.size === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
+        <div class="ost-row"><span class="ost-label">Mat shadow</span>${this.toggle("matshadow", mat.shadow)}</div>
+        <div class="ost-note">The board floats on a dark wall and casts a soft shadow at its outside edge.</div>` : ""}
       </section>
       <section class="ost-section" data-tab="home">
         <h3>Extras</h3>
@@ -538,6 +547,13 @@ Module.register("MMM-OpenSky-Settings", {
     box.querySelectorAll('[data-seg="theme"] button').forEach((b) => {
       b.onclick = () => { const sb = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0]; if (sb) sb.setTheme(b.dataset.v); this.renderPrefs(); };   // this screen only
     });
+    box.querySelector('.ost-toggle[data-id="mat"]').onclick = () => this.savePrefs({ mat: { enabled: !mat.enabled } });
+    if (mat.enabled) {
+      box.querySelectorAll("[data-mat-color]").forEach((b) => { b.onclick = () => this.savePrefs({ mat: { color: b.dataset.matColor } }); });
+      box.querySelector(".ost-mat-pick").onchange = (e) => this.savePrefs({ mat: { color: e.target.value } });
+      box.querySelectorAll('[data-seg="matSize"] button').forEach((b) => { b.onclick = () => this.savePrefs({ mat: { size: b.dataset.v } }); });
+      box.querySelector('.ost-toggle[data-id="matshadow"]').onclick = () => this.savePrefs({ mat: { shadow: !mat.shadow } });
+    }
     box.querySelectorAll('[data-seg="wordgame"] button').forEach((b) => { b.onclick = () => this.savePrefs({ wordgame: b.dataset.v }); });
     box.querySelector('.ost-toggle[data-id="photos"]').onclick = () => this.savePrefs({ photos: !P.prefs.photos });
     box.querySelector('[data-pref="reminders"]').onchange = (e) => this.savePrefs({ reminders: Number(e.target.value) });

@@ -11,7 +11,14 @@ module.exports = async (page, h) => {
   ok("off by default: no mat, the page is as before", !none.mat && none.pos === "", none);
   const full = await rect(".os-side-wrap");
 
-  await sb("setDefaultMat", { enabled: true, color: "#1f2f4a", size: "medium", shadow: true }); await h.sleep(1500);
+  // switched on from the Settings panel (Screen tab → Look): applies at once, no restart
+  await page.evaluate(() => MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].sendNotification("OPENSKY_SETTINGS_OPEN")); await h.sleep(900);
+  await page.evaluate(() => document.querySelector('.ost-toggle[data-id="mat"]').click()); await h.sleep(1800);
+  ok("Settings → Mat board on: the board appears at once", await page.evaluate(() => !!document.querySelector(".os-mat")));
+  await page.evaluate(() => document.querySelector('[data-mat-color="#1f2f4a"]').click()); await h.sleep(1200);
+  ok("Settings → Mat color: the board takes it", await page.evaluate(() => getComputedStyle(document.querySelector(".os-mat-board")).backgroundColor === "rgb(31, 47, 74)"));
+  await page.evaluate(() => document.querySelector(".ost-close, .ost-x, [aria-label='Close']")?.click()); await h.sleep(600);
+
   const g = await page.evaluate(() => { const m = MM.getModules().withClass("MMM-OpenSky-Sidebar")[0].matGeometry(); const b = document.body.getBoundingClientRect(); return { m, body: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)], mat: !!document.querySelector(".os-mat"), lip: !!document.querySelector(".os-mat-lip"), shadow: document.querySelector(".os-mat").classList.contains("shadow") }; });
   ok("on: the board is drawn and the page sits exactly in the opening", g.mat && g.lip && g.shadow && g.body[0] === g.m.l && g.body[1] === g.m.t && g.body[2] === 1920 - g.m.r && g.body[3] === 1080 - g.m.b, g);
   const inside = await page.evaluate((m) => {
