@@ -26,6 +26,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     nav: { groups: [], more: [] },   // opensky.json → nav: groups = [{ key, label, icon, pages }] (a flyout each), more = [page keys] (the More grid)
     screens: [],                 // opensky.json → screens: [{ name, pages?, person?, textSize?, accent? }] — "screen profiles" a screen can pick (Settings)
     textSize: "normal",          // opensky.json → look.textSize: the default for every screen; a screen can pick its own (deviceTextSize)
+    mat: { enabled: false, color: "#f4f1ea", size: "medium", shadow: true },   // opensky.json → look.mat: a picture-frame mat board; the UI shrinks to its opening
     theme: "light",              // opensky.json → look.theme: "light" | "dark" | "auto" (by sun): the default for every screen; a screen can pick its own (deviceTheme)
     lightSensor: false,          // look.lightSensor: let an ambient light sensor, if the screen has one, overrule the sun in Auto
     latitude: null, longitude: null,   // opensky.json → location, for sunrise and sunset
@@ -59,7 +60,8 @@ Module.register("MMM-OpenSky-Sidebar", {
   // (css/layout.css and each module's CSS). look.scale (a number) overrides the fitted zoom.
   // <html data-orient> is "landscape" or "portrait" (a screen taller than wide).
   applyScale() {
-    const W = window.innerWidth, H = window.innerHeight;
+    const mat = this.matGeometry();
+    const W = mat ? mat.w : window.innerWidth, H = mat ? mat.h : window.innerHeight;   // matted: the opening is the screen
     const fixed = Number(this.config.scale);
     const portrait = H > W * 1.1;
     const full = Math.min(W / 1920, H / 1080);
@@ -73,10 +75,56 @@ Module.register("MMM-OpenSky-Sidebar", {
     root.dataset.layout = portrait ? "portrait" : (W / z < 1600 || H / z < 880) ? "compact" : "full";
     root.dataset.orient = portrait ? "portrait" : "landscape";
     root.dataset.text = window.OpenSkyTextSize ? (window.OpenSkyTextSize.normalize(this.effectiveTextSize()) || "normal") : "normal";   // the text size in effect (css/modules can make room for "xlarge")
+    this.applyMat(mat, z);
     this.applySizes(root.dataset.layout, H / z, W / z);
-    const key = `${z.toFixed(3)} ${root.dataset.layout}`;
+    const key = `${z.toFixed(3)} ${root.dataset.layout} ${mat ? `${mat.w}x${mat.h}` : ""}`;
     if (this.layoutKey && key !== this.layoutKey) this.sendNotification("OPENSKY_LAYOUT_CHANGED");   // Home re-fits its day tiles
     this.layoutKey = key;
+  },
+
+  // look.mat: where the mat board's opening is, in screen px: { edge (the wall showing around a floating board), l, t, r, b, w, h }.
+  // The mat is a share of the screen's short side; the bottom is a little wider, like a real mat.
+  matGeometry() {
+    const m = this.config.mat;
+    if (!m || m.enabled !== true) return null;
+    const W = window.innerWidth, H = window.innerHeight, s = Math.min(W, H);
+    const edge = m.shadow !== false ? Math.round(s * 0.03) : 0;
+    const side = Math.round(s * ({ small: 0.035, medium: 0.07, large: 0.11 }[m.size] || 0.07));
+    const l = edge + side, t = edge + side, r = edge + side, b = edge + Math.round(side * 1.2);
+    return { edge, l, t, r, b, w: Math.max(200, W - l - r), h: Math.max(150, H - t - b) };
+  },
+
+  // Draw the mat board behind the UI and shrink the page (body) into the opening. `contain: layout paint` makes the body the
+  // containing block of every fixed element (sidebar, pages, popups), so they all fit the opening, and clips them to it.
+  applyMat(mat, z) {
+    const root = document.documentElement, st = document.body.style;
+    if (!mat) {
+      ["position", "left", "top", "width", "height", "contain", "zIndex"].forEach((k) => { st[k] = ""; });
+      ["--vh", "--vw"].forEach((k) => root.style.removeProperty(k));
+      delete root.dataset.mat;
+      document.querySelectorAll(".os-mat, .os-mat-lip").forEach((e) => e.remove());
+      this.matEl = null;
+      return;
+    }
+    const c = this.config.mat;
+    if (!this.matEl) {
+      this.matEl = document.createElement("div");
+      this.matEl.className = "os-mat";
+      this.matEl.innerHTML = `<div class="os-mat-board"></div>`;
+      this.lipEl = document.createElement("div");
+      this.lipEl.className = "os-mat-lip";
+    }
+    if (!this.matEl.isConnected) root.append(this.matEl, this.lipEl);
+    root.dataset.mat = "on";
+    this.matEl.classList.toggle("shadow", c.shadow !== false);
+    this.matEl.style.setProperty("--mat", c.color);
+    this.lipEl.style.setProperty("--mat", c.color);
+    this.matEl.querySelector(".os-mat-board").style.inset = `${mat.edge}px`;
+    Object.assign(this.lipEl.style, { left: `${mat.l}px`, top: `${mat.t}px`, width: `${mat.w}px`, height: `${mat.h}px` });
+    // the body's own lengths are scaled by its zoom, so they are given divided by it
+    Object.assign(st, { position: "absolute", left: `${mat.l / z}px`, top: `${mat.t / z}px`, width: `${mat.w / z}px`, height: `${mat.h / z}px`, contain: "layout paint", zIndex: "1" });
+    root.style.setProperty("--vh", `${mat.h / 100 / z}px`);   // 1vh / 1vw inside the opening (css/opensky.css has the unmatted values)
+    root.style.setProperty("--vw", `${mat.w / 100 / z}px`);
   },
 
   // The sidebar's sizes (and with them where the pages start) for the current layout; see ui in the defaults
@@ -204,6 +252,7 @@ Module.register("MMM-OpenSky-Sidebar", {
     try { if (v) localStorage.setItem("opensky.textSize", v); else localStorage.removeItem("opensky.textSize"); } catch (e) { /* private window: this visit only */ this._textSizeFallback = v; }
     this.applyScale();
   },
+  setDefaultMat(mat) { this.config.mat = { ...this.config.mat, ...mat }; this.applyScale(); },
   setDefaultTextSize(size) { this.config.textSize = size; this.applyScale(); },
 
   // ----- Dark mode (look.theme): css/opensky.css turns the whole page dark when <html data-os-theme="dark">. Per screen like the
@@ -488,7 +537,7 @@ Module.register("MMM-OpenSky-Sidebar", {
       document.body.appendChild(c);
       this.cover = c;
     }
-    if (on) { this.cover.hidden = false; this.sendNotification("OPENSKY_SCREEN_SLEEP", true); }
+    if (on) { document.documentElement.classList.add("os-asleep"); this.cover.hidden = false; this.sendNotification("OPENSKY_SCREEN_SLEEP", true); }
   },
 
   isAsleep() { return !!(this.cover && !this.cover.hidden); },
@@ -497,7 +546,7 @@ Module.register("MMM-OpenSky-Sidebar", {
   wake() {
     if (!this.cover || this.cover.hidden) return;
     // keep the cover a moment so the tail of the waking touch is swallowed too
-    setTimeout(() => { this.cover.hidden = true; }, 400);
+    setTimeout(() => { this.cover.hidden = true; document.documentElement.classList.remove("os-asleep"); }, 400);
     this.lastActivity = Date.now();
     this.sendNotification("OPENSKY_SCREEN_SLEEP", false);
   },

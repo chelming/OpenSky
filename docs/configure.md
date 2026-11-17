@@ -88,6 +88,18 @@ never used in Docker (time and sun only).
 "look": { "theme": "auto", "lightSensor": false }
 ```
 
+
+**Mat board** (phone setup -> Extras -> Look -> *Mat board*): the whole screen looks like a matted, framed picture. A textured
+mat board is drawn around the edge and the dashboard shrinks to fit its opening (the layout adapts to the smaller space, as
+on a smaller screen).
+```json
+"look": { "mat": { "enabled": true, "color": "#f4f1ea", "size": "medium", "shadow": true } }
+```
+`color` is any `#rrggbb` (the phone page offers warm white, cream, gray, sage, blush, navy and black, or any color you pick),
+`size` is `small`, `medium` or `large` (a share of the screen's short side; the bottom is a little wider, like a real mat) and
+`shadow` floats the board on a dark wall with a soft shadow at its outer edge (`false` = the board fills the screen).
+Applies to every screen. A sleeping screen goes fully black.
+
 `accent`: the color of buttons, highlights and the active page: any palette color name (see Calendars) or any
 color as a code, `"#rrggbb"` (or the short `"#rgb"`), e.g. `"#3b82f6"` or your team's color. Leave it out for the
 default peach. This setting is the **default for every screen** (set it on the phone: Extras: a chip, the color picker, or
@@ -615,16 +627,6 @@ It doesn't start while the screen is asleep or a timer is running on the Timer p
 `upNext`, `showClock` and `showWeather` hide those parts; `photoSeconds` is the time per photo (5 or more). With no photos
 you get a dark background and the same information. The text drifts a few pixels with each photo, to spare the screen.
 Works the same in Docker with the screen shown in a browser (it only needs page touches).
-
-**Mat board** (phone setup -> Screensaver -> *Mat board*): shows each photo like a framed picture, in a window cut in a
-textured mat board.
-```json
-"screensaver": { "enabled": true, "mat": { "enabled": true, "color": "#f4f1ea", "size": "medium", "shadow": true } }
-```
-`color` is any `#rrggbb` (the phone page offers warm white, cream, gray, sage, blush, navy and black, or any color you pick),
-`size` is `small`, `medium` or `large`, and `shadow` floats the board on a dark wall with a soft shadow at its outer edge
-(`false` = the board fills the screen). The window takes the photo's own shape, so nothing is cropped; on a wide screen it
-sits to the right of the clock and Up next.
 
 ## On-screen keyboard
 ```json

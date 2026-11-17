@@ -42,15 +42,6 @@ module.exports = async (page, h) => {
   ok("…without pressing the tile under it", (await page.evaluate(() => document.querySelector(".os-tile.active")?.dataset.key)) === before);
   ok("…and the idle clock restarted (doesn't come straight back)", await page.evaluate(() => { const ss = MM.getModules().withClass("MMM-OpenSky-Screensaver")[0]; ss.checkIdle(); return !ss.visible; }));
 
-  // mat board: the photo sits in a window inside a textured board; the shadow option floats the board on a dark wall
-  await page.evaluate(() => { const ss = MM.getModules().withClass("MMM-OpenSky-Screensaver")[0]; ss.config.mat = { enabled: true, color: "#1f2f4a", size: "medium", shadow: true }; ss.photoPending = 0; ss.open(); });
-  await h.sleep(2500);
-  const mt = await page.evaluate(() => { const b = document.querySelector(".ss-layer.matted .ss-board"), w = document.querySelector(".ss-layer.matted .ss-window"); if (!b || !w) return null;
-    const br = b.getBoundingClientRect(), wr = w.getBoundingClientRect(); return { board: [br.left, br.top], win: [wr.left, wr.top, wr.width, wr.height], shadow: getComputedStyle(b).boxShadow !== "none", bg: getComputedStyle(b).backgroundColor }; });
-  ok("mat on: the photo is in a window inside the board, with the board's shadow", !!mt && mt.win[0] > mt.board[0] + 40 && mt.win[1] > mt.board[1] + 40 && mt.shadow && mt.bg === "rgb(31, 47, 74)", mt);
-  await h.shot("screensaver-mat");
-  await page.evaluate(() => { const ss = MM.getModules().withClass("MMM-OpenSky-Screensaver")[0]; ss.config.mat = { enabled: false }; ss.close(true); });
-
   // nothing left today → tomorrow fills in; no events at all → a friendly line
   await page.evaluate(() => { const ss = MM.getModules().withClass("MMM-OpenSky-Screensaver")[0], t = new Date(); ss.nowMs = () => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 22, 0).getTime();
     const at = (d, hh) => new Date(t.getFullYear(), t.getMonth(), t.getDate() + d, hh).getTime();

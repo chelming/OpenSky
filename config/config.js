@@ -44,6 +44,17 @@ function textSizeOf(v) {
   return ["small", "normal", "large", "xlarge"].includes(k) ? k : "normal";
 }
 
+// look.mat: a picture-frame mat board around the whole screen { enabled, color "#rrggbb", size small|medium|large, shadow }
+function matOf(v) {
+  const m = (v && typeof v === "object") ? v : {};
+  return {
+    enabled: m.enabled === true,
+    color: /^#[0-9a-f]{6}$/i.test(String(m.color || "")) ? String(m.color).toLowerCase() : "#f4f1ea",
+    size: ["small", "medium", "large"].includes(m.size) ? m.size : "medium",
+    shadow: m.shadow !== false
+  };
+}
+
 // look.theme: "light" (default) | "dark" | "auto" (by sun) | "system" (the browser's setting); same rule as lib/theme.js
 function themeOf(v) {
   const s = String(v == null ? "" : v).trim().toLowerCase().replace(/[\s_()-]/g, "");
@@ -395,16 +406,6 @@ const loc = s.location || {};
 const units = locale.units === "metric" ? "metric" : "imperial";
 const header = s.header || {};
 const saver = s.screensaver || {};
-// Mat board around the screensaver photo: screensaver.mat { enabled, color "#rrggbb", size small|medium|large, shadow }
-const saverMat = (() => {
-  const m = (saver.mat && typeof saver.mat === "object") ? saver.mat : {};
-  return {
-    enabled: m.enabled === true,
-    color: /^#[0-9a-f]{6}$/i.test(String(m.color || "")) ? String(m.color).toLowerCase() : "#f4f1ea",
-    size: ["small", "medium", "large"].includes(m.size) ? m.size : "medium",
-    shadow: m.shadow !== false
-  };
-})();
 
 // Event reminders: opensky.json -> reminders { minutes (0/absent = off), chime, banner, allDay, people: [profile names] }.
 // "people" limits it to the calendars linked to those people (or named like them); empty = every calendar.
@@ -429,7 +430,7 @@ const fixed = [
     config: {
       afterMinutes: Number.isFinite(saver.afterMinutes) && saver.afterMinutes > 0 ? saver.afterMinutes : 10,
       upNext: saver.upNext !== false, showClock: saver.showClock !== false, showWeather: saver.showWeather !== false,
-      hour12: locale.timeFormat !== 24, eventColors, mat: saverMat,
+      hour12: locale.timeFormat !== 24, eventColors,
       photos: { ...photosConfig(20), intervalSeconds: Number.isFinite(saver.photoSeconds) && saver.photoSeconds >= 5 ? saver.photoSeconds : 20 }
     }
   }] : []),
@@ -476,6 +477,7 @@ const fixed = [
       scale: (s.look && s.look.scale) || "auto",
       textSize: textSizeOf(s.look && s.look.textSize),
       theme: themeOf(s.look && s.look.theme),
+      mat: matOf(s.look && s.look.mat),
       lightSensor: !!(s.look && s.look.lightSensor === true) && process.env.OPENSKY_DOCKER !== "1",   // no sensor in a container: sun only
       latitude: Number.isFinite(loc.latitude) ? loc.latitude : null,
       longitude: Number.isFinite(loc.longitude) ? loc.longitude : null,
