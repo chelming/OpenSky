@@ -76,6 +76,16 @@ Module.register("MMM-OpenSky-Quartiles", {
     this.renderBoard();
   },
 
+  // the tiles of the quartiles found so far go first, in the order they were found (a row each), the rest are shuffled
+  shuffleRest() {
+    const s = this.state;
+    if (!s || !(s.quartileTiles || []).length) return;
+    const done = s.quartileTiles, rest = this.order.filter((i) => !done.includes(i));
+    for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+    this.order = [...done, ...rest];
+    this.renderBoard();
+  },
+
   hint(kind) {
     const s = this.state;
     if (!s || s.status !== "playing" || this.busy) return;
@@ -131,9 +141,10 @@ Module.register("MMM-OpenSky-Quartiles", {
     if (w) w.textContent = this.picked.map((i) => s.tiles[i]).join("") || (s.status === "won" ? "All quartiles found!" : "");
     const f = this.root.querySelector(".qt-foot");
     if (!f) return;
-    f.innerHTML = s.status === "playing" ? `<div class="gm-actions"><button class="gm-btn qt-shuffle">Shuffle</button><button class="gm-btn qt-clear" ${this.picked.length ? "" : "disabled"}>Clear</button><button class="gm-btn solid qt-go" ${this.picked.length ? "" : "disabled"}>Submit</button></div>` : "";
+    f.innerHTML = s.status === "playing" ? `<div class="gm-actions"><button class="gm-btn qt-shuffle">Shuffle</button><button class="gm-btn qt-rest" ${(s.quartileTiles || []).length ? "" : "disabled"}>Shuffle rest</button><button class="gm-btn qt-clear" ${this.picked.length ? "" : "disabled"}>Clear</button><button class="gm-btn solid qt-go" ${this.picked.length ? "" : "disabled"}>Submit</button></div>` : "";
     const q = (sel) => f.querySelector(sel);
     if (q(".qt-shuffle")) q(".qt-shuffle").onclick = () => this.shuffle();
+    if (q(".qt-rest")) q(".qt-rest").onclick = () => this.shuffleRest();
     if (q(".qt-clear")) q(".qt-clear").onclick = () => { this.picked = []; this.renderBoard(); };
     if (q(".qt-go")) q(".qt-go").onclick = () => this.submit();
   },
