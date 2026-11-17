@@ -91,7 +91,8 @@ module.exports = NodeHelper.create({
     if (cells.length < 4) return this.sendSocketNotification("OS_ST_ERROR", { message: "Too short" });
     const word = cells.map(([r, c]) => p.board[r][c]).join("");
     const key = cellKey(cells);
-    const hit = p.words.find((w) => cellKey(w.cells) === key);
+    // the path has to spell the word: the right cells picked in another order are not it
+    const hit = p.words.find((w) => w.cells.length === cells.length && w.cells.every((c, i) => c[0] === cells[i][0] && c[1] === cells[i][1]));
     if (hit) {
       if (g.found.includes(hit.word)) return this.sendSocketNotification("OS_ST_ERROR", { message: "Already found" });
       g.found.push(hit.word);
@@ -104,7 +105,8 @@ module.exports = NodeHelper.create({
       gs.write(FILE, file);
       return send({ message: hit.spangram ? "Spangram!" : null, foundNow: hit.word });
     }
-    if (p.words.some((w) => w.word === word)) return this.sendSocketNotification("OS_ST_ERROR", { message: "Not quite — try the letters in another order" });
+    if (p.words.some((w) => g.found.includes(w.word) && cellKey(w.cells) === key)) return this.sendSocketNotification("OS_ST_ERROR", { message: "Already found" });
+    if (p.words.some((w) => w.word === word || (cellKey(w.cells) === key && !p.dictionary.has(word.toLowerCase())))) return this.sendSocketNotification("OS_ST_ERROR", { message: "Not quite — try the letters in another order" });
     if (!p.dictionary.has(word.toLowerCase())) return this.sendSocketNotification("OS_ST_ERROR", { message: "Not in word list" });
     if (g.extras.includes(word)) return this.sendSocketNotification("OS_ST_ERROR", { message: "Already found" });
     g.extras.push(word);
