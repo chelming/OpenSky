@@ -120,7 +120,8 @@ Module.register("MMM-OpenSky-Sidebar", {
     this.matEl.style.setProperty("--mat", c.color);
     this.lipEl.style.setProperty("--mat", c.color);
     this.matEl.querySelector(".os-mat-board").style.inset = `${mat.edge}px`;
-    Object.assign(this.lipEl.style, { left: `${mat.l}px`, top: `${mat.t}px`, width: `${mat.w}px`, height: `${mat.h}px` });
+    // the lip is the bevel: a border drawn just outside the opening, so its box is the opening grown by the bevel width
+    Object.assign(this.lipEl.style, { left: `${mat.l - 8}px`, top: `${mat.t - 8}px`, width: `${mat.w + 16}px`, height: `${mat.h + 16}px` });
     // the body's own lengths are scaled by its zoom, so they are given divided by it
     Object.assign(st, { position: "absolute", left: `${mat.l / z}px`, top: `${mat.t / z}px`, width: `${mat.w / z}px`, height: `${mat.h / z}px`, contain: "layout paint", zIndex: "1" });
     root.style.setProperty("--vh", `${mat.h / 100 / z}px`);   // 1vh / 1vw inside the opening (css/opensky.css has the unmatted values)

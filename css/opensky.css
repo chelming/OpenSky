@@ -145,8 +145,15 @@ html[data-os-theme="dark"] .hb-theme-labor { --cd-bg: #edf3ff; --cd-fg: #2f5fb8;
 .os-mat-board::before { content: ""; position: absolute; inset: 0; opacity: .5; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .55  0 0 0 0 .55  0 0 0 .55 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>"); }
 .os-mat.shadow .os-mat-board { box-shadow: 0 .3em .2em rgba(0,0,0,.35), 0 1em 2em -.4em rgba(0,0,0,.55), 0 2em 3.5em -.5em rgba(0,0,0,.45), inset 0 3px 2px rgba(255,255,255,.35); }
-.os-mat-lip { z-index: 2147483600; box-shadow: inset 0 8px 10px -2px rgba(0,0,0,.45), inset 0 0 14px rgba(0,0,0,.25),
-  0 0 0 6px color-mix(in srgb, var(--mat, #f4f1ea) 45%, #fff), 0 0 0 7px rgba(0,0,0,.3); }   /* the cut edge catches the light */
+/* The bevel is the mat's cut edge, seen at an angle: a white core in four shades of light gray (the top in shadow, the right a
+   little lighter, the bottom catching the light), meeting at mitred corners that each get a thin light-gray line. */
+.os-mat-lip { z-index: 2147483600; box-sizing: border-box; border: 8px solid; border-color: #cdcdcd #e2e2e2 #f4f4f4 #dadada;   /* top right bottom left */
+  box-shadow: inset 0 0 12px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.28); }   /* the shade inside the opening is even on all four sides */
+.os-mat-lip::before { content: ""; position: absolute; inset: -8px; --ln: #eeeeee; background:
+  linear-gradient(to top right, transparent calc(50% - .9px), var(--ln) calc(50% - .9px) calc(50% + .9px), transparent calc(50% + .9px)) left top / 8px 8px no-repeat,
+  linear-gradient(to bottom right, transparent calc(50% - .9px), var(--ln) calc(50% - .9px) calc(50% + .9px), transparent calc(50% + .9px)) right top / 8px 8px no-repeat,
+  linear-gradient(to bottom right, transparent calc(50% - .9px), var(--ln) calc(50% - .9px) calc(50% + .9px), transparent calc(50% + .9px)) left bottom / 8px 8px no-repeat,
+  linear-gradient(to top right, transparent calc(50% - .9px), var(--ln) calc(50% - .9px) calc(50% + .9px), transparent calc(50% + .9px)) right bottom / 8px 8px no-repeat; }
 html.os-asleep[data-mat] { background: #000; }
 html.os-asleep .os-mat, html.os-asleep .os-mat-lip { visibility: hidden; }
 html[data-os-theme="dark"].os-asleep[data-mat] { background: #fff; }
