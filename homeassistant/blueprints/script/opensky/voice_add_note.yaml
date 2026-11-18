@@ -1,0 +1,127 @@
+blueprint:
+  name: Voice - Post a note to the OpenSky screen - Full LLM script
+  author: OpenSky
+  source_url: https://github.com/chelming/OpenSky/blob/main/homeassistant/blueprints/script/opensky/voice_add_note.yaml
+  description: |
+    # Post a note to the OpenSky family screen by voice
+
+    "Put a note on the screen that the dentist moved to Thursday." The LLM passes the text to OpenSky's
+    family share API, and the note appears on the Home page.
+
+    ### Prerequisites (once)
+    1. In OpenSky phone setup, open **Share with the family**, switch it on and tap **Make a token**. Copy it
+       (it is shown once).
+    2. Put the token in Home Assistant's `secrets.yaml` (never in a script, blueprint or automation, which
+       are stored in plain text and appear in backups and the UI):
+       ```yaml
+       opensky_share_auth: "Bearer osk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+       ```
+    3. Add this to `configuration.yaml` (replace the address with your OpenSky's share page, port 8091 by
+       default), then **Developer tools -> YAML -> check configuration** and restart (a `rest_command` change
+       needs a restart):
+       ```yaml
+       rest_command:
+         opensky_add_note:
+           url: "http://opensky.local:8091/api/notes"
+           method: post
+           headers:
+             authorization: !secret opensky_share_auth
+           content_type: "application/json"
+           payload: '{"text": {{ text | tojson }}, "from": {{ posted_by | tojson }}, "days": {{ days | int(0) }}}'
+       ```
+
+    ### Blueprint setup
+    * **Posted by** is shown next to the note (OpenSky's "from").
+    * **Default days** is how long a note stays up (0 = until someone removes it on the screen).
+    * Give the script a clear description so the LLM knows when to use it, and
+      **expose the script to Assist after saving it**.
+
+    #### Example script description
+    `Tool to put a short note on the family's kitchen screen. Use it when asked to leave, post or put up a note or message for the family.`
+
+    #### Examples
+    ```
+    Put a note on the screen that soccer is cancelled
+    Leave a note for the family: the plumber comes Friday morning
+    Post a note for 3 days that we're out of milk
+    ```
+  domain: script
+  homeassistant:
+    min_version: 2024.8.0
+  input:
+    posted_by:
+      name: Posted by
+      description: Name shown on the note.
+      default: Voice
+      selector:
+        text:
+    default_days:
+      name: Default days
+      description: How many days a note stays up when the request doesn't say. 0 keeps it until it is removed.
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 30
+          mode: box
+    text_prompt:
+      name: Note text prompt
+      description: The prompt the LLM sees for the note text.
+      default: The note to put on the screen, as a short plain sentence (at most 200 characters), in the words the person would want to read.
+      selector:
+        text:
+          multiline: true
+    days_prompt:
+      name: Days prompt
+      description: The prompt the LLM sees for how long the note stays.
+      default: Optional. How many days the note should stay on the screen, only if the person says so. 0 means until it is removed. Leave out otherwise.
+      selector:
+        text:
+          multiline: true
+mode: parallel
+max_exceeded: silent
+fields:
+  text:
+    name: Note
+    description: !input text_prompt
+    selector:
+      text:
+    required: true
+  days:
+    name: Days
+    description: !input days_prompt
+    selector:
+      number:
+        min: 0
+        max: 30
+    required: false
+sequence:
+- variables:
+    default_days: !input default_days
+    posted_by: !input posted_by
+    note_text: "{{ (text | default('', true) | string).strip() }}"
+    note_days: "{{ days if days is defined and days is not none else default_days }}"
+- if:
+  - condition: template
+    value_template: "{{ note_text | length == 0 }}"
+  then:
+  - variables:
+      reply:
+        result: No note text was given, so nothing was posted.
+  - stop: No note text
+    response_variable: reply
+- alias: Post the note to OpenSky
+  action: rest_command.opensky_add_note
+  data:
+    text: "{{ note_text }}"
+    days: "{{ note_days | int(1) }}"
+    posted_by: "{{ posted_by }}"
+  response_variable: sent
+  continue_on_error: true
+- variables:
+    posted: "{{ sent is defined and sent.status | default(0) == 200 }}"
+    why: "{{ sent.content.error if sent is defined and sent.content is mapping and sent.content.error is defined else 'OpenSky could not be reached, or the token is wrong.' }}"
+    reply:
+      result: "{{ 'Done. The note is on the screen.' if posted else 'The note was not posted. ' ~ why }}"
+- stop: Finished
+  response_variable: reply

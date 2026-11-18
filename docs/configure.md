@@ -683,6 +683,12 @@ on the Home screen. It is separate from phone setup, which stays closed except w
   ```
   `days` is how long the note stays up (0 = until removed). In Home Assistant, call that from a `rest_command` that a voice
   automation or script runs (keep the token in `secrets.yaml`).
+- **Home Assistant voice blueprint.** `homeassistant/blueprints/script/opensky/voice_add_note.yaml` in this repo is a script blueprint for
+  Assist's LLM ("put a note on the screen that…"). Import it from
+  `https://github.com/chelming/OpenSky/blob/main/homeassistant/blueprints/script/opensky/voice_add_note.yaml`
+  (Settings → Automations & scenes → Blueprints → Import), create a script from it and **expose the script to Assist**. Keep the token out of
+  scripts and blueprints (they are stored in plain text): put `opensky_share_auth: "Bearer <token>"` in Home Assistant's
+  `secrets.yaml` and use the `rest_command` snippet in the blueprint's description, which reads it with `!secret`.
 - Over plain `http` (a Pi on your Wi-Fi) the passcode crosses the network unencrypted, like the phone setup code; put the page behind HTTPS
   (a reverse proxy, see [docker.md](docker.md#family-share-page)) if that matters to you. With **Immich** as the photo source, the page only offers notes, because photos
   have to be added in Immich.
