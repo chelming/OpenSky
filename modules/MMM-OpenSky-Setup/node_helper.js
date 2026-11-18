@@ -24,6 +24,7 @@
  *     · POST /api/photos?name= (the raw image as the body) · POST /api/photos/delete {id}
  *   The family share page (lib/share.js, always on when share.enabled): GET /api/share → {running, passcodeSet, addresses}
  *     · POST /api/share/passcode {passcode} (hashed; a new one signs every family phone out)
+ *     · POST /api/share/token → {token} (shown once, only a hash is kept; replaces the old one) · POST /api/share/token/revoke
  *   GET /api/backup[?secrets=1] (a download: settings + on-device data, passwords only when asked) · POST /api/restore {backup}
  */
 const NodeHelper = require("node_helper");
@@ -391,13 +392,24 @@ module.exports = NodeHelper.create({
 
     // the share page: its addresses, and the family passcode (only a hash is kept; a new passcode signs every family phone out)
     if (url.pathname === "/api/share" && req.method === "GET") {
-      return this.send(res, 200, { running: !!this.shareServer, passcodeSet: share.hasPasscode(), addresses: this.shareServer ? this.shareAddresses() : [], minLength: share.MIN_PASSCODE });
+      return this.send(res, 200, { running: !!this.shareServer, passcodeSet: share.hasPasscode(), apiTokenSet: share.hasApiToken(), addresses: this.shareServer ? this.shareAddresses() : [], minLength: share.MIN_PASSCODE });
     }
     if (url.pathname === "/api/share/passcode" && req.method === "POST") {
       const { passcode } = await this.body(req, 4 * 1024);
       try { share.setPasscode(passcode); } catch (e) { return this.send(res, e.status || 500, { error: e.status ? e.message : "Couldn't save the passcode on the Pi" }); }
       console.log("[OpenSky] phone setup: the share passcode was changed");
       return this.send(res, 200, { ok: true, passcodeSet: true });
+    }
+    if (url.pathname === "/api/share/token" && req.method === "POST") {
+      let token;
+      try { token = share.createApiToken(); } catch (e) { return this.send(res, e.status || 500, { error: e.status ? e.message : "Couldn't save the token on the Pi" }); }
+      console.log("[OpenSky] phone setup: a share API token was made");
+      return this.send(res, 200, { ok: true, token });
+    }
+    if (url.pathname === "/api/share/token/revoke" && req.method === "POST") {
+      try { share.revokeApiToken(); } catch (e) { return this.send(res, e.status || 500, { error: e.status ? e.message : "Couldn't remove the token on the Pi" }); }
+      console.log("[OpenSky] phone setup: the share API token was removed");
+      return this.send(res, 200, { ok: true });
     }
 
     if (url.pathname === "/api/google" && req.method === "GET") {

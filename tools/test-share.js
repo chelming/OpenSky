@@ -125,6 +125,28 @@ let pass = 0, fail = 0; const ok = (k, v, i = "") => { v ? pass++ : fail++; cons
   ok("24 a wrong Host is refused", (await call("GET", "/", undefined, { Host: "evil.example" })).status === 421);
   r = await call("POST", "/api/logout", {}, as);
   ok("25a signing out clears the cookie", r.status === 200 && /Max-Age=0/.test(r.headers["set-cookie"]));
+  // the API token (Home Assistant's voice pipeline etc.): Authorization: Bearer, same reach as a signed-in phone
+  ok("25b no token yet", share.hasApiToken() === false && (await call("GET", "/api/state", undefined, { Authorization: "Bearer osk_" + "a".repeat(48), "X-Forwarded-For": "10.4.0.1" })).status === 401);
+  const TOKEN = share.createApiToken(), rawSec = fs.readFileSync(process.env.OPENSKY_SECRETS, "utf8");
+  ok("25c only a hash of the token is kept (never the token), 0600, passcode data and other secrets untouched",
+    /^osk_[a-f0-9]{48}$/.test(TOKEN) && !rawSec.includes(TOKEN) && /^sha256\$[a-f0-9]{64}$/.test(sec().share.apiToken) && !!sec().share.hash && !!sec().share.secret && (fs.statSync(process.env.OPENSKY_SECRETS).mode & 0o777) === 0o600);
+  const bt = { Authorization: `Bearer ${TOKEN}`, "X-OpenSky": "0" };
+  r = await call("POST", "/api/notes", { text: "Buy oat milk", from: "Voice", days: 1 }, bt);
+  ok("25d a bearer token adds a note, with no cookie and no X-OpenSky header", r.status === 200 && r.body.note.text === "Buy oat milk" && r.body.note.from === "Voice");
+  ok("25e ...and can read the state and remove it again", (await call("GET", "/api/state", undefined, bt)).body.notes.some((n) => n.text === "Buy oat milk") && (await call("POST", "/api/notes/delete", { id: r.body.note.id }, bt)).status === 200);
+  ok("25f a wrong or malformed token is refused (even with a good cookie), and the token is not accepted as a cookie or passcode",
+    (await call("POST", "/api/notes", { text: "x" }, { ...as, Authorization: "Bearer osk_" + "b".repeat(48), "X-Forwarded-For": "10.4.0.2" })).status === 401 && (await call("GET", "/api/state", undefined, { Authorization: "Bearer nope", "X-Forwarded-For": "10.4.0.3" })).status === 401
+    && (await call("GET", "/api/state", undefined, { Cookie: `os_share=${TOKEN}` })).status === 401 && (await call("POST", "/api/login", { passcode: TOKEN }, { "X-Forwarded-For": "10.4.0.4" })).status === 401);
+  ok("25g without a bearer header a POST still needs X-OpenSky", (await call("POST", "/api/notes", { text: "x" }, { ...as, "X-OpenSky": "0" })).status === 403);
+  const reachT = [["GET", "/api/backup"], ["POST", "/api/save"], ["GET", "/api/share"], ["POST", "/api/share/token"], ["POST", "/api/share/passcode"]];
+  const codesT = []; for (const [m, p] of reachT) codesT.push((await call(m, p, m === "POST" ? {} : undefined, bt)).status);
+  ok("25h a token can't reach settings, backups or the setup endpoints (incl. making tokens)", codesT.every((c) => c === 404), codesT.join(","));
+  let lim; for (let i = 0; i < 6; i++) lim = await call("GET", "/api/state", undefined, { Authorization: `Bearer osk_${String(i).repeat(48)}`, "X-Forwarded-For": "10.5.5.5" });
+  ok("25i guessing tokens is rate limited like guessing passcodes (even the right token waits for that phone)", lim.status === 429 && (await call("GET", "/api/state", undefined, { ...bt, "X-Forwarded-For": "10.5.5.5" })).status === 429 && (await call("GET", "/api/state", undefined, { ...bt, "X-Forwarded-For": "10.5.5.6" })).status === 200);
+  const TOKEN2 = share.createApiToken();
+  ok("25j a new token replaces the old one", TOKEN2 !== TOKEN && (await call("GET", "/api/state", undefined, { Authorization: `Bearer ${TOKEN}`, "X-Forwarded-For": "10.5.6.1" })).status === 401 && (await call("GET", "/api/state", undefined, { Authorization: `Bearer ${TOKEN2}` })).status === 200);
+  share.revokeApiToken();
+  ok("25k removing the token stops it (and keeps the passcode)", !share.hasApiToken() && (await call("GET", "/api/state", undefined, { Authorization: `Bearer ${TOKEN2}`, "X-Forwarded-For": "10.5.6.2" })).status === 401 && share.checkPasscode("a-new-passcode"));
   // changing the passcode: old sessions stop working
   share.setPasscode("third-passcode");
   ok("25 after a new passcode the old cookie stops working, the new passcode signs in", (await call("GET", "/api/state", undefined, as)).status === 401 && (await call("POST", "/api/login", { passcode: "third-passcode" })).status === 200);

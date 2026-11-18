@@ -951,6 +951,18 @@
       if (!d.running) parts.push(el("p", { class: "hint" }, "Tap Finish below: the share page starts when OpenSky restarts, and its address appears here."));
       else parts.push(el("div", { class: "field" }, el("span", { class: "label" }, "Address for the family"), ...d.addresses.slice(0, 2).map((a) => el("code", { class: "addr" }, a)),
         el("span", { class: "hint" }, "Open it on each phone, sign in once, and add it to the home screen. It works on your home network.")));
+      const shown = el("code", { class: "addr" }), tokenErr = el("p", { class: "err" });
+      parts.push(el("div", { class: "field" }, el("span", { class: "label" }, "API token (automations)"),
+        el("span", { class: "hint" }, d.apiTokenSet ? "A token is set. Making a new one replaces it; the old one stops working." : "For Home Assistant's voice assistant or a shortcut that posts notes. Send it as an Authorization: Bearer header. It can only do what a family phone can."),
+        shown, tokenErr,
+        el("button", { type: "button", class: "btn", onclick: async () => {
+          tokenErr.textContent = "";
+          try { const r = await api("POST", "/api/share/token"); shown.textContent = r.token; toast("Token made. Copy it now: it is shown only once"); }
+          catch (e) { tokenErr.textContent = e.message; }
+        } }, d.apiTokenSet ? "Make a new token" : "Make a token"),
+        d.apiTokenSet ? el("button", { type: "button", class: "btn", onclick: async () => {
+          try { await api("POST", "/api/share/token/revoke"); toast("Token removed"); draw(); } catch (e) { tokenErr.textContent = e.message; }
+        } }, "Remove token") : null));
       body.replaceChildren(...parts);
     };
     draw();

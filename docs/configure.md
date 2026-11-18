@@ -673,6 +673,16 @@ on the Home screen. It is separate from phone setup, which stays closed except w
 - The passcode is kept only as a salted scrypt hash in `secrets.json → share.hash`; signed-in phones carry a cookie signed with `share.secret`.
   **Changing the passcode** (same card) makes a new secret and signs every phone out. Five wrong passcodes from one phone pause that phone for a
   minute, and many wrong ones from anywhere pause everyone for a few minutes.
+- **API token (automations, e.g. Home Assistant's voice assistant).** In the same card, **Make a token** shows a token once (copy it then; only
+  its SHA-256 is kept, in `secrets.json → share.apiToken`); making another replaces it, **Remove token** turns it off. Send it as
+  `Authorization: Bearer <token>`: no sign-in, cookie or `X-OpenSky` header needed, and it can do exactly what a family phone can (notes, photos,
+  countdowns, on-device meals), nothing in settings. Wrong tokens are rate limited like wrong passcodes. Post a note:
+  ```sh
+  curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+       -d '{"text":"Buy oat milk","from":"Voice","days":3}' http://opensky.local:8091/api/notes
+  ```
+  `days` is how long the note stays up (0 = until removed). In Home Assistant, call that from a `rest_command` that a voice
+  automation or script runs (keep the token in `secrets.yaml`).
 - Over plain `http` (a Pi on your Wi-Fi) the passcode crosses the network unencrypted, like the phone setup code; put the page behind HTTPS
   (a reverse proxy, see [docker.md](docker.md#family-share-page)) if that matters to you. With **Immich** as the photo source, the page only offers notes, because photos
   have to be added in Immich.
